@@ -1,0 +1,151 @@
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { useQuery } from 'convex/react'
+import { api } from '@convex/_generated/api'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { AddLeadDialog } from '@/components/leads/add-lead-dialog'
+import { Calendar } from 'lucide-react'
+
+function formatINR(amount: number) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
+}
+
+const stageOrder = ['NEW_LEAD', 'CONTACTED', 'DISCOVERY', 'PROPOSAL_SENT', 'NEGOTIATION', 'WON', 'LOST']
+const stageColors: Record<string, string> = {
+  NEW_LEAD: 'bg-gray-100 text-gray-600',
+  CONTACTED: 'bg-blue-100 text-blue-700',
+  DISCOVERY: 'bg-purple-100 text-purple-700',
+  PROPOSAL_SENT: 'bg-yellow-100 text-yellow-700',
+  NEGOTIATION: 'bg-orange-100 text-orange-700',
+  WON: 'bg-green-100 text-green-700',
+  LOST: 'bg-red-100 text-red-700',
+}
+
+const sourceColors: Record<string, string> = {
+  INSTAGRAM: 'bg-pink-100 text-pink-700',
+  REFERRAL: 'bg-green-100 text-green-700',
+  LINKEDIN: 'bg-blue-100 text-blue-700',
+  COLD_EMAIL: 'bg-yellow-100 text-yellow-700',
+  EVENT: 'bg-purple-100 text-purple-700',
+  WEBSITE: 'bg-cyan-100 text-cyan-700',
+  OTHER: 'bg-gray-100 text-gray-600',
+}
+
+export default function LeadsPage() {
+  const router = useRouter()
+  const leads = useQuery(api.leads.list) ?? []
+
+  const pipelineValue = leads.filter((l) => !['WON', 'LOST'].includes(l.stage)).reduce((s, l) => s + (l.estimatedValue ?? 0), 0)
+  const wonLeads = leads.filter((l) => l.stage === 'WON').length
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Leads</h1>
+        <AddLeadDialog />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Leads', value: leads.length },
+          { label: 'Won', value: wonLeads },
+          { label: 'Lost', value: leads.filter(l => l.stage === 'LOST').length },
+          { label: 'Pipeline Value', value: formatINR(pipelineValue) },
+        ].map(({ label, value }) => (
+          <Card key={label}>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">{label}</p>
+              <p className="text-xl font-bold mt-0.5">{value}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Tabs defaultValue="pipeline">
+        <TabsList>
+          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+          <TabsTrigger value="list">List</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pipeline">
+          <div className="grid grid-cols-7 gap-2 overflow-x-auto min-w-0">
+            {stageOrder.map((stage) => {
+              const stageLeads = leads.filter((l) => l.stage === stage)
+              return (
+                <div key={stage} className="min-w-[160px]">
+                  <div className="mb-2">
+                    <Badge className={`text-[10px] border-0 ${stageColors[stage]}`}>{stage.replace('_', ' ')}</Badge>
+                    <span className="text-xs text-muted-foreground ml-1">({stageLeads.length})</span>
+                  </div>
+                  <div className="space-y-2">
+                    {stageLeads.map((lead) => (
+                      <Card key={lead.id} className="cursor-pointer hover:border-blue-300 shadow-none" onClick={() => router.push(`/leads/${lead.id}`)}>
+                        <CardContent className="p-3">
+                          <p className="text-xs font-medium leading-tight">{lead.name}</p>
+                          {lead.company && <p className="text-[10px] text-muted-foreground">{lead.company}</p>}
+                          {lead.estimatedValue && <p className="text-[10px] font-semibold text-green-600 mt-1">{formatINR(lead.estimatedValue)}</p>}
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <Badge className={`text-[10px] border-0 ${sourceColors[lead.source]}`}>{lead.source.replace('_', ' ')}</Badge>
+                          </div>
+                          {lead.followUpDate && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Calendar className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-[10px] text-muted-foreground">
+                                {new Date(lead.followUpDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                              </span>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {stageLeads.length === 0 && (
+                      <div className="border-2 border-dashed rounded-lg p-3 text-center text-[10px] text-muted-foreground">Empty</div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="list">
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Stage</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Est. Value</TableHead>
+                  <TableHead>Follow-up</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {leads.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">No leads yet</TableCell></TableRow>
+                )}
+                {leads.map((lead) => (
+                  <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/leads/${lead.id}`)}>
+                    <TableCell className="font-medium text-sm">{lead.name}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{lead.company ?? '—'}</TableCell>
+                    <TableCell><Badge className={`text-xs border-0 ${stageColors[lead.stage]}`}>{lead.stage.replace('_', ' ')}</Badge></TableCell>
+                    <TableCell><Badge className={`text-xs border-0 ${sourceColors[lead.source]}`}>{lead.source.replace('_', ' ')}</Badge></TableCell>
+                    <TableCell className="text-sm">{lead.estimatedValue ? formatINR(lead.estimatedValue) : '—'}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {lead.followUpDate ? new Date(lead.followUpDate).toLocaleDateString('en-IN') : '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
