@@ -12,6 +12,7 @@ import {
   UsersRound,
   Receipt,
   MessageSquare,
+  Settings,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -50,6 +51,7 @@ const navSections = [
     label: 'Tools',
     items: [
       { title: 'Templates', href: '/templates', icon: MessageSquare },
+      { title: 'Settings', href: '/settings', icon: Settings },
     ],
   },
 ]

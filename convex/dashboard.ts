@@ -19,8 +19,8 @@ export const getStats = query({
     ).length;
     const openLeads = leads.filter((l) => !["WON", "LOST"].includes(l.stage)).length;
 
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const nowDate = new Date();
+    const startOfMonth = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1).getTime();
     const monthlyRevenue = transactions
       .filter((t) => t.date >= startOfMonth)
       .reduce((sum, t) => sum + t.amount, 0);

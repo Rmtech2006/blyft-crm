@@ -262,4 +262,14 @@ export default defineSchema({
     category: v.string(),
     addedBy: v.string(),
   }),
+
+  userSettings: defineTable({
+    userId: v.string(),
+    displayName: v.optional(v.string()),
+    notifOverdueTasks: v.boolean(),
+    notifNewLeads: v.boolean(),
+    notifPaymentDue: v.boolean(),
+    notifReimbursements: v.boolean(),
+    notifProjectUpdates: v.boolean(),
+  }).index("by_userId", ["userId"]),
 });
