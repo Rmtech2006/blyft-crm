@@ -18,18 +18,18 @@ const statusColumns = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'] as
 type TaskStatus = typeof statusColumns[number]
 
 const statusColors: Record<string, string> = {
-  TODO: 'bg-gray-100 text-gray-600',
-  IN_PROGRESS: 'bg-blue-100 text-blue-700',
-  IN_REVIEW: 'bg-yellow-100 text-yellow-700',
-  DONE: 'bg-green-100 text-green-700',
-  BLOCKED: 'bg-red-100 text-red-700',
+  TODO: 'bg-muted text-muted-foreground',
+  IN_PROGRESS: 'bg-primary/15 text-primary',
+  IN_REVIEW: 'bg-amber-500/15 text-amber-500',
+  DONE: 'bg-emerald-500/15 text-emerald-500',
+  BLOCKED: 'bg-destructive/15 text-destructive',
 }
 
 const priorityColors: Record<string, string> = {
   CRITICAL: 'bg-red-500 text-white',
-  HIGH: 'bg-orange-100 text-orange-700',
-  MEDIUM: 'bg-blue-100 text-blue-700',
-  LOW: 'bg-gray-100 text-gray-600',
+  HIGH: 'bg-orange-500/15 text-orange-500',
+  MEDIUM: 'bg-primary/15 text-primary',
+  LOW: 'bg-muted text-muted-foreground',
 }
 
 export default function TasksPage() {
@@ -61,7 +61,7 @@ export default function TasksPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Tasks</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
         <div className="flex items-center gap-3">
           <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v ?? 'ALL')}>
             <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>

@@ -21,13 +21,13 @@ function formatINR(amount: number) {
 
 const stageOrder = ['NEW_LEAD', 'CONTACTED', 'DISCOVERY', 'PROPOSAL_SENT', 'NEGOTIATION', 'WON', 'LOST']
 const stageColors: Record<string, string> = {
-  NEW_LEAD: 'bg-gray-100 text-gray-600',
-  CONTACTED: 'bg-blue-100 text-blue-700',
-  DISCOVERY: 'bg-purple-100 text-purple-700',
-  PROPOSAL_SENT: 'bg-yellow-100 text-yellow-700',
-  NEGOTIATION: 'bg-orange-100 text-orange-700',
-  WON: 'bg-green-100 text-green-700',
-  LOST: 'bg-red-100 text-red-700',
+  NEW_LEAD: 'bg-muted text-muted-foreground',
+  CONTACTED: 'bg-primary/15 text-primary',
+  DISCOVERY: 'bg-violet-500/15 text-violet-500',
+  PROPOSAL_SENT: 'bg-amber-500/15 text-amber-500',
+  NEGOTIATION: 'bg-orange-500/15 text-orange-500',
+  WON: 'bg-emerald-500/15 text-emerald-500',
+  LOST: 'bg-destructive/15 text-destructive',
 }
 
 export default function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -91,12 +91,12 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         <Button variant="ghost" size="icon" onClick={() => router.back()}><ArrowLeft className="h-4 w-4" /></Button>
         <div className="flex-1">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold">{lead.name}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{lead.name}</h1>
             {lead.company && <span className="text-muted-foreground text-sm">· {lead.company}</span>}
           </div>
           <div className="flex items-center gap-3 mt-1">
             <Badge className={`border-0 ${stageColors[lead.stage] ?? ''}`}>{lead.stage.replace('_', ' ')}</Badge>
-            {lead.estimatedValue && <span className="text-sm font-semibold text-green-600">{formatINR(lead.estimatedValue)}</span>}
+            {lead.estimatedValue && <span className="text-sm font-semibold text-emerald-500">{formatINR(lead.estimatedValue)}</span>}
           </div>
         </div>
         <div className="space-y-1">

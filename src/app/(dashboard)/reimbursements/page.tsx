@@ -18,10 +18,10 @@ function formatINR(amount: number) {
 }
 
 const statusColors: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-700',
-  APPROVED: 'bg-blue-100 text-blue-700',
-  PAID: 'bg-green-100 text-green-700',
-  REJECTED: 'bg-red-100 text-red-700',
+  PENDING: 'bg-amber-500/15 text-amber-500',
+  APPROVED: 'bg-primary/15 text-primary',
+  PAID: 'bg-emerald-500/15 text-emerald-500',
+  REJECTED: 'bg-destructive/15 text-destructive',
 }
 
 export default function ReimbursementsPage() {
@@ -55,16 +55,16 @@ export default function ReimbursementsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Reimbursements</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Reimbursements</h1>
         <SubmitReimbursementDialog />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Pending', value: pending.length, amount: pending.reduce((s, i) => s + i.amount, 0), color: 'text-yellow-600' },
-          { label: 'Approved', value: approved.length, amount: approved.reduce((s, i) => s + i.amount, 0), color: 'text-blue-600' },
-          { label: 'Paid', value: paid.length, amount: paid.reduce((s, i) => s + i.amount, 0), color: 'text-green-600' },
-          { label: 'Rejected', value: items.filter(i => i.status === 'REJECTED').length, amount: 0, color: 'text-red-600' },
+          { label: 'Approved', value: approved.length, amount: approved.reduce((s, i) => s + i.amount, 0), color: 'text-primary' },
+          { label: 'Paid', value: paid.length, amount: paid.reduce((s, i) => s + i.amount, 0), color: 'text-emerald-500' },
+          { label: 'Rejected', value: items.filter(i => i.status === 'REJECTED').length, amount: 0, color: 'text-destructive' },
         ].map(({ label, value, amount, color }) => (
           <Card key={label}>
             <CardContent className="p-4">
@@ -123,7 +123,7 @@ export default function ReimbursementsPage() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-7 w-7 text-green-500 hover:text-green-600"
+                            className="h-7 w-7 text-green-500 hover:text-emerald-500"
                             disabled={updating === item.id}
                             onClick={() => handleUpdateStatus(item.id, 'APPROVED')}
                           >
@@ -132,7 +132,7 @@ export default function ReimbursementsPage() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-7 w-7 text-red-500 hover:text-red-600"
+                            className="h-7 w-7 text-red-500 hover:text-destructive"
                             disabled={updating === item.id}
                             onClick={() => handleUpdateStatus(item.id, 'REJECTED')}
                           >

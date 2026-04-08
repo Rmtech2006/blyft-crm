@@ -17,7 +17,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Settings</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
 
       <Tabs defaultValue="profile">
         <TabsList>
@@ -33,7 +33,7 @@ export default function SettingsPage() {
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
                   <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? 'User'} />
-                  <AvatarFallback className="text-lg bg-blue-600 text-white">
+                  <AvatarFallback className="text-lg bg-primary text-primary-foreground">
                     {getInitials(user?.name)}
                   </AvatarFallback>
                 </Avatar>

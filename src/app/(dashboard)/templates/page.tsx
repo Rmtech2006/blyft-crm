@@ -12,12 +12,12 @@ import { UseTemplateDialog } from '@/components/templates/use-template-dialog'
 import { Lock, BarChart3 } from 'lucide-react'
 
 const categoryColors: Record<string, string> = {
-  CLIENT_COMMS: 'bg-blue-100 text-blue-700',
-  LEAD_FOLLOWUP: 'bg-green-100 text-green-700',
-  INTERNAL: 'bg-gray-100 text-gray-700',
-  FINANCE: 'bg-yellow-100 text-yellow-700',
-  SOCIAL: 'bg-pink-100 text-pink-700',
-  PROPOSAL: 'bg-purple-100 text-purple-700',
+  CLIENT_COMMS: 'bg-primary/15 text-primary',
+  LEAD_FOLLOWUP: 'bg-emerald-500/15 text-emerald-500',
+  INTERNAL: 'bg-muted text-muted-foreground',
+  FINANCE: 'bg-amber-500/15 text-amber-500',
+  SOCIAL: 'bg-pink-500/15 text-pink-500',
+  PROPOSAL: 'bg-violet-500/15 text-violet-500',
 }
 
 export default function TemplatesPage() {
@@ -37,7 +37,7 @@ export default function TemplatesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Message Templates</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Message Templates</h1>
         <AddTemplateDialog />
       </div>
 
@@ -45,7 +45,7 @@ export default function TemplatesPage() {
         {categories.map((cat) => {
           const count = templates.filter((t) => t.category === cat).length
           return (
-            <Card key={cat} className={`cursor-pointer transition-all ${categoryFilter === cat ? 'ring-2 ring-blue-500' : ''}`} onClick={() => setCategoryFilter(categoryFilter === cat ? 'ALL' : cat)}>
+            <Card key={cat} className={`cursor-pointer transition-all ${categoryFilter === cat ? 'ring-2 ring-primary' : ''}`} onClick={() => setCategoryFilter(categoryFilter === cat ? 'ALL' : cat)}>
               <CardContent className="p-3">
                 <Badge className={`text-[10px] border-0 ${categoryColors[cat]} mb-1`}>{cat.replace('_', ' ')}</Badge>
                 <p className="text-lg font-bold">{count}</p>
@@ -94,7 +94,7 @@ export default function TemplatesPage() {
                 {template.variables.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-1">
                     {template.variables.map((v) => (
-                      <span key={v} className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-mono">{`{{${v}}}`}</span>
+                      <span key={v} className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-mono">{`{{${v}}}`}</span>
                     ))}
                   </div>
                 )}

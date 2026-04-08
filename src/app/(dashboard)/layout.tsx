@@ -1,10 +1,9 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
-import { Bell, LogOut, Settings, User, ChevronDown, Menu } from 'lucide-react'
+import { Bell, LogOut, Settings, User, ChevronDown } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -24,7 +23,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { SidebarNav } from '@/components/layout/sidebar-nav'
 
@@ -46,15 +44,15 @@ function AppSidebar() {
           href="/"
           className="flex items-center gap-2.5 font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden"
         >
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-600 shadow-sm">
-            <span className="text-xs font-black text-white">B</span>
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary shadow-sm shadow-primary/40">
+            <span className="text-xs font-black text-primary-foreground">B</span>
           </div>
           <span className="text-base tracking-tight">
-            BLYFT <span className="text-blue-500">CRM</span>
+            BLYFT <span className="text-primary">CRM</span>
           </span>
         </Link>
-        <div className="hidden group-data-[collapsible=icon]:flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-600 shadow-sm">
-          <span className="text-xs font-black text-white">B</span>
+        <div className="hidden group-data-[collapsible=icon]:flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary shadow-sm shadow-primary/40">
+          <span className="text-xs font-black text-primary-foreground">B</span>
         </div>
       </SidebarHeader>
 
@@ -63,8 +61,8 @@ function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-2">
-        <div className="text-xs text-sidebar-foreground/40 text-center py-1 group-data-[collapsible=icon]:hidden">
-          BLYFT CRM v1.0
+        <div className="text-[10px] font-medium text-sidebar-foreground/30 text-center py-1 tracking-widest uppercase group-data-[collapsible=icon]:hidden">
+          BLYFT v1.0
         </div>
       </SidebarFooter>
     </Sidebar>
@@ -82,9 +80,9 @@ function TopHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background/95 backdrop-blur px-4">
-      <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
-      <Separator orientation="vertical" className="h-5" />
+    <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4">
+      <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground transition-colors" />
+      <Separator orientation="vertical" className="h-5 opacity-50" />
 
       {/* Spacer */}
       <div className="flex-1" />
@@ -93,12 +91,11 @@ function TopHeader() {
       <Button
         variant="ghost"
         size="icon"
-        className="relative h-8 w-8 text-muted-foreground hover:text-foreground"
+        className="relative h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg"
         aria-label="Notifications"
       >
         <Bell className="h-4 w-4" />
-        {/* Unread indicator - can be made dynamic later */}
-        <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-blue-500" />
+        <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
       </Button>
 
       {/* User Menu */}
@@ -106,12 +103,12 @@ function TopHeader() {
         <DropdownMenuTrigger render={<button className="flex items-center gap-2 h-8 px-2 rounded-lg hover:bg-accent transition-colors outline-none" />}>
           <Avatar className="h-7 w-7">
             <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? 'User'} />
-            <AvatarFallback className="text-xs bg-blue-600 text-white">
+            <AvatarFallback className="text-xs bg-primary text-primary-foreground font-semibold">
               {getInitials(user?.name)}
             </AvatarFallback>
           </Avatar>
           <div className="hidden sm:flex flex-col items-start">
-            <span className="text-xs font-medium leading-none">
+            <span className="text-xs font-medium leading-none text-foreground">
               {user?.name ?? 'User'}
             </span>
             <span className="text-[10px] text-muted-foreground leading-none mt-0.5">
@@ -120,7 +117,7 @@ function TopHeader() {
           </div>
           <ChevronDown className="h-3 w-3 text-muted-foreground" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">{user?.name}</p>
@@ -140,7 +137,7 @@ function TopHeader() {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            className="text-red-500 focus:text-red-500 cursor-pointer"
+            className="text-destructive focus:text-destructive cursor-pointer"
             onClick={handleSignOut}
           >
             <LogOut className="mr-2 h-4 w-4" />

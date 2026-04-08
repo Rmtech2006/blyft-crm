@@ -12,16 +12,16 @@ import { AddMemberDialog } from '@/components/team/add-member-dialog'
 import { Users } from 'lucide-react'
 
 const typeColors: Record<string, string> = {
-  INTERN: 'bg-blue-100 text-blue-700',
-  FREELANCER: 'bg-purple-100 text-purple-700',
-  PART_TIME: 'bg-yellow-100 text-yellow-700',
-  FULL_TIME: 'bg-green-100 text-green-700',
+  INTERN: 'bg-primary/15 text-primary',
+  FREELANCER: 'bg-violet-500/15 text-violet-500',
+  PART_TIME: 'bg-amber-500/15 text-amber-500',
+  FULL_TIME: 'bg-emerald-500/15 text-emerald-500',
 }
 
 const statusColors: Record<string, string> = {
-  ACTIVE: 'bg-green-100 text-green-700',
-  ON_LEAVE: 'bg-yellow-100 text-yellow-700',
-  OFFBOARDED: 'bg-gray-100 text-gray-600',
+  ACTIVE: 'bg-emerald-500/15 text-emerald-500',
+  ON_LEAVE: 'bg-amber-500/15 text-amber-500',
+  OFFBOARDED: 'bg-muted text-muted-foreground',
 }
 
 function getInitials(name: string) {
@@ -49,7 +49,7 @@ export default function TeamPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Team</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Team</h1>
         <AddMemberDialog />
       </div>
 
@@ -62,7 +62,7 @@ export default function TeamPage() {
         ].map(({ label, value }) => (
           <Card key={label}>
             <CardContent className="p-4 flex items-center gap-3">
-              <Users className="h-6 w-6 text-blue-500" />
+              <Users className="h-6 w-6 text-primary" />
               <div>
                 <p className="text-xs text-muted-foreground">{label}</p>
                 <p className="text-xl font-bold">{value}</p>
@@ -101,12 +101,12 @@ export default function TeamPage() {
           {filtered.map((member) => (
             <Card
               key={member.id}
-              className="cursor-pointer hover:border-blue-300 hover:shadow-sm transition-all"
+              className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
               onClick={() => router.push(`/team/${member.id}`)}
             >
               <CardContent className="p-5">
                 <div className="flex items-start gap-3 mb-3">
-                  <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                  <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold shrink-0">
                     {getInitials(member.fullName)}
                   </div>
                   <div className="flex-1 min-w-0">

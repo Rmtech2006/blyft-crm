@@ -12,16 +12,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ArrowLeft } from 'lucide-react'
 
 const typeColors: Record<string, string> = {
-  INTERN: 'bg-blue-100 text-blue-700',
-  FREELANCER: 'bg-purple-100 text-purple-700',
-  PART_TIME: 'bg-yellow-100 text-yellow-700',
-  FULL_TIME: 'bg-green-100 text-green-700',
+  INTERN: 'bg-primary/15 text-primary',
+  FREELANCER: 'bg-violet-500/15 text-violet-500',
+  PART_TIME: 'bg-amber-500/15 text-amber-500',
+  FULL_TIME: 'bg-emerald-500/15 text-emerald-500',
 }
 
 const statusColors: Record<string, string> = {
-  ACTIVE: 'bg-green-100 text-green-700',
-  ON_LEAVE: 'bg-yellow-100 text-yellow-700',
-  OFFBOARDED: 'bg-gray-100 text-gray-600',
+  ACTIVE: 'bg-emerald-500/15 text-emerald-500',
+  ON_LEAVE: 'bg-amber-500/15 text-amber-500',
+  OFFBOARDED: 'bg-muted text-muted-foreground',
 }
 
 function formatINR(amount: number) {
@@ -46,12 +46,12 @@ export default function TeamMemberDetailPage({ params }: { params: Promise<{ id:
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex items-center gap-4 flex-1">
-          <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
+          <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
             {getInitials(member.fullName)}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">{member.fullName}</h1>
+              <h1 className="text-2xl font-bold tracking-tight">{member.fullName}</h1>
               <Badge className={`border-0 ${typeColors[member.type] ?? ''}`}>{member.type.replace('_', ' ')}</Badge>
               <Badge className={`border-0 ${statusColors[member.status] ?? ''}`}>{member.status.replace('_', ' ')}</Badge>
             </div>
@@ -123,7 +123,7 @@ export default function TeamMemberDetailPage({ params }: { params: Promise<{ id:
           <div className="space-y-3">
             {(member.projects ?? []).length === 0 && <p className="text-center py-8 text-muted-foreground">No projects assigned</p>}
             {(member.projects ?? []).filter((p): p is NonNullable<typeof p> => p !== null).map((ptm) => (
-              <Card key={ptm.project.id} className="cursor-pointer hover:border-blue-300" onClick={() => router.push(`/projects/${ptm.project.id}`)}>
+              <Card key={ptm.project.id} className="cursor-pointer hover:border-primary/40" onClick={() => router.push(`/projects/${ptm.project.id}`)}>
                 <CardContent className="p-4 flex items-center justify-between">
                   <div>
                     <p className="font-medium text-sm">{ptm.project.name}</p>

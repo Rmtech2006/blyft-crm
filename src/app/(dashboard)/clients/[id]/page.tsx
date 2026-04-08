@@ -19,10 +19,10 @@ function formatINR(amount: number) {
 }
 
 const statusColors: Record<string, string> = {
-  ACTIVE: 'bg-green-100 text-green-700',
-  PAUSED: 'bg-yellow-100 text-yellow-700',
-  COMPLETED: 'bg-blue-100 text-blue-700',
-  PROSPECT: 'bg-purple-100 text-purple-700',
+  ACTIVE: 'bg-emerald-500/15 text-emerald-500',
+  PAUSED: 'bg-amber-500/15 text-amber-500',
+  COMPLETED: 'bg-primary/15 text-primary',
+  PROSPECT: 'bg-violet-500/15 text-violet-500',
 }
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -72,7 +72,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         <Button variant="ghost" size="icon" onClick={() => router.back()}><ArrowLeft className="h-4 w-4" /></Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">{client.companyName}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{client.companyName}</h1>
             <Badge className={`border-0 ${statusColors[client.status] ?? ''}`}>{client.status}</Badge>
           </div>
           {client.industry && <p className="text-sm text-muted-foreground">{client.industry}</p>}
@@ -165,7 +165,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           <div className="space-y-3">
             {(client.projects ?? []).length === 0 && <p className="text-center py-8 text-muted-foreground">No projects yet</p>}
             {(client.projects ?? []).map((p) => (
-              <Card key={p.id} className="cursor-pointer hover:border-blue-300" onClick={() => router.push(`/projects/${p.id}`)}>
+              <Card key={p.id} className="cursor-pointer hover:border-primary/40" onClick={() => router.push(`/projects/${p.id}`)}>
                 <CardContent className="p-4 flex items-center justify-between">
                   <div>
                     <p className="font-medium text-sm">{p.name}</p>
@@ -208,7 +208,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                     <p className="font-medium text-sm">{t.description}</p>
                     <p className="text-xs text-muted-foreground">{t.category} · {new Date(t.date).toLocaleDateString('en-IN')}</p>
                   </div>
-                  <span className={`font-semibold text-sm ${t.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className={`font-semibold text-sm ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-destructive'}`}>
                     {t.type === 'INCOME' ? '+' : '-'}{formatINR(t.amount)}
                   </span>
                 </CardContent>

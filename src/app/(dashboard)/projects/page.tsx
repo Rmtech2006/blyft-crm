@@ -16,21 +16,21 @@ function formatINR(amount: number) {
 }
 
 const statusColors: Record<string, string> = {
-  NOT_STARTED: 'bg-gray-100 text-gray-600',
-  IN_PROGRESS: 'bg-blue-100 text-blue-700',
-  IN_REVIEW: 'bg-yellow-100 text-yellow-700',
-  COMPLETED: 'bg-green-100 text-green-700',
-  ON_HOLD: 'bg-red-100 text-red-700',
+  NOT_STARTED: 'bg-muted text-muted-foreground',
+  IN_PROGRESS: 'bg-primary/15 text-primary',
+  IN_REVIEW: 'bg-amber-500/15 text-amber-500',
+  COMPLETED: 'bg-emerald-500/15 text-emerald-500',
+  ON_HOLD: 'bg-destructive/15 text-destructive',
 }
 
 const typeColors: Record<string, string> = {
-  SOCIAL_MEDIA: 'bg-pink-100 text-pink-700',
-  SEO: 'bg-green-100 text-green-700',
-  WEB_DESIGN: 'bg-purple-100 text-purple-700',
-  BRANDING: 'bg-orange-100 text-orange-700',
+  SOCIAL_MEDIA: 'bg-pink-500/15 text-pink-500',
+  SEO: 'bg-emerald-500/15 text-emerald-500',
+  WEB_DESIGN: 'bg-violet-500/15 text-violet-500',
+  BRANDING: 'bg-orange-500/15 text-orange-500',
   CONTENT: 'bg-cyan-100 text-cyan-700',
-  ADS: 'bg-red-100 text-red-700',
-  OTHER: 'bg-gray-100 text-gray-700',
+  ADS: 'bg-destructive/15 text-destructive',
+  OTHER: 'bg-muted text-muted-foreground',
 }
 
 export default function ProjectsPage() {
@@ -55,14 +55,14 @@ export default function ProjectsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Projects</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
         <AddProjectDialog />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total', value: projects.length, icon: FolderOpen, color: 'text-blue-500' },
-          { label: 'In Progress', value: inProgress, icon: Clock, color: 'text-blue-600' },
+          { label: 'Total', value: projects.length, icon: FolderOpen, color: 'text-primary' },
+          { label: 'In Progress', value: inProgress, icon: Clock, color: 'text-primary' },
           { label: 'Completed', value: completed, icon: CheckCircle, color: 'text-green-500' },
           { label: 'On Hold', value: onHold, icon: PauseCircle, color: 'text-red-500' },
         ].map(({ label, value, icon: Icon, color }) => (
@@ -105,7 +105,7 @@ export default function ProjectsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((project) => (
-            <Card key={project.id} className="cursor-pointer hover:border-blue-300 hover:shadow-sm transition-all" onClick={() => router.push(`/projects/${project.id}`)}>
+            <Card key={project.id} className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all" onClick={() => router.push(`/projects/${project.id}`)}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="font-semibold text-sm leading-tight flex-1 mr-2">{project.name}</h3>

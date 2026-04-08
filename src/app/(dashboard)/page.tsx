@@ -44,11 +44,11 @@ function formatCurrency(amount: number): string {
 function getActionColor(action: string): string {
   const map: Record<string, string> = {
     CREATE: 'bg-emerald-500',
-    UPDATE: 'bg-blue-500',
-    DELETE: 'bg-red-500',
-    LOGIN: 'bg-purple-500',
+    UPDATE: 'bg-primary',
+    DELETE: 'bg-destructive',
+    LOGIN: 'bg-violet-500',
   }
-  return map[action.toUpperCase()] ?? 'bg-slate-400'
+  return map[action.toUpperCase()] ?? 'bg-muted-foreground'
 }
 
 export default function DashboardPage() {
@@ -69,7 +69,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           {greeting},{' '}
-          <span className="text-blue-500">
+          <span className="text-primary">
             {session?.user?.name?.split(' ')[0] ?? 'there'}
           </span>{' '}
           👋
@@ -80,7 +80,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatsCard title="Active Clients" value={stats.totalClients} subtitle="Currently active retainers" icon={Users} iconClassName="bg-blue-500/10" />
+        <StatsCard title="Active Clients" value={stats.totalClients} subtitle="Currently active retainers" icon={Users} iconClassName="bg-primary/10" />
         <StatsCard title="Active Projects" value={stats.activeProjects} subtitle="In progress or review" icon={FolderKanban} iconClassName="bg-violet-500/10" />
         <StatsCard title="Open Leads" value={stats.openLeads} subtitle="Leads in pipeline" icon={TrendingUp} iconClassName="bg-amber-500/10" />
         <StatsCard title="Monthly Revenue" value={formatCurrency(stats.monthlyRevenue)} subtitle="Income this month" icon={Wallet} iconClassName="bg-emerald-500/10" />
@@ -93,16 +93,16 @@ export default function DashboardPage() {
             const Icon = action.icon
             return (
               <Link key={action.href} href={action.href}>
-                <Card className="group cursor-pointer border-border hover:border-blue-500/50 hover:shadow-md transition-all duration-200">
+                <Card className="group cursor-pointer border-border hover:border-primary/50 hover:shadow-md transition-all duration-200">
                   <CardContent className="flex items-center gap-3 p-4">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
-                      <Icon className="h-4 w-4 text-blue-500" />
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                      <Icon className="h-4 w-4 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground group-hover:text-blue-500 transition-colors leading-none">{action.label}</p>
+                      <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-none">{action.label}</p>
                       <p className="text-xs text-muted-foreground mt-1 truncate">{action.description}</p>
                     </div>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all shrink-0" />
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
                   </CardContent>
                 </Card>
               </Link>

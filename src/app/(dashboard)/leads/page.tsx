@@ -16,23 +16,23 @@ function formatINR(amount: number) {
 
 const stageOrder = ['NEW_LEAD', 'CONTACTED', 'DISCOVERY', 'PROPOSAL_SENT', 'NEGOTIATION', 'WON', 'LOST']
 const stageColors: Record<string, string> = {
-  NEW_LEAD: 'bg-gray-100 text-gray-600',
-  CONTACTED: 'bg-blue-100 text-blue-700',
-  DISCOVERY: 'bg-purple-100 text-purple-700',
-  PROPOSAL_SENT: 'bg-yellow-100 text-yellow-700',
-  NEGOTIATION: 'bg-orange-100 text-orange-700',
-  WON: 'bg-green-100 text-green-700',
-  LOST: 'bg-red-100 text-red-700',
+  NEW_LEAD: 'bg-muted text-muted-foreground',
+  CONTACTED: 'bg-primary/15 text-primary',
+  DISCOVERY: 'bg-violet-500/15 text-violet-500',
+  PROPOSAL_SENT: 'bg-amber-500/15 text-amber-500',
+  NEGOTIATION: 'bg-orange-500/15 text-orange-500',
+  WON: 'bg-emerald-500/15 text-emerald-500',
+  LOST: 'bg-destructive/15 text-destructive',
 }
 
 const sourceColors: Record<string, string> = {
-  INSTAGRAM: 'bg-pink-100 text-pink-700',
-  REFERRAL: 'bg-green-100 text-green-700',
-  LINKEDIN: 'bg-blue-100 text-blue-700',
-  COLD_EMAIL: 'bg-yellow-100 text-yellow-700',
-  EVENT: 'bg-purple-100 text-purple-700',
+  INSTAGRAM: 'bg-pink-500/15 text-pink-500',
+  REFERRAL: 'bg-emerald-500/15 text-emerald-500',
+  LINKEDIN: 'bg-primary/15 text-primary',
+  COLD_EMAIL: 'bg-amber-500/15 text-amber-500',
+  EVENT: 'bg-violet-500/15 text-violet-500',
   WEBSITE: 'bg-cyan-100 text-cyan-700',
-  OTHER: 'bg-gray-100 text-gray-600',
+  OTHER: 'bg-muted text-muted-foreground',
 }
 
 export default function LeadsPage() {
@@ -45,7 +45,7 @@ export default function LeadsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Leads</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
         <AddLeadDialog />
       </div>
 
@@ -83,11 +83,11 @@ export default function LeadsPage() {
                   </div>
                   <div className="space-y-2">
                     {stageLeads.map((lead) => (
-                      <Card key={lead.id} className="cursor-pointer hover:border-blue-300 shadow-none" onClick={() => router.push(`/leads/${lead.id}`)}>
+                      <Card key={lead.id} className="cursor-pointer hover:border-primary/40 shadow-none" onClick={() => router.push(`/leads/${lead.id}`)}>
                         <CardContent className="p-3">
                           <p className="text-xs font-medium leading-tight">{lead.name}</p>
                           {lead.company && <p className="text-[10px] text-muted-foreground">{lead.company}</p>}
-                          {lead.estimatedValue && <p className="text-[10px] font-semibold text-green-600 mt-1">{formatINR(lead.estimatedValue)}</p>}
+                          {lead.estimatedValue && <p className="text-[10px] font-semibold text-emerald-500 mt-1">{formatINR(lead.estimatedValue)}</p>}
                           <div className="flex items-center gap-2 mt-1.5">
                             <Badge className={`text-[10px] border-0 ${sourceColors[lead.source]}`}>{lead.source.replace('_', ' ')}</Badge>
                           </div>

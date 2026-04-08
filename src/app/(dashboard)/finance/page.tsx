@@ -193,7 +193,7 @@ function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string;
         <div className="flex items-center gap-3">
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Current Balance</p>
-            <p className={`text-xl font-bold ${account.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatINR(account.balance)}</p>
+            <p className={`text-xl font-bold ${account.balance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{formatINR(account.balance)}</p>
           </div>
           <AddTransactionDialog defaultBankAccountId={account.id} triggerLabel="Add Entry" />
         </div>
@@ -208,7 +208,7 @@ function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string;
               <TableHead>Category</TableHead>
               <TableHead>Mode</TableHead>
               <TableHead className="text-right text-green-700">Credit</TableHead>
-              <TableHead className="text-right text-red-600">Debit</TableHead>
+              <TableHead className="text-right text-destructive">Debit</TableHead>
               <TableHead className="text-right">Balance</TableHead>
               <TableHead className="w-8" />
             </TableRow>
@@ -233,9 +233,9 @@ function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string;
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{t.category}</TableCell>
                 <TableCell><Badge variant="outline" className="text-xs">{t.paymentMode.replace('_', ' ')}</Badge></TableCell>
-                <TableCell className="text-right font-medium text-green-600">{t.type === 'INCOME' ? formatINR(t.amount) : '—'}</TableCell>
-                <TableCell className="text-right font-medium text-red-600">{t.type === 'EXPENSE' ? formatINR(t.amount) : '—'}</TableCell>
-                <TableCell className={`text-right font-semibold text-sm ${t.runningBalance >= 0 ? 'text-foreground' : 'text-red-600'}`}>{formatINR(t.runningBalance)}</TableCell>
+                <TableCell className="text-right font-medium text-emerald-500">{t.type === 'INCOME' ? formatINR(t.amount) : '—'}</TableCell>
+                <TableCell className="text-right font-medium text-destructive">{t.type === 'EXPENSE' ? formatINR(t.amount) : '—'}</TableCell>
+                <TableCell className={`text-right font-semibold text-sm ${t.runningBalance >= 0 ? 'text-foreground' : 'text-destructive'}`}>{formatINR(t.runningBalance)}</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500" onClick={() => deleteTransaction(t.id)}>
                     <Trash2 className="h-3.5 w-3.5" />
@@ -295,7 +295,7 @@ export default function FinancePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Finance</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Finance</h1>
         <AddTransactionDialog />
       </div>
 
@@ -306,7 +306,7 @@ export default function FinancePage() {
               <TrendingUp className="h-4 w-4 text-green-500" /> Total Income
             </CardTitle>
           </CardHeader>
-          <CardContent><p className="text-2xl font-bold text-green-600">{formatINR(income)}</p></CardContent>
+          <CardContent><p className="text-2xl font-bold text-emerald-500">{formatINR(income)}</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
@@ -314,15 +314,15 @@ export default function FinancePage() {
               <TrendingDown className="h-4 w-4 text-red-500" /> Total Expenses
             </CardTitle>
           </CardHeader>
-          <CardContent><p className="text-2xl font-bold text-red-600">{formatINR(expense)}</p></CardContent>
+          <CardContent><p className="text-2xl font-bold text-destructive">{formatINR(expense)}</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-blue-500" /> Net Profit
+              <TrendingUp className="h-4 w-4 text-primary" /> Net Profit
             </CardTitle>
           </CardHeader>
-          <CardContent><p className={`text-2xl font-bold ${net >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatINR(net)}</p></CardContent>
+          <CardContent><p className={`text-2xl font-bold ${net >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{formatINR(net)}</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
@@ -330,7 +330,7 @@ export default function FinancePage() {
               <Landmark className="h-4 w-4 text-purple-500" /> Total Bank Balance
             </CardTitle>
           </CardHeader>
-          <CardContent><p className={`text-2xl font-bold ${totalBankBalance >= 0 ? 'text-purple-600' : 'text-red-600'}`}>{formatINR(totalBankBalance)}</p></CardContent>
+          <CardContent><p className={`text-2xl font-bold ${totalBankBalance >= 0 ? 'text-purple-600' : 'text-destructive'}`}>{formatINR(totalBankBalance)}</p></CardContent>
         </Card>
       </div>
 
@@ -369,7 +369,7 @@ export default function FinancePage() {
                   <TableHead>Account</TableHead>
                   <TableHead>Mode</TableHead>
                   <TableHead className="text-right text-green-700">Credit</TableHead>
-                  <TableHead className="text-right text-red-600">Debit</TableHead>
+                  <TableHead className="text-right text-destructive">Debit</TableHead>
                   <TableHead className="w-8" />
                 </TableRow>
               </TableHeader>
@@ -392,8 +392,8 @@ export default function FinancePage() {
                     <TableCell className="text-sm">{t.category}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{t.bankAccount?.name ?? '—'}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{t.paymentMode.replace('_', ' ')}</Badge></TableCell>
-                    <TableCell className="text-right font-medium text-green-600">{t.type === 'INCOME' ? formatINR(t.amount) : '—'}</TableCell>
-                    <TableCell className="text-right font-medium text-red-600">{t.type === 'EXPENSE' ? formatINR(t.amount) : '—'}</TableCell>
+                    <TableCell className="text-right font-medium text-emerald-500">{t.type === 'INCOME' ? formatINR(t.amount) : '—'}</TableCell>
+                    <TableCell className="text-right font-medium text-destructive">{t.type === 'EXPENSE' ? formatINR(t.amount) : '—'}</TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500" onClick={() => deleteTransaction(t.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
@@ -458,16 +458,16 @@ export default function FinancePage() {
                         {account.accountNumber && <p className="text-xs text-muted-foreground font-mono">{account.accountNumber}</p>}
                         <div>
                           <p className="text-xs text-muted-foreground">Current Balance</p>
-                          <p className={`text-2xl font-bold ${account.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatINR(account.balance)}</p>
+                          <p className={`text-2xl font-bold ${account.balance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{formatINR(account.balance)}</p>
                         </div>
                         <div className="flex gap-4 pt-1 border-t">
                           <div>
                             <p className="text-xs text-muted-foreground">Credits</p>
-                            <p className="text-sm font-medium text-green-600">{formatINR(credits)}</p>
+                            <p className="text-sm font-medium text-emerald-500">{formatINR(credits)}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Debits</p>
-                            <p className="text-sm font-medium text-red-600">{formatINR(debits)}</p>
+                            <p className="text-sm font-medium text-destructive">{formatINR(debits)}</p>
                           </div>
                           <div className="ml-auto text-right">
                             <p className="text-xs text-muted-foreground">Entries</p>

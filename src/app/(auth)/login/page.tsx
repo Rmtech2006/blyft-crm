@@ -55,63 +55,63 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
+    <div className="rounded-xl border border-border bg-card p-8 shadow-2xl">
       {/* Logo & Branding */}
       <div className="mb-8 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-          <span className="text-xl font-black tracking-tighter text-white">B</span>
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/30">
+          <span className="text-lg font-black tracking-tighter text-primary-foreground">B</span>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">
-          BLYFT <span className="text-blue-400">CRM</span>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          BLYFT <span className="text-primary">CRM</span>
         </h1>
-        <p className="mt-1 text-sm text-slate-400">Sign in to your workspace</p>
+        <p className="mt-1.5 text-sm text-muted-foreground">Sign in to your workspace</p>
       </div>
 
       {/* Credentials Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="email" className="text-sm text-slate-300">
+          <Label htmlFor="email" className="text-sm text-foreground/80">
             Email address
           </Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="email"
               type="email"
               placeholder="you@blyftit.com"
               autoComplete="email"
-              className="pl-9 border-slate-700 bg-slate-800 text-slate-100 placeholder:text-slate-500 focus-visible:ring-blue-500"
+              className="pl-9"
               {...register('email')}
             />
           </div>
           {errors.email && (
-            <p className="text-xs text-red-400">{errors.email.message}</p>
+            <p className="text-xs text-destructive">{errors.email.message}</p>
           )}
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="password" className="text-sm text-slate-300">
+          <Label htmlFor="password" className="text-sm text-foreground/80">
             Password
           </Label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="password"
               type="password"
               placeholder="••••••••"
               autoComplete="current-password"
-              className="pl-9 border-slate-700 bg-slate-800 text-slate-100 placeholder:text-slate-500 focus-visible:ring-blue-500"
+              className="pl-9"
               {...register('password')}
             />
           </div>
           {errors.password && (
-            <p className="text-xs text-red-400">{errors.password.message}</p>
+            <p className="text-xs text-destructive">{errors.password.message}</p>
           )}
         </div>
 
         <Button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-lg shadow-blue-600/20"
+          className="w-full font-semibold shadow-lg shadow-primary/20"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -125,7 +125,7 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-xs text-slate-500">
+      <p className="mt-6 text-center text-xs text-muted-foreground">
         BLYFT CRM — Internal use only
       </p>
     </div>

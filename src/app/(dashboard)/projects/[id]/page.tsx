@@ -19,19 +19,19 @@ function formatINR(amount: number) {
 }
 
 const statusColors: Record<string, string> = {
-  NOT_STARTED: 'bg-gray-100 text-gray-600',
-  IN_PROGRESS: 'bg-blue-100 text-blue-700',
-  IN_REVIEW: 'bg-yellow-100 text-yellow-700',
-  COMPLETED: 'bg-green-100 text-green-700',
-  ON_HOLD: 'bg-red-100 text-red-700',
+  NOT_STARTED: 'bg-muted text-muted-foreground',
+  IN_PROGRESS: 'bg-primary/15 text-primary',
+  IN_REVIEW: 'bg-amber-500/15 text-amber-500',
+  COMPLETED: 'bg-emerald-500/15 text-emerald-500',
+  ON_HOLD: 'bg-destructive/15 text-destructive',
 }
 
 const taskStatusColors: Record<string, string> = {
-  TODO: 'bg-gray-100 text-gray-600',
-  IN_PROGRESS: 'bg-blue-100 text-blue-700',
-  IN_REVIEW: 'bg-yellow-100 text-yellow-700',
-  DONE: 'bg-green-100 text-green-700',
-  BLOCKED: 'bg-red-100 text-red-700',
+  TODO: 'bg-muted text-muted-foreground',
+  IN_PROGRESS: 'bg-primary/15 text-primary',
+  IN_REVIEW: 'bg-amber-500/15 text-amber-500',
+  DONE: 'bg-emerald-500/15 text-emerald-500',
+  BLOCKED: 'bg-destructive/15 text-destructive',
 }
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -69,7 +69,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         <Button variant="ghost" size="icon" onClick={() => router.back()}><ArrowLeft className="h-4 w-4" /></Button>
         <div className="flex-1">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold">{project.name}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
             <Badge className={`border-0 ${statusColors[project.status] ?? ''}`}>{project.status.replace('_', ' ')}</Badge>
             <Badge variant="outline" className="text-xs">{project.type.replace('_', ' ')}</Badge>
           </div>
@@ -161,7 +161,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     <p className={`text-sm font-medium ${m.completed ? 'line-through text-muted-foreground' : ''}`}>{m.title}</p>
                     <p className="text-xs text-muted-foreground">Due {new Date(m.dueDate).toLocaleDateString('en-IN')}</p>
                   </div>
-                  {m.completed && <Badge className="bg-green-100 text-green-700 border-0 text-xs">Done</Badge>}
+                  {m.completed && <Badge className="bg-emerald-500/15 text-emerald-500 border-0 text-xs">Done</Badge>}
                 </CardContent>
               </Card>
             ))}

@@ -16,10 +16,10 @@ function formatINR(amount: number) {
 }
 
 const statusColors: Record<string, string> = {
-  ACTIVE: 'bg-green-100 text-green-700',
-  PAUSED: 'bg-yellow-100 text-yellow-700',
-  COMPLETED: 'bg-blue-100 text-blue-700',
-  PROSPECT: 'bg-purple-100 text-purple-700',
+  ACTIVE: 'bg-emerald-500/15 text-emerald-500',
+  PAUSED: 'bg-amber-500/15 text-amber-500',
+  COMPLETED: 'bg-primary/15 text-primary',
+  PROSPECT: 'bg-violet-500/15 text-violet-500',
 }
 
 export default function ClientsPage() {
@@ -41,13 +41,13 @@ export default function ClientsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Clients</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Clients</h1>
         <AddClientDialog />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Clients', value: clients.length, icon: Building2, color: 'text-blue-500' },
+          { label: 'Total Clients', value: clients.length, icon: Building2, color: 'text-primary' },
           { label: 'Active', value: activeClients.length, icon: Users, color: 'text-green-500' },
           { label: 'Prospects', value: clients.filter(c => c.status === 'PROSPECT').length, icon: TrendingUp, color: 'text-purple-500' },
           { label: 'Monthly Retainer', value: formatINR(totalRetainer), icon: TrendingUp, color: 'text-orange-500' },
@@ -83,7 +83,7 @@ export default function ClientsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((client) => (
-            <Card key={client.id} className="cursor-pointer hover:border-blue-300 hover:shadow-sm transition-all" onClick={() => router.push(`/clients/${client.id}`)}>
+            <Card key={client.id} className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all" onClick={() => router.push(`/clients/${client.id}`)}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
@@ -109,7 +109,7 @@ export default function ClientsPage() {
                   </div>
                 </div>
                 {client.website && (
-                  <a href={client.website} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="mt-3 flex items-center gap-1 text-xs text-blue-500 hover:underline">
+                  <a href={client.website} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="mt-3 flex items-center gap-1 text-xs text-primary hover:underline">
                     <ExternalLink className="h-3 w-3" />Website
                   </a>
                 )}
