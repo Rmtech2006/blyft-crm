@@ -12,7 +12,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft } from 'lucide-react'
+import { EditLeadDialog } from '@/components/leads/edit-lead-dialog'
+import { ArrowLeft, Pencil, UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
 
 function formatINR(amount: number) {
@@ -37,10 +38,14 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const updateLead = useMutation(api.leads.update)
   const addNote = useMutation(api.leads.addNote)
   const addCallLog = useMutation(api.leads.addCallLog)
+  const convertToClient = useMutation(api.leads.convertToClient)
+
   const [noteContent, setNoteContent] = useState('')
   const [callForm, setCallForm] = useState({ summary: '', callDate: '' })
   const [addingNote, setAddingNote] = useState(false)
   const [addingCall, setAddingCall] = useState(false)
+  const [converting, setConverting] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   if (!lead) return <div className="p-8 text-center text-muted-foreground">Loading…</div>
 
@@ -85,6 +90,22 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
     }
   }
 
+  async function handleConvertToClient() {
+    if (!confirm('Convert this lead to a client? A new client record will be created.')) return
+    setConverting(true)
+    try {
+      const clientId = await convertToClient({ id: id as Id<'leads'> })
+      toast.success('Client created!')
+      router.push(`/clients/${clientId}`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to convert')
+    } finally {
+      setConverting(false)
+    }
+  }
+
+  const alreadyConverted = !!lead.convertedClientId
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -99,14 +120,39 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             {lead.estimatedValue && <span className="text-sm font-semibold text-emerald-500">{formatINR(lead.estimatedValue)}</span>}
           </div>
         </div>
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Move stage</p>
-          <Select value={lead.stage} onValueChange={(v) => v && updateStage(v)}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {stageOrder.map((s) => <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>)}
-            </SelectContent>
-          </Select>
+
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-4 w-4 mr-1.5" /> Edit
+          </Button>
+
+          {!alreadyConverted && lead.stage !== 'LOST' && (
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={converting}
+              onClick={handleConvertToClient}
+            >
+              <UserCheck className="h-4 w-4 mr-1.5" />
+              {converting ? 'Converting…' : 'Convert to Client'}
+            </Button>
+          )}
+
+          {alreadyConverted && (
+            <Button size="sm" variant="outline" onClick={() => router.push(`/clients/${lead.convertedClientId}`)}>
+              <UserCheck className="h-4 w-4 mr-1.5" /> View Client
+            </Button>
+          )}
+
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Move stage</p>
+            <Select value={lead.stage} onValueChange={(v) => v && updateStage(v)}>
+              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {stageOrder.map((s) => <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -122,13 +168,13 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             <Card>
               <CardHeader><CardTitle className="text-sm">Lead Info</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
-                {[
+                {([
                   ['Industry', lead.industry],
                   ['Source', lead.source?.replace('_', ' ')],
                   ['Stage', lead.stage?.replace('_', ' ')],
                   ['Service Type', lead.serviceType],
                   ['Estimated Value', lead.estimatedValue ? formatINR(lead.estimatedValue) : null],
-                ].map(([label, value]) => value && (
+                ] as [string, string | null | undefined][]).map(([label, value]) => value && (
                   <div key={label} className="flex justify-between">
                     <span className="text-muted-foreground">{label}</span>
                     <span className="font-medium">{value}</span>
@@ -139,13 +185,13 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             <Card>
               <CardHeader><CardTitle className="text-sm">Contact</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
-                {[
+                {([
                   ['Contact Name', lead.contactName],
                   ['WhatsApp', lead.whatsapp],
                   ['Email', lead.email],
                   ['Follow-up Date', lead.followUpDate ? new Date(lead.followUpDate).toLocaleDateString('en-IN') : null],
                   ['Owner', lead.owner?.name],
-                ].map(([label, value]) => value && (
+                ] as [string, string | null | undefined][]).map(([label, value]) => value && (
                   <div key={label} className="flex justify-between">
                     <span className="text-muted-foreground">{label}</span>
                     <span className="font-medium">{value}</span>
@@ -197,6 +243,8 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </TabsContent>
       </Tabs>
+
+      <EditLeadDialog lead={lead} open={editOpen} onClose={() => setEditOpen(false)} />
     </div>
   )
 }

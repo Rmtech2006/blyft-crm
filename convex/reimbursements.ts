@@ -13,11 +13,23 @@ export const list = query({
     return await Promise.all(
       items.map(async (item) => {
         const teamMember = item.teamMemberId ? await ctx.db.get(item.teamMemberId) : null;
+        const receiptUrl = item.receiptStorageId
+          ? await ctx.storage.getUrl(item.receiptStorageId)
+          : item.receiptUrl;
         return {
           ...item,
           id: item._id,
+          receiptUrl: receiptUrl ?? undefined,
           submittedBy: USERS[item.submittedById] ?? { id: item.submittedById, name: item.submittedById },
-          teamMember: teamMember ? { id: teamMember._id, fullName: teamMember.fullName } : null,
+          teamMember: teamMember
+            ? {
+                id: teamMember._id,
+                fullName: teamMember.fullName,
+                upiId: teamMember.upiId,
+                bankDetails: teamMember.bankDetails,
+                paymentMode: teamMember.paymentMode,
+              }
+            : null,
         };
       })
     );
@@ -34,6 +46,7 @@ export const create = mutation({
     description: v.string(),
     date: v.number(),
     receiptUrl: v.optional(v.string()),
+    receiptStorageId: v.optional(v.string()),
     teamMemberId: v.optional(v.id("teamMembers")),
     submittedById: v.string(),
   },
@@ -44,6 +57,7 @@ export const create = mutation({
       description: args.description,
       date: args.date,
       receiptUrl: args.receiptUrl,
+      receiptStorageId: args.receiptStorageId,
       status: "PENDING",
       submittedById: args.submittedById,
       teamMemberId: args.teamMemberId,

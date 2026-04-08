@@ -126,3 +126,35 @@ export const addCallLog = mutation({
     });
   },
 });
+
+export const convertToClient = mutation({
+  args: { id: v.id("leads") },
+  handler: async (ctx, args) => {
+    const lead = await ctx.db.get(args.id);
+    if (!lead) throw new Error("Lead not found");
+
+    const clientId = await ctx.db.insert("clients", {
+      companyName: lead.company ?? lead.name,
+      industry: lead.industry,
+      status: "ACTIVE",
+      startDate: Date.now(),
+    });
+
+    if (lead.contactName || lead.email || lead.whatsapp) {
+      await ctx.db.insert("clientContacts", {
+        clientId,
+        name: lead.contactName ?? lead.name,
+        email: lead.email,
+        whatsapp: lead.whatsapp,
+        isPrimary: true,
+      });
+    }
+
+    await ctx.db.patch(args.id, {
+      stage: "WON",
+      convertedClientId: clientId,
+    });
+
+    return clientId;
+  },
+});

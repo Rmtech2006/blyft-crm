@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Copy, Wand2 } from 'lucide-react'
+import { Copy, Wand2, MessageCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Template {
@@ -85,8 +85,22 @@ export function UseTemplateDialog({ template }: { template: Template }) {
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                let content = template.content
+                for (const [key, value] of Object.entries(values)) {
+                  content = content.replaceAll(`{{${key}}}`, value)
+                }
+                const encoded = encodeURIComponent(content)
+                window.open(`https://web.whatsapp.com/send?text=${encoded}`, '_blank')
+                await incrementUsage({ id: template.id as Id<'messageTemplates'> })
+              }}
+            >
+              <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
+            </Button>
             <Button onClick={fillAndCopy} disabled={loading}>
-              <Copy className="h-4 w-4 mr-1" /> Copy to Clipboard
+              <Copy className="h-4 w-4 mr-1" /> Copy
             </Button>
           </div>
         </div>

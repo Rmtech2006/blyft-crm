@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 
 export async function POST(req: NextRequest) {
   try {
+    const resend = new Resend(process.env.RESEND_API_KEY)
     const { to, subject, body } = await req.json() as {
       to: string[]
       subject: string
@@ -18,26 +19,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No valid email addresses provided' }, { status: 400 })
     }
 
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'mail.blyftit.com',
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: false, // STARTTLS on port 587
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false, // cPanel self-signed certs
-      },
-    })
-
-    await transporter.sendMail({
-      from: `"${process.env.SMTP_FROM_NAME || 'BLYFT'}" <${process.env.SMTP_USER}>`,
-      to: validEmails.join(', '),
+    const { error } = await resend.emails.send({
+      from: `${process.env.SMTP_FROM_NAME || 'BLYFT'} <${process.env.SMTP_USER || 'clientservice@blyftit.com'}>`,
+      to: validEmails,
       subject: subject.trim(),
       text: body,
       html: body.replace(/\n/g, '<br />'),
     })
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
 
     return NextResponse.json({ success: true, sent: validEmails.length })
   } catch (err) {

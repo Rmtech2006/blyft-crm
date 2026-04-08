@@ -1,15 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery } from 'convex/react'
+import { useQuery, useMutation } from 'convex/react'
 import { api } from '@convex/_generated/api'
+import { Id } from '@convex/_generated/dataModel'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import { AddTemplateDialog } from '@/components/templates/add-template-dialog'
 import { UseTemplateDialog } from '@/components/templates/use-template-dialog'
-import { Lock, BarChart3 } from 'lucide-react'
+import { EditTemplateDialog } from '@/components/templates/edit-template-dialog'
+import { VersionHistoryDialog } from '@/components/templates/version-history-dialog'
+import { toast } from 'sonner'
+import { Lock, Unlock, BarChart3, Pencil, History, Trash2 } from 'lucide-react'
 
 const categoryColors: Record<string, string> = {
   CLIENT_COMMS: 'bg-primary/15 text-primary',
@@ -23,8 +28,12 @@ const categoryColors: Record<string, string> = {
 export default function TemplatesPage() {
   const [categoryFilter, setCategoryFilter] = useState('ALL')
   const [search, setSearch] = useState('')
+  const [editingTemplate, setEditingTemplate] = useState<string | null>(null)
+  const [historyTemplate, setHistoryTemplate] = useState<string | null>(null)
 
   const templates = useQuery(api.templates.list) ?? []
+  const toggleLock = useMutation(api.templates.toggleLock)
+  const removeTemplate = useMutation(api.templates.remove)
 
   const filtered = templates.filter((t) => {
     const matchCat = categoryFilter === 'ALL' || t.category === categoryFilter
@@ -33,6 +42,27 @@ export default function TemplatesPage() {
   })
 
   const categories = ['CLIENT_COMMS', 'LEAD_FOLLOWUP', 'INTERNAL', 'FINANCE', 'SOCIAL', 'PROPOSAL']
+
+  async function handleToggleLock(id: string) {
+    try {
+      await toggleLock({ id: id as Id<'messageTemplates'> })
+    } catch {
+      toast.error('Failed')
+    }
+  }
+
+  async function handleDelete(id: string, title: string) {
+    if (!confirm(`Delete "${title}"?`)) return
+    try {
+      await removeTemplate({ id: id as Id<'messageTemplates'> })
+      toast.success('Deleted')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete')
+    }
+  }
+
+  const editingTpl = editingTemplate ? templates.find((t) => t.id === editingTemplate) : null
+  const historyTpl = historyTemplate ? templates.find((t) => t.id === historyTemplate) : null
 
   return (
     <div className="space-y-6">
@@ -103,10 +133,67 @@ export default function TemplatesPage() {
                   <BarChart3 className="h-3 w-3" />
                   Used {template.usageCount} times
                 </div>
+
+                <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    title="Edit"
+                    disabled={template.isLocked}
+                    onClick={() => setEditingTemplate(template.id)}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    title="Version history"
+                    onClick={() => setHistoryTemplate(template.id)}
+                  >
+                    <History className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    title={template.isLocked ? 'Unlock' : 'Lock'}
+                    onClick={() => handleToggleLock(template.id)}
+                  >
+                    {template.isLocked ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-destructive hover:text-destructive ml-auto"
+                    title="Delete"
+                    disabled={template.isLocked}
+                    onClick={() => handleDelete(template.id, template.title)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
+      )}
+
+      {editingTpl && (
+        <EditTemplateDialog
+          template={editingTpl}
+          open={!!editingTemplate}
+          onClose={() => setEditingTemplate(null)}
+        />
+      )}
+
+      {historyTpl && (
+        <VersionHistoryDialog
+          templateId={historyTpl.id}
+          open={!!historyTemplate}
+          onClose={() => setHistoryTemplate(null)}
+        />
       )}
     </div>
   )

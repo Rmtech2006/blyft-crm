@@ -9,9 +9,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { SubmitReimbursementDialog } from '@/components/reimbursements/submit-reimbursement-dialog'
 import { toast } from 'sonner'
-import { CheckCircle, XCircle } from 'lucide-react'
+import { CheckCircle, XCircle, Download, Receipt, CreditCard } from 'lucide-react'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
@@ -24,29 +27,102 @@ const statusColors: Record<string, string> = {
   REJECTED: 'bg-destructive/15 text-destructive',
 }
 
+type ReimbursementItem = {
+  id: string
+  date: number
+  amount: number
+  category: string
+  description: string
+  status: string
+  receiptUrl?: string
+  rejectionNote?: string
+  teamMember?: {
+    id: string
+    fullName: string
+    upiId?: string
+    bankDetails?: string
+    paymentMode?: string
+  } | null
+  submittedBy: { id: string; name: string }
+}
+
+function exportCSV(items: ReimbursementItem[]) {
+  const headers = ['Date', 'Team Member', 'Category', 'Description', 'Amount (₹)', 'Status']
+  const rows = items.map((i) => [
+    new Date(i.date).toLocaleDateString('en-IN'),
+    i.teamMember?.fullName ?? i.submittedBy.name ?? '',
+    i.category.replace('_', ' '),
+    `"${i.description.replace(/"/g, '""')}"`,
+    i.amount,
+    i.status,
+  ])
+  const csv = [headers, ...rows].map((r) => r.join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `reimbursements-${new Date().toISOString().slice(0, 7)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function ReimbursementsPage() {
   const [activeTab, setActiveTab] = useState('ALL')
-  const items = useQuery(api.reimbursements.list) ?? []
+  const items = (useQuery(api.reimbursements.list) ?? []) as ReimbursementItem[]
   const updateStatus = useMutation(api.reimbursements.updateStatus)
   const [updating, setUpdating] = useState<string | null>(null)
 
-  const filtered = activeTab === 'ALL' ? items : items.filter((i) => i.status === activeTab)
+  // Rejection dialog state
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null)
+  const [rejectNote, setRejectNote] = useState('')
 
+  // Pay dialog state
+  const [payTarget, setPayTarget] = useState<ReimbursementItem | null>(null)
+
+  const filtered = activeTab === 'ALL' ? items : items.filter((i) => i.status === activeTab)
   const pending = items.filter((i) => i.status === 'PENDING')
   const approved = items.filter((i) => i.status === 'APPROVED')
   const paid = items.filter((i) => i.status === 'PAID')
 
-  async function handleUpdateStatus(id: string, status: string, rejectionNote?: string) {
+  async function handleApprove(id: string) {
     setUpdating(id)
     try {
-      await updateStatus({
-        id: id as Id<'reimbursements'>,
-        status: status as Parameters<typeof updateStatus>[0]['status'],
-        rejectionNote,
-      })
-      toast.success(`Marked as ${status.toLowerCase()}`)
+      await updateStatus({ id: id as Id<'reimbursements'>, status: 'APPROVED', approverId: 'ritish' })
+      toast.success('Approved')
     } catch {
-      toast.error('Failed to update')
+      toast.error('Failed')
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  async function handleReject() {
+    if (!rejectTarget) return
+    setUpdating(rejectTarget)
+    try {
+      await updateStatus({
+        id: rejectTarget as Id<'reimbursements'>,
+        status: 'REJECTED',
+        rejectionNote: rejectNote || undefined,
+      })
+      toast.success('Rejected')
+      setRejectTarget(null)
+      setRejectNote('')
+    } catch {
+      toast.error('Failed')
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  async function handleMarkPaid(id: string) {
+    setUpdating(id)
+    try {
+      await updateStatus({ id: id as Id<'reimbursements'>, status: 'PAID' })
+      toast.success('Marked as paid')
+      setPayTarget(null)
+    } catch {
+      toast.error('Failed')
     } finally {
       setUpdating(null)
     }
@@ -56,7 +132,12 @@ export default function ReimbursementsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Reimbursements</h1>
-        <SubmitReimbursementDialog />
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => exportCSV(filtered)}>
+            <Download className="h-4 w-4 mr-1.5" /> Export CSV
+          </Button>
+          <SubmitReimbursementDialog />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -95,6 +176,7 @@ export default function ReimbursementsPage() {
                   <TableHead>Category</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Receipt</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -102,7 +184,7 @@ export default function ReimbursementsPage() {
               <TableBody>
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">No reimbursements</TableCell>
+                    <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">No reimbursements</TableCell>
                   </TableRow>
                 )}
                 {filtered.map((item) => (
@@ -112,8 +194,24 @@ export default function ReimbursementsPage() {
                     <TableCell>
                       <Badge variant="outline" className="text-xs">{item.category.replace('_', ' ')}</Badge>
                     </TableCell>
-                    <TableCell className="text-sm max-w-[200px] truncate">{item.description}</TableCell>
+                    <TableCell className="text-sm max-w-[180px]">
+                      <p className="truncate">{item.description}</p>
+                      {item.status === 'REJECTED' && item.rejectionNote && (
+                        <p className="text-xs text-destructive mt-0.5 truncate">Note: {item.rejectionNote}</p>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right font-semibold text-sm">{formatINR(item.amount)}</TableCell>
+                    <TableCell>
+                      {item.receiptUrl ? (
+                        <a href={item.receiptUrl} target="_blank" rel="noopener noreferrer">
+                          <Button size="icon" variant="ghost" className="h-7 w-7">
+                            <Receipt className="h-3.5 w-3.5" />
+                          </Button>
+                        </a>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge className={`text-xs border-0 ${statusColors[item.status]}`}>{item.status}</Badge>
                     </TableCell>
@@ -125,7 +223,7 @@ export default function ReimbursementsPage() {
                             variant="ghost"
                             className="h-7 w-7 text-green-500 hover:text-emerald-500"
                             disabled={updating === item.id}
-                            onClick={() => handleUpdateStatus(item.id, 'APPROVED')}
+                            onClick={() => handleApprove(item.id)}
                           >
                             <CheckCircle className="h-4 w-4" />
                           </Button>
@@ -134,7 +232,7 @@ export default function ReimbursementsPage() {
                             variant="ghost"
                             className="h-7 w-7 text-red-500 hover:text-destructive"
                             disabled={updating === item.id}
-                            onClick={() => handleUpdateStatus(item.id, 'REJECTED')}
+                            onClick={() => { setRejectTarget(item.id); setRejectNote('') }}
                           >
                             <XCircle className="h-4 w-4" />
                           </Button>
@@ -146,9 +244,9 @@ export default function ReimbursementsPage() {
                           variant="outline"
                           className="h-7 text-xs"
                           disabled={updating === item.id}
-                          onClick={() => handleUpdateStatus(item.id, 'PAID')}
+                          onClick={() => setPayTarget(item)}
                         >
-                          Mark Paid
+                          <CreditCard className="h-3 w-3 mr-1" /> Pay
                         </Button>
                       )}
                     </TableCell>
@@ -159,6 +257,75 @@ export default function ReimbursementsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Rejection dialog */}
+      <Dialog open={!!rejectTarget} onOpenChange={(v) => !v && setRejectTarget(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Reject Reimbursement</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Reason (optional)</Label>
+              <Textarea
+                rows={3}
+                placeholder="Add a rejection reason…"
+                value={rejectNote}
+                onChange={(e) => setRejectNote(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setRejectTarget(null)}>Cancel</Button>
+              <Button variant="destructive" onClick={handleReject} disabled={!!updating}>
+                Reject
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pay dialog with UPI/bank details */}
+      <Dialog open={!!payTarget} onOpenChange={(v) => !v && setPayTarget(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Mark as Paid</DialogTitle></DialogHeader>
+          {payTarget && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-muted p-3 space-y-2">
+                <p className="text-sm font-medium">{payTarget.teamMember?.fullName ?? payTarget.submittedBy.name}</p>
+                <p className="text-lg font-bold text-emerald-500">{formatINR(payTarget.amount)}</p>
+                <p className="text-xs text-muted-foreground">{payTarget.description}</p>
+              </div>
+              {payTarget.teamMember && (payTarget.teamMember.upiId || payTarget.teamMember.bankDetails) && (
+                <div className="rounded-lg border border-border p-3 space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Payment Details</p>
+                  {payTarget.teamMember.upiId && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">UPI ID</span>
+                      <span className="text-sm font-mono font-medium">{payTarget.teamMember.upiId}</span>
+                    </div>
+                  )}
+                  {payTarget.teamMember.bankDetails && (
+                    <div>
+                      <span className="text-xs text-muted-foreground">Bank Details</span>
+                      <p className="text-sm mt-0.5 whitespace-pre-wrap">{payTarget.teamMember.bankDetails}</p>
+                    </div>
+                  )}
+                  {payTarget.teamMember.paymentMode && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Preferred Mode</span>
+                      <span className="text-sm">{payTarget.teamMember.paymentMode}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setPayTarget(null)}>Cancel</Button>
+                <Button onClick={() => handleMarkPaid(payTarget.id)} disabled={!!updating}>
+                  Confirm Paid
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -85,3 +85,39 @@ export const incrementUsage = mutation({
     await ctx.db.patch(args.id, { usageCount: template.usageCount + 1 });
   },
 });
+
+export const toggleLock = mutation({
+  args: { id: v.id("messageTemplates") },
+  handler: async (ctx, args) => {
+    const template = await ctx.db.get(args.id);
+    if (!template) return;
+    await ctx.db.patch(args.id, { isLocked: !template.isLocked });
+  },
+});
+
+export const getVersions = query({
+  args: { id: v.id("messageTemplates") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("templateVersions")
+      .withIndex("by_templateId", (q) => q.eq("templateId", args.id))
+      .order("desc")
+      .collect();
+  },
+});
+
+export const restoreVersion = mutation({
+  args: { templateId: v.id("messageTemplates"), content: v.string() },
+  handler: async (ctx, args) => {
+    const template = await ctx.db.get(args.templateId);
+    if (!template) return;
+    await ctx.db.insert("templateVersions", {
+      templateId: args.templateId,
+      content: template.content,
+    });
+    const variables = [...new Set(
+      (args.content.match(/\{\{(\w+)\}\}/g) ?? []).map((m) => m.replace(/[{}]/g, ""))
+    )];
+    await ctx.db.patch(args.templateId, { content: args.content, variables });
+  },
+});

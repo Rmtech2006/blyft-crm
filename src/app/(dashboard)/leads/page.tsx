@@ -5,10 +5,12 @@ import { useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AddLeadDialog } from '@/components/leads/add-lead-dialog'
-import { Calendar } from 'lucide-react'
+import { Calendar, AlertCircle, Link2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
@@ -35,9 +37,16 @@ const sourceColors: Record<string, string> = {
   OTHER: 'bg-muted text-muted-foreground',
 }
 
+const now = Date.now()
+
+function isOverdue(followUpDate?: number | null) {
+  return followUpDate && followUpDate < now
+}
+
 export default function LeadsPage() {
   const router = useRouter()
   const leads = useQuery(api.leads.list) ?? []
+  const overdueCount = leads.filter(l => !['WON', 'LOST'].includes(l.stage) && isOverdue(l.followUpDate)).length
 
   const pipelineValue = leads.filter((l) => !['WON', 'LOST'].includes(l.stage)).reduce((s, l) => s + (l.estimatedValue ?? 0), 0)
   const wonLeads = leads.filter((l) => l.stage === 'WON').length
@@ -46,20 +55,34 @@ export default function LeadsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
-        <AddLeadDialog />
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const url = `${window.location.origin}/capture`
+              navigator.clipboard.writeText(url)
+              toast.success('Capture form link copied!')
+            }}
+          >
+            <Link2 className="h-4 w-4 mr-1.5" /> Copy Capture Link
+          </Button>
+          <AddLeadDialog />
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           { label: 'Total Leads', value: leads.length },
           { label: 'Won', value: wonLeads },
           { label: 'Lost', value: leads.filter(l => l.stage === 'LOST').length },
           { label: 'Pipeline Value', value: formatINR(pipelineValue) },
-        ].map(({ label, value }) => (
+          { label: 'Follow-up Overdue', value: overdueCount, highlight: overdueCount > 0 },
+        ].map(({ label, value, highlight }) => (
           <Card key={label}>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">{label}</p>
-              <p className="text-xl font-bold mt-0.5">{value}</p>
+              <p className={`text-xl font-bold mt-0.5 ${highlight ? 'text-destructive' : ''}`}>{value}</p>
             </CardContent>
           </Card>
         ))}
@@ -93,8 +116,12 @@ export default function LeadsPage() {
                           </div>
                           {lead.followUpDate && (
                             <div className="flex items-center gap-1 mt-1">
-                              <Calendar className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-[10px] text-muted-foreground">
+                              {isOverdue(lead.followUpDate) && !['WON', 'LOST'].includes(lead.stage) ? (
+                                <AlertCircle className="h-3 w-3 text-destructive" />
+                              ) : (
+                                <Calendar className="h-3 w-3 text-muted-foreground" />
+                              )}
+                              <span className={`text-[10px] ${isOverdue(lead.followUpDate) && !['WON', 'LOST'].includes(lead.stage) ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
                                 {new Date(lead.followUpDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                               </span>
                             </div>

@@ -163,6 +163,7 @@ export default defineSchema({
     description: v.string(),
     date: v.number(),
     receiptUrl: v.optional(v.string()),
+    receiptStorageId: v.optional(v.string()),
     status: v.union(
       v.literal("PENDING"), v.literal("APPROVED"), v.literal("REJECTED"), v.literal("PAID")
     ),
