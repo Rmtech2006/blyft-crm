@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
 import { Bell, LogOut, Settings, User, ChevronDown, Menu } from 'lucide-react'
 import {
@@ -73,12 +72,10 @@ function AppSidebar() {
 
 function TopHeader() {
   const { data: session } = useSession()
-  const router = useRouter()
   const user = session?.user
 
   async function handleSignOut() {
-    await signOut({ redirect: false })
-    router.push('/login')
+    await signOut({ redirectTo: '/login' })
   }
 
   return (
@@ -130,7 +127,7 @@ function TopHeader() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem render={<Link href="/settings/profile" className="cursor-pointer" />}>
+          <DropdownMenuItem render={<Link href="/settings" className="cursor-pointer" />}>
             <User className="mr-2 h-4 w-4" />
             Profile
           </DropdownMenuItem>
