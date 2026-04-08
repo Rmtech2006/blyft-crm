@@ -11,8 +11,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowLeft, Globe, Phone, Mail } from 'lucide-react'
+import { ArrowLeft, Phone, Mail } from 'lucide-react'
 import { toast } from 'sonner'
+import { ComposeEmailDialog } from '@/components/clients/compose-email-dialog'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
@@ -128,6 +129,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         </TabsContent>
 
         <TabsContent value="contacts" className="space-y-4">
+          {/* Add Contact */}
           <Card>
             <CardHeader><CardTitle className="text-sm">Add Contact</CardTitle></CardHeader>
             <CardContent className="space-y-3">
@@ -140,6 +142,18 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <Button size="sm" onClick={handleAddContact} disabled={addingContact}>Add Contact</Button>
             </CardContent>
           </Card>
+
+          {/* Contact list header with Email All */}
+          {(client.contacts ?? []).length > 0 && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">
+                {client.contacts?.length} contact{client.contacts?.length !== 1 ? 's' : ''}
+              </p>
+              <ComposeEmailDialog contacts={client.contacts ?? []} />
+            </div>
+          )}
+
+          {/* Contact cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {(client.contacts ?? []).map((c) => (
               <Card key={c.id}>
@@ -149,7 +163,20 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       <p className="font-medium text-sm">{c.name}</p>
                       {c.designation && <p className="text-xs text-muted-foreground">{c.designation}</p>}
                     </div>
-                    {c.isPrimary && <Badge className="text-xs">Primary</Badge>}
+                    <div className="flex items-center gap-2">
+                      {c.isPrimary && <Badge className="text-xs border-0">Primary</Badge>}
+                      {c.email && (
+                        <ComposeEmailDialog
+                          contacts={client.contacts ?? []}
+                          preselected={[c.id]}
+                          trigger={
+                            <Button size="icon" variant="ghost" className="h-7 w-7">
+                              <Mail className="h-3.5 w-3.5" />
+                            </Button>
+                          }
+                        />
+                      )}
+                    </div>
                   </div>
                   <div className="mt-2 space-y-1">
                     {c.email && <div className="flex items-center gap-1 text-xs text-muted-foreground"><Mail className="h-3 w-3" />{c.email}</div>}
