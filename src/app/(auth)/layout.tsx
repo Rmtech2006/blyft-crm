@@ -1,3 +1,5 @@
+import { BlyftLogo } from '@/components/brand/blyft-logo'
+
 export default function AuthLayout({
   children,
 }: {
@@ -11,14 +13,13 @@ export default function AuthLayout({
 
           <div className="relative space-y-8">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-[20px] bg-white text-sm font-black tracking-[0.22em] text-black">
-                B
-              </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-white/45">
                   Agency OS
                 </p>
-                <p className="font-heading text-xl font-semibold tracking-tight">BLYFT CRM</p>
+                <div className="mt-1">
+                  <BlyftLogo size="md" variant="white" priority className="opacity-95" />
+                </div>
               </div>
             </div>
 

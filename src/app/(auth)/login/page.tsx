@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Loader2, Lock, Mail } from 'lucide-react'
 import { toast } from 'sonner'
+import { BlyftLogo } from '@/components/brand/blyft-logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -58,8 +59,8 @@ export default function LoginPage() {
   return (
     <div className="surface-card border-border/70 bg-white/92 p-8 sm:p-9">
       <div className="mb-8 space-y-4">
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-[18px] bg-primary text-sm font-black tracking-[0.22em] text-primary-foreground">
-          B
+        <div className="inline-flex rounded-[18px] border border-border/80 bg-white px-4 py-3 shadow-[0_18px_36px_-28px_rgba(15,23,42,0.24)] lg:hidden">
+          <BlyftLogo size="md" priority />
         </div>
 
         <div className="space-y-2">

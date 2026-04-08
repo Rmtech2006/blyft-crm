@@ -23,6 +23,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
+import { BlyftLogo } from '@/components/brand/blyft-logo'
 
 const routeLabels: Array<{ href: string; label: string }> = [
   { href: '/reimbursements', label: 'Reimbursements' },
@@ -61,17 +62,19 @@ function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
         <Link href="/" className="group flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[20px] bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_22px_38px_-24px_rgba(255,255,255,0.4)]">
-            <span className="text-sm font-black tracking-[0.18em]">B</span>
+          <div className="flex items-center gap-3 group-data-[collapsible=icon]:hidden">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-sidebar-foreground/40">
+                Agency OS
+              </p>
+              <div className="mt-1">
+                <BlyftLogo size="sm" variant="white" priority className="opacity-95" />
+              </div>
+            </div>
           </div>
 
-          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-sidebar-foreground/40">
-              Agency OS
-            </p>
-            <p className="truncate font-heading text-base font-semibold tracking-tight text-sidebar-accent-foreground">
-              BLYFT CRM
-            </p>
+          <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-[20px] bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_22px_38px_-24px_rgba(255,255,255,0.4)] group-data-[collapsible=icon]:flex">
+            <span className="text-sm font-black tracking-[0.18em]">B</span>
           </div>
         </Link>
       </SidebarHeader>
