@@ -101,7 +101,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         </div>
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Move stage</p>
-          <Select value={lead.stage} onValueChange={updateStage}>
+          <Select value={lead.stage} onValueChange={(v) => v && updateStage(v)}>
             <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               {stageOrder.map((s) => <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>)}

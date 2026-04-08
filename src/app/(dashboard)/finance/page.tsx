@@ -58,8 +58,8 @@ function AddBankAccountDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Account</Button>
+      <DialogTrigger render={<Button size="sm" />}>
+        <Plus className="h-4 w-4 mr-1" /> Add Account
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader><DialogTitle>Add Bank Account</DialogTitle></DialogHeader>
@@ -113,10 +113,8 @@ function EditBalanceDialog({ account }: { account: { id: string; name: string; b
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit balance">
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
+      <DialogTrigger render={<Button variant="ghost" size="icon" className="h-7 w-7" title="Edit balance" />}>
+        <Pencil className="h-3.5 w-3.5" />
       </DialogTrigger>
       <DialogContent className="sm:max-w-xs">
         <DialogHeader><DialogTitle>Edit Balance — {account.name}</DialogTitle></DialogHeader>
@@ -344,7 +342,7 @@ export default function FinancePage() {
 
         <TabsContent value="transactions" className="space-y-4">
           <div className="flex gap-3 flex-wrap">
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v ?? 'ALL')}>
               <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All Types</SelectItem>

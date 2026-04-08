@@ -19,10 +19,10 @@ import { Plus } from 'lucide-react'
 const schema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  status: z.enum(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED']).default('TODO'),
-  priority: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']).default('MEDIUM'),
+  status: z.enum(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED']),
+  priority: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']),
   dueDate: z.string().optional(),
-  recurringType: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'NONE']).default('NONE'),
+  recurringType: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'NONE']),
   projectId: z.string().optional(),
   assigneeId: z.string().optional(),
 })
@@ -67,8 +67,8 @@ export function AddTaskDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Task</Button>
+      <DialogTrigger render={<Button size="sm" />}>
+        <Plus className="h-4 w-4 mr-1" /> Add Task
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader><DialogTitle>Add Task</DialogTitle></DialogHeader>
@@ -130,7 +130,7 @@ export function AddTaskDialog() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label>Project</Label>
-              <Select onValueChange={(v) => setValue('projectId', v === 'none' ? undefined : v)}>
+              <Select onValueChange={(v) => setValue('projectId', v === 'none' || v == null ? undefined : String(v))}>
                 <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
@@ -140,7 +140,7 @@ export function AddTaskDialog() {
             </div>
             <div className="space-y-1">
               <Label>Assignee</Label>
-              <Select onValueChange={(v) => setValue('assigneeId', v === 'none' ? undefined : v)}>
+              <Select onValueChange={(v) => setValue('assigneeId', v === 'none' || v == null ? undefined : String(v))}>
                 <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Unassigned</SelectItem>

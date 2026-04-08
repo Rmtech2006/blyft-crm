@@ -66,7 +66,7 @@ export default function ClientsPage() {
 
       <div className="flex gap-3">
         <Input placeholder="Search clients…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? 'ALL')}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All Status</SelectItem>

@@ -83,7 +83,7 @@ export function SidebarNav() {
         return (
           <SidebarMenuItem key={item.href}>
             <SidebarMenuButton
-              asChild
+              render={<Link href={item.href} />}
               isActive={isActive}
               tooltip={item.title}
               className={cn(
@@ -92,10 +92,8 @@ export function SidebarNav() {
                   'bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground'
               )}
             >
-              <Link href={item.href}>
-                <Icon className="h-4 w-4 shrink-0" />
-                <span>{item.title}</span>
-              </Link>
+              <Icon className="h-4 w-4 shrink-0" />
+              <span>{item.title}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         )

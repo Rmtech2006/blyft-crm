@@ -31,7 +31,7 @@ export default function RootLayout({
     <html lang="en" className={`${dmSans.variable} ${plusJakarta.variable} h-full antialiased`}>
       <body className="min-h-full bg-background text-foreground">
         <Providers>
-          <TooltipProvider delayDuration={200}>
+          <TooltipProvider delay={200}>
             {children}
           </TooltipProvider>
         </Providers>

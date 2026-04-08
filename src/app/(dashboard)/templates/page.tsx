@@ -57,7 +57,7 @@ export default function TemplatesPage() {
 
       <div className="flex gap-3">
         <Input placeholder="Search templates…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+        <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v ?? 'ALL')}>
           <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All Categories</SelectItem>

@@ -122,7 +122,7 @@ export default function TeamMemberDetailPage({ params }: { params: Promise<{ id:
         <TabsContent value="projects">
           <div className="space-y-3">
             {(member.projects ?? []).length === 0 && <p className="text-center py-8 text-muted-foreground">No projects assigned</p>}
-            {(member.projects ?? []).map((ptm: { project: { id: string; name: string; status: string; type: string } }) => (
+            {(member.projects ?? []).filter((p): p is NonNullable<typeof p> => p !== null).map((ptm) => (
               <Card key={ptm.project.id} className="cursor-pointer hover:border-blue-300" onClick={() => router.push(`/projects/${ptm.project.id}`)}>
                 <CardContent className="p-4 flex items-center justify-between">
                   <div>

@@ -53,10 +53,8 @@ export function UseTemplateDialog({ template }: { template: Template }) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) { setValues({}); setFilled('') } }}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-7 text-xs">
-          <Wand2 className="h-3 w-3 mr-1" /> Use
-        </Button>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="h-7 text-xs" />}>
+        <Wand2 className="h-3 w-3 mr-1" /> Use
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader><DialogTitle>Use: {template.title}</DialogTitle></DialogHeader>

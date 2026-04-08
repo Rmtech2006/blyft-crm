@@ -21,7 +21,7 @@ const schema = z.object({
   clientId: z.string().min(1, 'Client is required'),
   type: z.enum(['SOCIAL_MEDIA', 'SEO', 'WEB_DESIGN', 'BRANDING', 'CONTENT', 'ADS', 'OTHER']),
   description: z.string().optional(),
-  status: z.enum(['NOT_STARTED', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'ON_HOLD']).default('NOT_STARTED'),
+  status: z.enum(['NOT_STARTED', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'ON_HOLD']),
   startDate: z.string().optional(),
   deadline: z.string().optional(),
   budgetAgreed: z.string().optional(),
@@ -67,8 +67,8 @@ export function AddProjectDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm"><Plus className="h-4 w-4 mr-1" /> New Project</Button>
+      <DialogTrigger render={<Button size="sm" />}>
+        <Plus className="h-4 w-4 mr-1" /> New Project
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader><DialogTitle>Create Project</DialogTitle></DialogHeader>
@@ -82,7 +82,7 @@ export function AddProjectDialog() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label>Client *</Label>
-              <Select onValueChange={(v) => setValue('clientId', v)}>
+              <Select onValueChange={(v) => setValue('clientId', String(v ?? ''))}>
                 <SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger>
                 <SelectContent>
                   {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.companyName}</SelectItem>)}

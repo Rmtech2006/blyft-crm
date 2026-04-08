@@ -20,7 +20,7 @@ const schema = z.object({
   gstNumber: z.string().optional(),
   website: z.string().optional(),
   address: z.string().optional(),
-  status: z.enum(['ACTIVE', 'PAUSED', 'COMPLETED', 'PROSPECT']).default('PROSPECT'),
+  status: z.enum(['ACTIVE', 'PAUSED', 'COMPLETED', 'PROSPECT']),
   retainerAmount: z.string().optional(),
   paymentTerms: z.string().optional(),
   startDate: z.string().optional(),
@@ -64,8 +64,8 @@ export function AddClientDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Client</Button>
+      <DialogTrigger render={<Button size="sm" />}>
+        <Plus className="h-4 w-4 mr-1" /> Add Client
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>

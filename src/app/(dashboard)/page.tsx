@@ -134,7 +134,7 @@ export default function DashboardPage() {
                     <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${getActionColor(log.action)}`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-foreground leading-tight">
-                        <span className="font-medium">{log.user?.name ?? 'System'}</span>{' '}
+                        <span className="font-medium">{(log.user as { name?: string } | null)?.name ?? 'System'}</span>{' '}
                         <span className="text-muted-foreground">{log.action.toLowerCase()}d a {log.entity.toLowerCase()}</span>
                       </p>
                       {log.details && <p className="text-xs text-muted-foreground truncate mt-0.5">{log.details}</p>}
@@ -169,8 +169,8 @@ export default function DashboardPage() {
                 </Badge>
               </div>
               {stats.pendingReimbursements > 0 && (
-                <Button asChild size="sm" variant="outline" className="w-full text-xs h-8">
-                  <Link href="/reimbursements">Review now</Link>
+                <Button size="sm" variant="outline" className="w-full text-xs h-8" render={<Link href="/reimbursements" />}>
+                  Review now
                 </Button>
               )}
             </CardContent>

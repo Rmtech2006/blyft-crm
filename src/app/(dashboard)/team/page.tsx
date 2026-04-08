@@ -74,7 +74,7 @@ export default function TeamPage() {
 
       <div className="flex gap-3 flex-wrap">
         <Input placeholder="Search members…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
+        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v ?? 'ALL')}>
           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All Types</SelectItem>
@@ -83,7 +83,7 @@ export default function TeamPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? 'ALL')}>
           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All Status</SelectItem>

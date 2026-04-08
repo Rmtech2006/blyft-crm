@@ -63,7 +63,7 @@ export default function TasksPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Tasks</h1>
         <div className="flex items-center gap-3">
-          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+          <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v ?? 'ALL')}>
             <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">All Priority</SelectItem>

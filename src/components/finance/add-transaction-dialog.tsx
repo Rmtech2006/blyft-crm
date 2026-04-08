@@ -24,7 +24,7 @@ const schema = z.object({
   date: z.string().min(1, 'Date is required'),
   paymentMode: z.enum(['CASH', 'UPI', 'BANK_TRANSFER', 'CHEQUE', 'CARD', 'OTHER']),
   bankAccountId: z.string().optional(),
-  gstTagged: z.boolean().default(false),
+  gstTagged: z.boolean(),
   gstAmount: z.string().optional(),
 })
 
@@ -93,8 +93,8 @@ export function AddTransactionDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm"><Plus className="h-4 w-4 mr-1" /> {triggerLabel}</Button>
+      <DialogTrigger render={<Button size="sm" />}>
+        <Plus className="h-4 w-4 mr-1" /> {triggerLabel}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader><DialogTitle>Record Transaction</DialogTitle></DialogHeader>
@@ -154,7 +154,7 @@ export function AddTransactionDialog({
                 {bankAccounts.find((a) => a.id === defaultBankAccountId)?.name ?? 'Selected account'}
               </p>
             ) : (
-              <Select defaultValue="" onValueChange={(v) => setValue('bankAccountId', v === 'none' ? '' : v)}>
+              <Select defaultValue="" onValueChange={(v) => setValue('bankAccountId', v == null ? '' : v === 'none' ? '' : v)}>
                 <SelectTrigger><SelectValue placeholder="No account" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No account</SelectItem>

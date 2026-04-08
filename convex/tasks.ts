@@ -31,13 +31,12 @@ export const get = query({
     const task = await ctx.db.get(args.id);
     if (!task) return null;
     const project = task.projectId ? await ctx.db.get(task.projectId) : null;
-    const subtasks = await ctx.db.query("subtasks").withIndex("by_taskId", (q) => q.eq("taskId", args.id)).collect();
     return {
       ...task,
       id: task._id,
       project: project ? { id: project._id, name: project.name } : null,
       assignee: task.assigneeId ? (USERS[task.assigneeId] ?? null) : null,
-      subtasks: subtasks.map((s) => ({ ...s, id: s._id })),
+      subtasks: [],
     };
   },
 });

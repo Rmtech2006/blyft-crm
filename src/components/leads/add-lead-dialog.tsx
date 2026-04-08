@@ -18,8 +18,8 @@ const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   company: z.string().optional(),
   industry: z.string().optional(),
-  source: z.enum(['INSTAGRAM', 'REFERRAL', 'LINKEDIN', 'COLD_EMAIL', 'EVENT', 'WEBSITE', 'OTHER']).default('OTHER'),
-  stage: z.enum(['NEW_LEAD', 'CONTACTED', 'DISCOVERY', 'PROPOSAL_SENT', 'NEGOTIATION', 'WON', 'LOST']).default('NEW_LEAD'),
+  source: z.enum(['INSTAGRAM', 'REFERRAL', 'LINKEDIN', 'COLD_EMAIL', 'EVENT', 'WEBSITE', 'OTHER']),
+  stage: z.enum(['NEW_LEAD', 'CONTACTED', 'DISCOVERY', 'PROPOSAL_SENT', 'NEGOTIATION', 'WON', 'LOST']),
   contactName: z.string().optional(),
   whatsapp: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
@@ -68,8 +68,8 @@ export function AddLeadDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Lead</Button>
+      <DialogTrigger render={<Button size="sm" />}>
+        <Plus className="h-4 w-4 mr-1" /> Add Lead
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader><DialogTitle>Add Lead</DialogTitle></DialogHeader>

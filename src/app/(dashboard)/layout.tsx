@@ -103,27 +103,22 @@ function TopHeader() {
 
       {/* User Menu */}
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex items-center gap-2 h-8 px-2 hover:bg-accent"
-          >
-            <Avatar className="h-7 w-7">
-              <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? 'User'} />
-              <AvatarFallback className="text-xs bg-blue-600 text-white">
-                {getInitials(user?.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="hidden sm:flex flex-col items-start">
-              <span className="text-xs font-medium leading-none">
-                {user?.name ?? 'User'}
-              </span>
-              <span className="text-[10px] text-muted-foreground leading-none mt-0.5">
-                {(user as { role?: string })?.role?.replace('_', ' ') ?? 'Member'}
-              </span>
-            </div>
-            <ChevronDown className="h-3 w-3 text-muted-foreground" />
-          </Button>
+        <DropdownMenuTrigger render={<Button variant="ghost" className="flex items-center gap-2 h-8 px-2 hover:bg-accent" />}>
+          <Avatar className="h-7 w-7">
+            <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? 'User'} />
+            <AvatarFallback className="text-xs bg-blue-600 text-white">
+              {getInitials(user?.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="hidden sm:flex flex-col items-start">
+            <span className="text-xs font-medium leading-none">
+              {user?.name ?? 'User'}
+            </span>
+            <span className="text-[10px] text-muted-foreground leading-none mt-0.5">
+              {(user as { role?: string })?.role?.replace('_', ' ') ?? 'Member'}
+            </span>
+          </div>
+          <ChevronDown className="h-3 w-3 text-muted-foreground" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuLabel className="font-normal">
@@ -135,17 +130,13 @@ function TopHeader() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href="/settings/profile" className="cursor-pointer">
-              <User className="mr-2 h-4 w-4" />
-              Profile
-            </Link>
+          <DropdownMenuItem render={<Link href="/settings/profile" className="cursor-pointer" />}>
+            <User className="mr-2 h-4 w-4" />
+            Profile
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/settings" className="cursor-pointer">
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </Link>
+          <DropdownMenuItem render={<Link href="/settings" className="cursor-pointer" />}>
+            <Settings className="mr-2 h-4 w-4" />
+            Settings
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

@@ -64,8 +64,8 @@ export function SubmitReimbursementDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Submit Reimbursement</Button>
+      <DialogTrigger render={<Button size="sm" />}>
+        <Plus className="h-4 w-4 mr-1" /> Submit Reimbursement
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader><DialogTitle>Submit Reimbursement</DialogTitle></DialogHeader>
@@ -102,7 +102,7 @@ export function SubmitReimbursementDialog() {
 
           <div className="space-y-1">
             <Label>Team Member</Label>
-            <Select onValueChange={(v) => setValue('teamMemberId', v === 'none' ? undefined : v)}>
+            <Select onValueChange={(v) => setValue('teamMemberId', v === 'none' || v == null ? undefined : String(v))}>
               <SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Self</SelectItem>
