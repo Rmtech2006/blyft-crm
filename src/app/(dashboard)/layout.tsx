@@ -1,69 +1,105 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
-import { LogOut, Settings, User, ChevronDown } from 'lucide-react'
+import {
+  ChevronDown,
+  LogOut,
+  Settings,
+  User,
+} from 'lucide-react'
 import { NotificationBell } from '@/components/layout/notification-panel'
+import { SidebarNav } from '@/components/layout/sidebar-nav'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Separator } from '@/components/ui/separator'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-  SidebarInset,
 } from '@/components/ui/sidebar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { SidebarNav } from '@/components/layout/sidebar-nav'
+
+const routeLabels: Array<{ href: string; label: string }> = [
+  { href: '/reimbursements', label: 'Reimbursements' },
+  { href: '/projects', label: 'Projects' },
+  { href: '/clients', label: 'Clients' },
+  { href: '/finance', label: 'Finance' },
+  { href: '/settings', label: 'Settings' },
+  { href: '/templates', label: 'Templates' },
+  { href: '/tasks', label: 'Tasks' },
+  { href: '/team', label: 'Team' },
+  { href: '/leads', label: 'Leads' },
+  { href: '/', label: 'Dashboard' },
+]
 
 function getInitials(name: string | null | undefined): string {
   if (!name) return 'U'
+
   return name
     .split(' ')
-    .map((n) => n[0])
+    .map((part) => part[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)
 }
 
+function getPageLabel(pathname: string): string {
+  return routeLabels.find((route) =>
+    route.href === '/'
+      ? pathname === '/'
+      : pathname === route.href || pathname.startsWith(route.href + '/')
+  )?.label ?? 'Workspace'
+}
+
 function AppSidebar() {
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarHeader className="h-14 flex items-center px-4 border-b border-sidebar-border">
-        <Link
-          href="/"
-          className="flex items-center gap-2.5 font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden"
-        >
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary shadow-sm shadow-primary/40">
-            <span className="text-xs font-black text-primary-foreground">B</span>
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
+      <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
+        <Link href="/" className="group flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[20px] bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_22px_38px_-24px_rgba(255,255,255,0.4)]">
+            <span className="text-sm font-black tracking-[0.18em]">B</span>
           </div>
-          <span className="text-base tracking-tight">
-            BLYFT <span className="text-primary">CRM</span>
-          </span>
+
+          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-sidebar-foreground/40">
+              Agency OS
+            </p>
+            <p className="truncate font-heading text-base font-semibold tracking-tight text-sidebar-accent-foreground">
+              BLYFT CRM
+            </p>
+          </div>
         </Link>
-        <div className="hidden group-data-[collapsible=icon]:flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary shadow-sm shadow-primary/40">
-          <span className="text-xs font-black text-primary-foreground">B</span>
-        </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-3">
+      <SidebarContent className="px-3 py-4">
+        <div className="mb-4 surface-muted border-white/5 bg-white/[0.04] p-3 text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sidebar-foreground/38">
+            Command Center
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-sidebar-foreground/78">
+            Keep sales, delivery, finance, and support aligned in one executive workspace.
+          </p>
+        </div>
+
         <SidebarNav />
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-2">
-        <div className="text-[10px] font-medium text-sidebar-foreground/30 text-center py-1 tracking-widest uppercase group-data-[collapsible=icon]:hidden">
-          BLYFT v1.0
+      <SidebarFooter className="border-t border-sidebar-border p-3">
+        <div className="surface-muted border-white/5 bg-white/[0.04] p-3 group-data-[collapsible=icon]:hidden">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sidebar-foreground/38">
+            System
+          </p>
+          <div className="mt-2 flex items-center justify-between gap-3 text-xs text-sidebar-foreground/75">
+            <span>Live sync</span>
+            <span className="rounded-full bg-emerald-500/12 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-300">
+              Online
+            </span>
+          </div>
         </div>
       </SidebarFooter>
     </Sidebar>
@@ -72,8 +108,15 @@ function AppSidebar() {
 
 function TopHeader() {
   const { data: session } = useSession()
-  const user = session?.user
+  const pathname = usePathname()
   const router = useRouter()
+  const user = session?.user
+  const pageLabel = getPageLabel(pathname)
+  const todayLabel = new Intl.DateTimeFormat('en-IN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date())
 
   async function handleSignOut() {
     await signOut({ redirect: false })
@@ -81,62 +124,84 @@ function TopHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4">
-      <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground transition-colors" />
-      <Separator orientation="vertical" className="h-5 opacity-50" />
+    <header className="sticky top-0 z-20 px-4 pt-4 sm:px-6">
+      <div className="surface-card flex min-h-[76px] items-center gap-3 px-4 py-3 sm:px-5">
+        <SidebarTrigger className="rounded-xl border border-border/70 bg-card/80 text-muted-foreground hover:bg-accent hover:text-foreground" />
+        <Separator orientation="vertical" className="hidden h-7 opacity-60 sm:block" />
 
-      {/* Spacer */}
-      <div className="flex-1" />
+        <div className="hidden min-w-0 sm:block">
+          <p className="section-eyebrow">Workspace</p>
+          <p className="truncate text-sm font-medium text-foreground">{pageLabel}</p>
+        </div>
 
-      <NotificationBell />
+        <div className="hidden items-center gap-2 rounded-full border border-border/80 bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground lg:flex">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          Convex sync active
+        </div>
 
-      {/* User Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger render={<button className="flex items-center gap-2 h-8 px-2 rounded-lg hover:bg-accent transition-colors outline-none" />}>
-          <Avatar className="h-7 w-7">
-            <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? 'User'} />
-            <AvatarFallback className="text-xs bg-primary text-primary-foreground font-semibold">
-              {getInitials(user?.name)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="hidden sm:flex flex-col items-start">
-            <span className="text-xs font-medium leading-none text-foreground">
-              {user?.name ?? 'User'}
-            </span>
-            <span className="text-[10px] text-muted-foreground leading-none mt-0.5">
-              {(user as { role?: string })?.role?.replace('_', ' ') ?? 'Member'}
-            </span>
+        <div className="ml-auto flex items-center gap-2 sm:gap-3">
+          <div className="hidden text-right md:block">
+            <p className="section-eyebrow">Today</p>
+            <p className="text-sm font-medium text-foreground">{todayLabel}</p>
           </div>
-          <ChevronDown className="h-3 w-3 text-muted-foreground" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{user?.name}</p>
-              <p className="text-xs leading-none text-muted-foreground truncate">
-                {user?.email}
-              </p>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/settings')}>
-            <User className="mr-2 h-4 w-4" />
-            Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/settings')}>
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="text-destructive focus:text-destructive cursor-pointer"
-            onClick={handleSignOut}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign out
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+
+          <NotificationBell />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <button className="flex items-center gap-2 rounded-2xl border border-border/80 bg-card/80 px-2.5 py-2 outline-none transition-colors hover:bg-accent" />
+              }
+            >
+              <Avatar className="h-9 w-9">
+                <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? 'User'} />
+                <AvatarFallback className="bg-primary text-sm font-semibold text-primary-foreground">
+                  {getInitials(user?.name)}
+                </AvatarFallback>
+              </Avatar>
+
+              <div className="hidden min-w-0 text-left sm:block">
+                <p className="truncate text-sm font-medium text-foreground">
+                  {user?.name ?? 'User'}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {(user as { role?: string })?.role?.replace('_', ' ') ?? 'Member'}
+                </p>
+              </div>
+
+              <ChevronDown className="hidden h-3.5 w-3.5 text-muted-foreground sm:block" />
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user?.name}</p>
+                  <p className="truncate text-xs leading-none text-muted-foreground">
+                    {user?.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/settings')}>
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/settings')}>
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="cursor-pointer text-destructive focus:text-destructive"
+                onClick={handleSignOut}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
     </header>
   )
 }
@@ -149,9 +214,13 @@ export default function DashboardLayout({
   return (
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />
-      <SidebarInset className="flex flex-col min-h-screen overflow-hidden">
-        <TopHeader />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+      <SidebarInset className="min-h-screen overflow-hidden bg-transparent">
+        <div className="app-shell min-h-screen">
+          <TopHeader />
+          <main className="flex-1 overflow-auto px-4 pb-8 pt-6 sm:px-6">
+            <div className="mx-auto w-full max-w-[1480px]">{children}</div>
+          </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )

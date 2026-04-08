@@ -3,35 +3,33 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard,
-  Wallet,
-  Users,
-  FolderKanban,
   CheckSquare,
-  TrendingUp,
-  UsersRound,
-  Receipt,
+  FolderKanban,
+  LayoutDashboard,
   MessageSquare,
+  Receipt,
   Settings,
+  TrendingUp,
+  Users,
+  UsersRound,
+  Wallet,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
 } from '@/components/ui/sidebar'
 
 const navSections = [
   {
-    label: null,
-    items: [
-      { title: 'Dashboard', href: '/', icon: LayoutDashboard },
-    ],
+    label: 'Overview',
+    items: [{ title: 'Dashboard', href: '/', icon: LayoutDashboard }],
   },
   {
-    label: 'Work',
+    label: 'Delivery',
     items: [
       { title: 'Clients', href: '/clients', icon: Users },
       { title: 'Projects', href: '/projects', icon: FolderKanban },
@@ -40,7 +38,7 @@ const navSections = [
     ],
   },
   {
-    label: 'Business',
+    label: 'Operations',
     items: [
       { title: 'Finance', href: '/finance', icon: Wallet },
       { title: 'Team', href: '/team', icon: UsersRound },
@@ -48,7 +46,7 @@ const navSections = [
     ],
   },
   {
-    label: 'Tools',
+    label: 'Workspace',
     items: [
       { title: 'Templates', href: '/templates', icon: MessageSquare },
       { title: 'Settings', href: '/settings', icon: Settings },
@@ -60,15 +58,14 @@ export function SidebarNav() {
   const pathname = usePathname()
 
   return (
-    <div className="space-y-1">
-      {navSections.map((section, si) => (
-        <SidebarGroup key={si} className="p-0">
-          {section.label && (
-            <SidebarGroupLabel className="px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/35 group-data-[collapsible=icon]:hidden">
-              {section.label}
-            </SidebarGroupLabel>
-          )}
-          <SidebarMenu>
+    <div className="space-y-4">
+      {navSections.map((section) => (
+        <SidebarGroup key={section.label} className="p-0">
+          <SidebarGroupLabel className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-sidebar-foreground/38 group-data-[collapsible=icon]:hidden">
+            {section.label}
+          </SidebarGroupLabel>
+
+          <SidebarMenu className="gap-1.5">
             {section.items.map((item) => {
               const Icon = item.icon
               const isActive =
@@ -83,14 +80,31 @@ export function SidebarNav() {
                     isActive={isActive}
                     tooltip={item.title}
                     className={cn(
-                      'relative transition-all rounded-md h-9 text-sm',
+                      'relative h-11 rounded-2xl px-3 text-sm transition-all',
                       isActive
-                        ? 'bg-sidebar-accent text-sidebar-primary font-semibold before:absolute before:left-0 before:inset-y-1.5 before:w-0.5 before:rounded-full before:bg-sidebar-primary'
-                        : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/60'
+                        ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_22px_45px_-28px_rgba(255,255,255,0.3)]'
+                        : 'text-sidebar-foreground/68 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                     )}
                   >
-                    <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-sidebar-primary' : 'text-sidebar-foreground/50')} />
-                    <span>{item.title}</span>
+                    <span
+                      className={cn(
+                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors',
+                        isActive
+                          ? 'bg-sidebar-primary-foreground/10'
+                          : 'bg-sidebar-accent/80 text-sidebar-foreground'
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                    </span>
+
+                    <span className="font-medium">{item.title}</span>
+
+                    <span
+                      className={cn(
+                        'ml-auto h-2 w-2 rounded-full transition-opacity group-data-[collapsible=icon]:hidden',
+                        isActive ? 'bg-sidebar-primary-foreground opacity-100' : 'opacity-0'
+                      )}
+                    />
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )

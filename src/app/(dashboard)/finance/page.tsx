@@ -161,14 +161,17 @@ function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string;
   if (!account) return null
 
   const txns = [...account.transactions].sort((a, b) => a.date - b.date)
+  const rows = txns.reduce<Array<(typeof txns)[number] & { runningBalance: number }>>((acc, transaction) => {
+    const previousBalance = acc.at(-1)?.runningBalance ?? 0
+    const delta = transaction.type === 'INCOME' ? transaction.amount : -transaction.amount
 
-  let running = 0
-  const rows = txns.map((t) => {
-    const delta = t.type === 'INCOME' ? t.amount : -t.amount
-    running += delta
-    return { ...t, runningBalance: running }
-  })
-  rows.reverse()
+    acc.push({
+      ...transaction,
+      runningBalance: previousBalance + delta,
+    })
+
+    return acc
+  }, []).reverse()
 
   async function deleteTransaction(id: string) {
     if (!confirm('Delete this transaction? The bank balance will be reversed.')) return

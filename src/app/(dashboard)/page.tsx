@@ -3,74 +3,128 @@
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useQuery } from 'convex/react'
-import { api } from '@convex/_generated/api'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { formatDistanceToNow } from 'date-fns'
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import {
-  Users,
-  FolderKanban,
-  TrendingUp,
-  Wallet,
-  PlusCircle,
-  UserPlus,
-  CheckSquare,
-  Receipt,
-  ArrowRight,
   Activity,
   AlertTriangle,
+  ArrowRight,
+  CheckSquare,
+  FolderKanban,
+  PlusCircle,
+  Receipt,
+  TrendingUp,
+  UserPlus,
+  Users,
+  Wallet,
 } from 'lucide-react'
+import { api } from '@convex/_generated/api'
 import { StatsCard } from '@/components/dashboard/stats-card'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { formatDistanceToNow } from 'date-fns'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 const quickActions = [
-  { label: 'Add Lead', href: '/leads', icon: UserPlus, description: 'Track a new prospect', iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-600 dark:text-emerald-400' },
-  { label: 'Add Client', href: '/clients', icon: PlusCircle, description: 'Onboard a new client', iconBg: 'bg-blue-500/10', iconColor: 'text-blue-600 dark:text-blue-400' },
-  { label: 'Create Task', href: '/tasks', icon: CheckSquare, description: 'Add a task or to-do', iconBg: 'bg-violet-500/10', iconColor: 'text-violet-600 dark:text-violet-400' },
-  { label: 'Record Expense', href: '/finance', icon: Receipt, description: 'Log income or expense', iconBg: 'bg-amber-500/10', iconColor: 'text-amber-600 dark:text-amber-400' },
+  {
+    label: 'Add lead',
+    href: '/leads',
+    icon: UserPlus,
+    description: 'Capture a new opportunity and move it into the pipeline.',
+  },
+  {
+    label: 'Add client',
+    href: '/clients',
+    icon: PlusCircle,
+    description: 'Onboard a new account and start tracking delivery.',
+  },
+  {
+    label: 'Create task',
+    href: '/tasks',
+    icon: CheckSquare,
+    description: 'Assign work fast and keep the delivery board current.',
+  },
+  {
+    label: 'Record expense',
+    href: '/finance',
+    icon: Receipt,
+    description: 'Keep operating cashflow accurate in one place.',
+  },
 ]
 
+const currencyFormatter = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  maximumFractionDigits: 0,
+})
+
 function formatCurrency(amount: number): string {
-  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`
-  if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`
-  return `₹${amount.toLocaleString('en-IN')}`
+  return currencyFormatter.format(amount)
+}
+
+function formatCompactCurrency(amount: number): string {
+  if (amount >= 100000) return `Rs ${(amount / 100000).toFixed(1)}L`
+  if (amount >= 1000) return `Rs ${(amount / 1000).toFixed(1)}K`
+  return `Rs ${amount.toLocaleString('en-IN')}`
 }
 
 function getActionColor(action: string): string {
   const map: Record<string, string> = {
     CREATE: 'bg-emerald-500',
-    UPDATE: 'bg-primary',
+    UPDATE: 'bg-slate-900',
     DELETE: 'bg-destructive',
-    LOGIN: 'bg-violet-500',
+    LOGIN: 'bg-amber-500',
   }
+
   return map[action.toUpperCase()] ?? 'bg-muted-foreground'
+}
+
+function getPerformanceTone(value: number): {
+  chip: string
+  bar: string
+  label: string
+} {
+  if (value >= 100) {
+    return {
+      chip: 'tone-success',
+      bar: 'bg-emerald-500',
+      label: 'Ahead of baseline',
+    }
+  }
+
+  if (value >= 75) {
+    return {
+      chip: 'tone-warning',
+      bar: 'bg-amber-500',
+      label: 'Near baseline',
+    }
+  }
+
+  return {
+    chip: 'tone-danger',
+    bar: 'bg-destructive',
+    label: 'Needs attention',
+  }
 }
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-8">
-      <div><Skeleton className="h-8 w-48 mb-2" /><Skeleton className="h-4 w-64" /></div>
-      <div className="rounded-xl border bg-card p-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i}><Skeleton className="h-4 w-24 mb-2" /><Skeleton className="h-8 w-16" /></div>
+    <div className="space-y-6">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
+        <Skeleton className="h-[320px] rounded-[32px]" />
+        <Skeleton className="h-[320px] rounded-[32px]" />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} className="h-[170px] rounded-[28px]" />
         ))}
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 rounded-xl" />
-        ))}
-      </div>
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Skeleton className="lg:col-span-2 h-64 rounded-xl" />
-        <Skeleton className="h-40 rounded-xl" />
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
+        <Skeleton className="h-[320px] rounded-[32px]" />
+        <Skeleton className="h-[320px] rounded-[32px]" />
       </div>
     </div>
   )
@@ -89,110 +143,373 @@ export default function DashboardPage() {
 
   if (!stats) return <DashboardSkeleton />
 
+  const monthlyAverage =
+    stats.monthlyRevenueTrend.length > 0
+      ? Math.round(
+          stats.monthlyRevenueTrend.reduce((sum, item) => sum + item.income, 0) /
+            stats.monthlyRevenueTrend.length
+        )
+      : 0
+
+  const revenueBaseline = Math.max(monthlyAverage, 1)
+  const revenuePace = Math.round((stats.monthlyRevenue / revenueBaseline) * 100)
+  const revenueProgress = Math.max(8, Math.min(revenuePace, 100))
+  const revenueTone = getPerformanceTone(revenuePace)
+
+  const activePipeline = stats.openLeads + stats.activeProjects
+  const opsLoad = activePipeline + stats.pendingReimbursements + stats.overdueCount
+  const firstName = session?.user?.name?.split(' ')[0] ?? 'there'
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          {greeting},{' '}
-          <span className="text-primary">
-            {session?.user?.name?.split(' ')[0] ?? 'there'}
-          </span>{' '}
-          👋
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Here&apos;s what&apos;s happening at BLYFT today.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
+        <div className="surface-card hero-noise relative overflow-hidden bg-primary px-6 py-7 text-primary-foreground sm:px-8 sm:py-8">
+          <div className="absolute inset-0 opacity-40">
+            <div className="absolute -left-10 top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+            <div className="absolute right-0 top-0 h-52 w-52 rounded-full bg-white/8 blur-3xl" />
+          </div>
+
+          <div className="relative flex h-full flex-col gap-8">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-primary-foreground/55">
+                  Executive overview
+                </p>
+                <div className="space-y-2">
+                  <h1 className="max-w-2xl text-3xl font-semibold tracking-tight sm:text-[2.6rem]">
+                    {greeting}, {firstName}. Your agency control room is live.
+                  </h1>
+                  <p className="max-w-2xl text-sm leading-7 text-primary-foreground/70 sm:text-base">
+                    Monitor clients, pipeline, delivery, reimbursements, and revenue from a single operating view.
+                  </p>
+                </div>
+              </div>
+
+              <Badge className="border border-white/15 bg-white/10 text-primary-foreground shadow-none">
+                BLYFT workspace
+              </Badge>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              {[
+                {
+                  label: 'Live clients',
+                  value: stats.totalClients,
+                  note: 'Accounts actively retained',
+                },
+                {
+                  label: 'Delivery load',
+                  value: stats.activeProjects,
+                  note: 'Projects in motion or review',
+                },
+                {
+                  label: 'Open pipeline',
+                  value: stats.openLeads,
+                  note: 'Leads that still need closing',
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-[24px] border border-white/12 bg-white/6 px-4 py-4 backdrop-blur-sm"
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-primary-foreground/55">
+                    {item.label}
+                  </p>
+                  <p className="mt-3 text-3xl font-semibold tracking-tight">{item.value}</p>
+                  <p className="mt-2 text-sm text-primary-foreground/65">{item.note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <Card className="surface-card border-border/70 bg-card/96">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="section-eyebrow">Revenue pulse</p>
+                <CardTitle className="mt-2 text-2xl">This month</CardTitle>
+              </div>
+              <Badge className={cn('border-0 shadow-none', revenueTone.chip)}>
+                {revenueTone.label}
+              </Badge>
+            </div>
+            <CardDescription>
+              Compare current income with your rolling six-month baseline.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <p className="text-4xl font-semibold tracking-tight text-foreground">
+                {formatCurrency(stats.monthlyRevenue)}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Baseline {formatCurrency(monthlyAverage)} over the last 6 months
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                <span>Revenue attainment</span>
+                <span>{revenuePace}%</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn('h-full rounded-full transition-all', revenueTone.bar)}
+                  style={{ width: `${revenueProgress}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="surface-muted p-4">
+                <p className="section-eyebrow">Ops pressure</p>
+                <p className="mt-3 text-2xl font-semibold tracking-tight">{opsLoad}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Combined active work, approvals, and overdue follow-up.
+                </p>
+              </div>
+
+              <div className="surface-muted p-4">
+                <p className="section-eyebrow">Pending review</p>
+                <p className="mt-3 text-2xl font-semibold tracking-tight">{stats.pendingReimbursements}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Reimbursements waiting for approval right now.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatsCard title="Active Clients" value={stats.totalClients} subtitle="Currently active retainers" icon={Users} color="blue" />
-        <StatsCard title="Active Projects" value={stats.activeProjects} subtitle="In progress or review" icon={FolderKanban} color="violet" />
-        <StatsCard title="Open Leads" value={stats.openLeads} subtitle="Leads in pipeline" icon={TrendingUp} color="emerald" />
-        <StatsCard title="Monthly Revenue" value={formatCurrency(stats.monthlyRevenue)} subtitle="Income this month" icon={Wallet} color="amber" />
+        <StatsCard
+          title="Active clients"
+          value={stats.totalClients}
+          subtitle="Currently retained accounts"
+          icon={Users}
+          color="blue"
+        />
+        <StatsCard
+          title="Active projects"
+          value={stats.activeProjects}
+          subtitle="Delivery in progress or review"
+          icon={FolderKanban}
+          color="violet"
+        />
+        <StatsCard
+          title="Open leads"
+          value={stats.openLeads}
+          subtitle="Pipeline opportunities still alive"
+          icon={TrendingUp}
+          color="emerald"
+        />
+        <StatsCard
+          title="Monthly revenue"
+          value={formatCompactCurrency(stats.monthlyRevenue)}
+          subtitle="Income recorded this month"
+          icon={Wallet}
+          color="amber"
+        />
       </div>
 
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {quickActions.map((action) => {
-            const Icon = action.icon
-            return (
-              <Link key={action.href} href={action.href}>
-                <Card className="group cursor-pointer border-border hover:border-primary/30 hover:shadow-md transition-all duration-200">
-                  <CardContent className="flex items-center gap-3 p-4">
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${action.iconBg} transition-colors`}>
-                      <Icon className={`h-4 w-4 ${action.iconColor}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground leading-none">{action.label}</p>
-                      <p className="text-xs text-muted-foreground mt-1 truncate">{action.description}</p>
-                    </div>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
-                  </CardContent>
-                </Card>
-              </Link>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Revenue Chart */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">Revenue — Last 6 Months</CardTitle>
-          <CardDescription className="text-xs">Monthly income trend</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {(stats.monthlyRevenueTrend ?? []).every((m) => m.income === 0) ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <TrendingUp className="h-8 w-8 text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground">No income recorded yet</p>
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
+        <Card className="surface-card">
+          <CardHeader className="pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="section-eyebrow">Revenue tracker</p>
+                <CardTitle className="mt-2">Rolling 6-month income</CardTitle>
+              </div>
+              <Badge variant="outline" className="shadow-none">
+                Real-time
+              </Badge>
             </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={stats.monthlyRevenueTrend ?? []} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `₹${(v / 1000).toFixed(0)}k` : `₹${v}`} />
-                <Tooltip
-                  formatter={(value: number) => [`₹${value.toLocaleString('en-IN')}`, 'Income']}
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)' }}
-                />
-                <Bar dataKey="income" fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={48} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <div>
-              <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
-              <CardDescription className="text-xs">Latest actions across the workspace</CardDescription>
-            </div>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardDescription>
+              Keep a quick read on momentum without leaving the dashboard.
+            </CardDescription>
           </CardHeader>
+
           <CardContent>
-            {stats.recentActivity.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <Activity className="h-8 w-8 text-muted-foreground/40 mb-2" />
-                <p className="text-sm text-muted-foreground">No activity recorded yet</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">Activity will appear here as you use the CRM</p>
+            {stats.monthlyRevenueTrend.every((month) => month.income === 0) ? (
+              <div className="flex min-h-[220px] flex-col items-center justify-center text-center">
+                <TrendingUp className="mb-3 h-10 w-10 text-muted-foreground/35" />
+                <p className="text-sm font-medium text-foreground">No income recorded yet</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Revenue activity will start appearing here as transactions are added.
+                </p>
               </div>
             ) : (
-              <div className="space-y-1">
-                {stats.recentActivity.map((log) => (
-                  <div key={log.id} className="flex items-start gap-3 rounded-lg px-2 py-2.5 hover:bg-muted/50 transition-colors">
-                    <div className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ring-2 ring-offset-1 ring-offset-card ${getActionColor(log.action)}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground leading-tight">
-                        <span className="font-medium">{(log.user as { name?: string } | null)?.name ?? 'System'}</span>{' '}
-                        <span className="text-muted-foreground">{log.action.toLowerCase()}d a {log.entity.toLowerCase()}</span>
-                      </p>
-                      {log.details && <p className="text-xs text-muted-foreground truncate mt-0.5">{log.details}</p>}
+              <div className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={stats.monthlyRevenueTrend}
+                    margin={{ top: 6, right: 6, left: -24, bottom: 0 }}
+                  >
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
+                      tickFormatter={(value) => formatCompactCurrency(value)}
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(15, 23, 42, 0.05)' }}
+                      formatter={(value: number) => [formatCurrency(value), 'Income']}
+                      contentStyle={{
+                        borderRadius: 18,
+                        border: '1px solid var(--border)',
+                        background: 'var(--card)',
+                        boxShadow: '0 24px 60px -42px rgba(15, 23, 42, 0.35)',
+                      }}
+                    />
+                    <Bar dataKey="income" radius={[12, 12, 0, 0]} fill="var(--foreground)" maxBarSize={42} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="space-y-6">
+          <Card className="surface-card">
+            <CardHeader className="pb-3">
+              <p className="section-eyebrow">Quick actions</p>
+              <CardTitle className="mt-2">Move the business forward</CardTitle>
+              <CardDescription>
+                Jump straight into the tasks your team uses most.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-3">
+              {quickActions.map((action) => {
+                const Icon = action.icon
+
+                return (
+                  <Link key={action.href} href={action.href}>
+                    <div className="group flex items-center gap-3 rounded-[22px] border border-border/80 bg-card/70 px-4 py-4 transition-all hover:border-foreground/12 hover:bg-accent">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground">{action.label}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{action.description}</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
                     </div>
-                    <span className="text-xs text-muted-foreground/60 shrink-0 mt-0.5">
+                  </Link>
+                )
+              })}
+            </CardContent>
+          </Card>
+
+          <Card className="surface-card">
+            <CardHeader className="pb-3">
+              <p className="section-eyebrow">Attention queue</p>
+              <CardTitle className="mt-2">What needs you next</CardTitle>
+            </CardHeader>
+
+            <CardContent className="space-y-3">
+              {[
+                {
+                  label: 'Overdue tasks',
+                  value: stats.overdueCount,
+                  tone: stats.overdueCount > 0 ? 'tone-danger' : 'tone-neutral',
+                  helper: stats.overdueCount > 0 ? 'Delivery risk is building' : 'No overdue work',
+                },
+                {
+                  label: 'Pending reimbursements',
+                  value: stats.pendingReimbursements,
+                  tone: stats.pendingReimbursements > 0 ? 'tone-warning' : 'tone-neutral',
+                  helper:
+                    stats.pendingReimbursements > 0
+                      ? 'Approvals waiting for finance review'
+                      : 'Approval queue is clear',
+                },
+                {
+                  label: 'Live pipeline',
+                  value: activePipeline,
+                  tone: activePipeline > 0 ? 'tone-success' : 'tone-neutral',
+                  helper:
+                    activePipeline > 0
+                      ? 'Opportunities and delivery are active'
+                      : 'Pipeline is currently quiet',
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="surface-muted flex items-start justify-between gap-4 p-4"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{item.label}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{item.helper}</p>
+                  </div>
+                  <span className={cn('rounded-full px-3 py-1 text-sm font-semibold', item.tone)}>
+                    {item.value}
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
+        <Card className="surface-card">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="section-eyebrow">Activity log</p>
+                <CardTitle className="mt-2">Recent workspace activity</CardTitle>
+              </div>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <CardDescription>
+              See the latest movement across your agency in one timeline.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            {stats.recentActivity.length === 0 ? (
+              <div className="flex min-h-[240px] flex-col items-center justify-center text-center">
+                <Activity className="mb-3 h-10 w-10 text-muted-foreground/35" />
+                <p className="text-sm font-medium text-foreground">No activity recorded yet</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Activity will appear here as your team starts using the CRM.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {stats.recentActivity.map((log) => (
+                  <div
+                    key={log.id}
+                    className="surface-muted flex items-start gap-4 p-4 transition-colors hover:bg-accent"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-card">
+                      <span className={cn('h-2.5 w-2.5 rounded-full', getActionColor(log.action))} />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm leading-6 text-foreground">
+                        <span className="font-medium">
+                          {(log.user as { name?: string } | null)?.name ?? 'System'}
+                        </span>{' '}
+                        <span className="text-muted-foreground">
+                          {log.action.toLowerCase()}d a {log.entity.toLowerCase()}
+                        </span>
+                      </p>
+                      {log.details && (
+                        <p className="mt-1 text-sm text-muted-foreground">{log.details}</p>
+                      )}
+                    </div>
+
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
                     </span>
                   </div>
@@ -202,48 +519,75 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="surface-card">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold">Pending Approvals</CardTitle>
-            <CardDescription className="text-xs">Items awaiting your review</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Receipt className="h-4 w-4 text-amber-500" />
-                <span className="text-sm text-foreground">Reimbursements</span>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="section-eyebrow">Decision queue</p>
+                <CardTitle className="mt-2">Review and approvals</CardTitle>
               </div>
-              <Badge
-                variant={stats.pendingReimbursements > 0 ? 'default' : 'secondary'}
-                className={stats.pendingReimbursements > 0 ? 'bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 border-0' : ''}
-              >
-                {stats.pendingReimbursements}
-              </Badge>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </div>
-            {stats.pendingReimbursements > 0 && (
-              <Button size="sm" variant="outline" className="w-full text-xs h-8" render={<Link href="/reimbursements" />}>
-                Review now
-              </Button>
-            )}
-            {(stats.overdueCount ?? 0) > 0 && (
-              <>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-destructive" />
-                    <span className="text-sm text-foreground">Overdue Tasks</span>
+            <CardDescription>
+              Use this block as your fast review lane before switching sections.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            <div className="surface-muted p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/12 text-amber-700">
+                    <Receipt className="h-4 w-4" />
                   </div>
-                  <Badge variant="secondary" className="bg-destructive/15 text-destructive border-0">
-                    {stats.overdueCount}
-                  </Badge>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Reimbursement approvals</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {stats.pendingReimbursements > 0
+                        ? 'Finance review is waiting on you.'
+                        : 'No approvals waiting right now.'}
+                    </p>
+                  </div>
                 </div>
-                <Button size="sm" variant="outline" className="w-full text-xs h-8 border-destructive/30 text-destructive hover:text-destructive" render={<Link href="/tasks" />}>
-                  View overdue
+                <span className="text-2xl font-semibold tracking-tight">
+                  {stats.pendingReimbursements}
+                </span>
+              </div>
+
+              {stats.pendingReimbursements > 0 && (
+                <Button className="mt-4 w-full" render={<Link href="/reimbursements" />}>
+                  Review reimbursements
                 </Button>
-              </>
-            )}
+              )}
+            </div>
+
+            <div className="surface-muted p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Overdue tasks</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {stats.overdueCount > 0
+                        ? 'Delivery follow-up is at risk on active work.'
+                        : 'No overdue task alerts right now.'}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-2xl font-semibold tracking-tight">{stats.overdueCount}</span>
+              </div>
+
+              {stats.overdueCount > 0 && (
+                <Button variant="outline" className="mt-4 w-full" render={<Link href="/tasks" />}>
+                  Open task board
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
-      </div>
+      </section>
     </div>
   )
 }

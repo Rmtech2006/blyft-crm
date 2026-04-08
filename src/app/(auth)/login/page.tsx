@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, Mail, Lock } from 'lucide-react'
+import { Loader2, Lock, Mail } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { toast } from 'sonner'
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -34,6 +34,7 @@ export default function LoginPage() {
 
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true)
+
     try {
       const result = await signIn('credentials', {
         email: data.email,
@@ -55,79 +56,76 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[oklch(0.17_0_0)] p-8 shadow-2xl">
-      {/* Logo & Branding */}
-      <div className="mb-8 text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white">
-          <span className="text-lg font-black tracking-tighter text-black">B</span>
+    <div className="surface-card border-border/70 bg-white/92 p-8 sm:p-9">
+      <div className="mb-8 space-y-4">
+        <div className="inline-flex h-12 w-12 items-center justify-center rounded-[18px] bg-primary text-sm font-black tracking-[0.22em] text-primary-foreground">
+          B
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">
-          BLYFT <span className="text-white/50">CRM</span>
-        </h1>
-        <p className="mt-1.5 text-sm text-white/40">Sign in to your workspace</p>
+
+        <div className="space-y-2">
+          <p className="section-eyebrow">Sign in</p>
+          <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
+            Enter the BLYFT workspace
+          </h1>
+          <p className="text-sm leading-7 text-muted-foreground">
+            Use your internal credentials to open the CRM and continue managing agency operations.
+          </p>
+        </div>
       </div>
 
-      {/* Credentials Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="email" className="text-sm text-white/60">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-sm font-medium text-foreground">
             Email address
           </Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="email"
               type="email"
               placeholder="you@blyftit.com"
               autoComplete="email"
-              className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-white/30 focus-visible:border-white/30"
+              className="pl-10"
               {...register('email')}
             />
           </div>
-          {errors.email && (
-            <p className="text-xs text-red-400">{errors.email.message}</p>
-          )}
+          {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="password" className="text-sm text-white/60">
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-sm font-medium text-foreground">
             Password
           </Label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="password"
               type="password"
-              placeholder="••••••••"
+              placeholder="Enter your password"
               autoComplete="current-password"
-              className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-white/30 focus-visible:border-white/30"
+              className="pl-10"
               {...register('password')}
             />
           </div>
-          {errors.password && (
-            <p className="text-xs text-red-400">{errors.password.message}</p>
-          )}
+          {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
         </div>
 
-        <Button
-          type="submit"
-          className="w-full bg-white text-black hover:bg-white/90 font-semibold"
-          disabled={isLoading}
-        >
+        <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Signing in...
             </>
           ) : (
-            'Sign in'
+            'Sign in to CRM'
           )}
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-xs text-white/25">
-        BLYFT CRM — Internal use only
-      </p>
+      <div className="mt-8 flex items-center justify-between gap-4 text-xs text-muted-foreground">
+        <span>Internal access only</span>
+        <span>Secure session</span>
+      </div>
     </div>
   )
 }

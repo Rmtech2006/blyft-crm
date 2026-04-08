@@ -31,14 +31,6 @@ import Link from 'next/link'
 const statusColumns = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'] as const
 type TaskStatus = typeof statusColumns[number]
 
-const statusColors: Record<string, string> = {
-  TODO: 'bg-muted text-muted-foreground',
-  IN_PROGRESS: 'bg-primary/15 text-primary',
-  IN_REVIEW: 'bg-amber-500/15 text-amber-500',
-  DONE: 'bg-emerald-500/15 text-emerald-500',
-  BLOCKED: 'bg-destructive/15 text-destructive',
-}
-
 const priorityColors: Record<string, string> = {
   CRITICAL: 'bg-red-500 text-white',
   HIGH: 'bg-orange-500/15 text-orange-500',
