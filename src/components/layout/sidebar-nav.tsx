@@ -81,13 +81,13 @@ export function SidebarNav() {
                     isActive={isActive}
                     tooltip={item.title}
                     className={cn(
-                      'transition-colors rounded-md h-8 text-sm',
+                      'relative transition-all rounded-md h-9 text-sm',
                       isActive
-                        ? 'bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground font-medium'
-                        : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'
+                        ? 'bg-sidebar-accent text-sidebar-primary font-semibold before:absolute before:left-0 before:inset-y-1.5 before:w-0.5 before:rounded-full before:bg-sidebar-primary'
+                        : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/60'
                     )}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
+                    <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-sidebar-primary' : 'text-sidebar-foreground/50')} />
                     <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

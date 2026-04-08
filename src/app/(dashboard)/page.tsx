@@ -30,10 +30,10 @@ import { Badge } from '@/components/ui/badge'
 import { formatDistanceToNow } from 'date-fns'
 
 const quickActions = [
-  { label: 'Add Lead', href: '/leads', icon: UserPlus, description: 'Track a new prospect' },
-  { label: 'Add Client', href: '/clients', icon: PlusCircle, description: 'Onboard a new client' },
-  { label: 'Create Task', href: '/tasks', icon: CheckSquare, description: 'Add a task or to-do' },
-  { label: 'Record Expense', href: '/finance', icon: Receipt, description: 'Log income or expense' },
+  { label: 'Add Lead', href: '/leads', icon: UserPlus, description: 'Track a new prospect', iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-600 dark:text-emerald-400' },
+  { label: 'Add Client', href: '/clients', icon: PlusCircle, description: 'Onboard a new client', iconBg: 'bg-blue-500/10', iconColor: 'text-blue-600 dark:text-blue-400' },
+  { label: 'Create Task', href: '/tasks', icon: CheckSquare, description: 'Add a task or to-do', iconBg: 'bg-violet-500/10', iconColor: 'text-violet-600 dark:text-violet-400' },
+  { label: 'Record Expense', href: '/finance', icon: Receipt, description: 'Log income or expense', iconBg: 'bg-amber-500/10', iconColor: 'text-amber-600 dark:text-amber-400' },
 ]
 
 function formatCurrency(amount: number): string {
@@ -89,7 +89,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           {greeting},{' '}
           <span className="text-primary">
@@ -97,16 +97,16 @@ export default function DashboardPage() {
           </span>{' '}
           👋
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Here&apos;s what&apos;s happening at BLYFT today.
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        <StatsCard title="Active Clients" value={stats.totalClients} subtitle="Currently active retainers" icon={Users} />
-        <StatsCard title="Active Projects" value={stats.activeProjects} subtitle="In progress or review" icon={FolderKanban} />
-        <StatsCard title="Open Leads" value={stats.openLeads} subtitle="Leads in pipeline" icon={TrendingUp} />
-        <StatsCard title="Monthly Revenue" value={formatCurrency(stats.monthlyRevenue)} subtitle="Income this month" icon={Wallet} />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatsCard title="Active Clients" value={stats.totalClients} subtitle="Currently active retainers" icon={Users} color="blue" />
+        <StatsCard title="Active Projects" value={stats.activeProjects} subtitle="In progress or review" icon={FolderKanban} color="violet" />
+        <StatsCard title="Open Leads" value={stats.openLeads} subtitle="Leads in pipeline" icon={TrendingUp} color="emerald" />
+        <StatsCard title="Monthly Revenue" value={formatCurrency(stats.monthlyRevenue)} subtitle="Income this month" icon={Wallet} color="amber" />
       </div>
 
       <div>
@@ -116,16 +116,16 @@ export default function DashboardPage() {
             const Icon = action.icon
             return (
               <Link key={action.href} href={action.href}>
-                <Card className="group cursor-pointer border-border hover:border-foreground/30 hover:shadow-sm transition-all duration-200">
+                <Card className="group cursor-pointer border-border hover:border-primary/30 hover:shadow-md transition-all duration-200">
                   <CardContent className="flex items-center gap-3 p-4">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted group-hover:bg-foreground/10 transition-colors">
-                      <Icon className="h-4 w-4 text-foreground/60" />
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${action.iconBg} transition-colors`}>
+                      <Icon className={`h-4 w-4 ${action.iconColor}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground leading-none">{action.label}</p>
+                      <p className="text-sm font-semibold text-foreground leading-none">{action.label}</p>
                       <p className="text-xs text-muted-foreground mt-1 truncate">{action.description}</p>
                     </div>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:translate-x-0.5 transition-all shrink-0" />
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
                   </CardContent>
                 </Card>
               </Link>
@@ -154,7 +154,7 @@ export default function DashboardPage() {
               <div className="space-y-1">
                 {stats.recentActivity.map((log) => (
                   <div key={log.id} className="flex items-start gap-3 rounded-lg px-2 py-2.5 hover:bg-muted/50 transition-colors">
-                    <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${getActionColor(log.action)}`} />
+                    <div className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ring-2 ring-offset-1 ring-offset-card ${getActionColor(log.action)}`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-foreground leading-tight">
                         <span className="font-medium">{(log.user as { name?: string } | null)?.name ?? 'System'}</span>{' '}
