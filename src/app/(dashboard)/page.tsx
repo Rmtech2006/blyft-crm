@@ -9,12 +9,15 @@ import {
   Activity,
   AlertTriangle,
   ArrowRight,
+  Building2,
   CheckSquare,
   FolderKanban,
   PlusCircle,
   Receipt,
+  Target,
   TrendingUp,
   UserPlus,
+  UserRound,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -69,6 +72,13 @@ function formatCompactCurrency(amount: number): string {
   return `Rs ${amount.toLocaleString('en-IN')}`
 }
 
+function formatMonthLabel(monthKey: string): string {
+  return new Date(`${monthKey}-01T00:00:00`).toLocaleDateString('en-IN', {
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
 function getActionColor(action: string): string {
   const map: Record<string, string> = {
     CREATE: 'bg-emerald-500',
@@ -89,7 +99,7 @@ function getPerformanceTone(value: number): {
     return {
       chip: 'tone-success',
       bar: 'bg-emerald-500',
-      label: 'Ahead of baseline',
+      label: 'On track',
     }
   }
 
@@ -97,14 +107,14 @@ function getPerformanceTone(value: number): {
     return {
       chip: 'tone-warning',
       bar: 'bg-amber-500',
-      label: 'Near baseline',
+      label: 'Watch closely',
     }
   }
 
   return {
     chip: 'tone-danger',
     bar: 'bg-destructive',
-    label: 'Needs attention',
+    label: 'Off track',
   }
 }
 
@@ -153,8 +163,14 @@ export default function DashboardPage() {
 
   const revenueBaseline = Math.max(monthlyAverage, 1)
   const revenuePace = Math.round((stats.monthlyRevenue / revenueBaseline) * 100)
-  const revenueProgress = Math.max(8, Math.min(revenuePace, 100))
-  const revenueTone = getPerformanceTone(revenuePace)
+  const hasSalesTarget = Boolean(stats.salesTarget)
+  const targetProgressSource = stats.salesTarget?.progress ?? revenuePace
+  const revenueProgress = Math.max(8, Math.min(targetProgressSource, 100))
+  const revenueTone = getPerformanceTone(targetProgressSource)
+  const targetDelta = stats.salesTarget
+    ? stats.salesTarget.actualAmount - stats.salesTarget.targetAmount
+    : 0
+  const hasTargetTrend = stats.monthlyRevenueTrend.some((month) => month.target > 0)
 
   const activePipeline = stats.openLeads + stats.activeProjects
   const opsLoad = activePipeline + stats.pendingReimbursements + stats.overdueCount
@@ -235,7 +251,9 @@ export default function DashboardPage() {
               </Badge>
             </div>
             <CardDescription>
-              Compare current income with your rolling six-month baseline.
+              {hasSalesTarget
+                ? 'Compare actual revenue against the configured monthly target.'
+                : 'Compare current income with your rolling six-month baseline until a target is configured.'}
             </CardDescription>
           </CardHeader>
 
@@ -245,14 +263,16 @@ export default function DashboardPage() {
                 {formatCurrency(stats.monthlyRevenue)}
               </p>
               <p className="text-sm text-muted-foreground">
-                Baseline {formatCurrency(monthlyAverage)} over the last 6 months
+                {hasSalesTarget
+                  ? `Target ${formatCurrency(stats.salesTarget!.targetAmount)} for ${formatMonthLabel(stats.salesTarget!.monthKey)}`
+                  : `Baseline ${formatCurrency(monthlyAverage)} over the last 6 months`}
               </p>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                <span>Revenue attainment</span>
-                <span>{revenuePace}%</span>
+                <span>{hasSalesTarget ? 'Target attainment' : 'Revenue attainment'}</span>
+                <span>{targetProgressSource}%</span>
               </div>
               <div className="h-3 overflow-hidden rounded-full bg-muted">
                 <div
@@ -264,21 +284,41 @@ export default function DashboardPage() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="surface-muted p-4">
+                <p className="section-eyebrow">{hasSalesTarget ? (targetDelta >= 0 ? 'Ahead of target' : 'Remaining to target') : 'Baseline variance'}</p>
+                <p className="mt-3 text-2xl font-semibold tracking-tight">
+                  {hasSalesTarget ? formatCurrency(Math.abs(targetDelta)) : `${revenuePace}%`}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {hasSalesTarget
+                    ? targetDelta >= 0
+                      ? 'Revenue has moved past the configured monthly goal.'
+                      : 'This is what remains to hit the overall monthly target.'
+                    : 'Use Settings to switch from baseline mode to target tracking.'}
+                </p>
+              </div>
+
+              <div className="surface-muted p-4">
                 <p className="section-eyebrow">Ops pressure</p>
                 <p className="mt-3 text-2xl font-semibold tracking-tight">{opsLoad}</p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Combined active work, approvals, and overdue follow-up.
                 </p>
               </div>
-
-              <div className="surface-muted p-4">
-                <p className="section-eyebrow">Pending review</p>
-                <p className="mt-3 text-2xl font-semibold tracking-tight">{stats.pendingReimbursements}</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Reimbursements waiting for approval right now.
-                </p>
-              </div>
             </div>
+
+            {!hasSalesTarget && (
+              <div className="flex items-center justify-between gap-4 rounded-[22px] border border-dashed border-border/80 bg-muted/35 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Monthly sales target not configured</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Add an overall target in Settings to unlock PRD-aligned progress tracking.
+                  </p>
+                </div>
+                <Button variant="outline" className="shrink-0" render={<Link href="/settings" />}>
+                  Configure
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </section>
@@ -323,11 +363,11 @@ export default function DashboardPage() {
                 <CardTitle className="mt-2">Rolling 6-month income</CardTitle>
               </div>
               <Badge variant="outline" className="shadow-none">
-                Real-time
+                {hasTargetTrend ? 'Target + actual' : 'Actual only'}
               </Badge>
             </div>
             <CardDescription>
-              Keep a quick read on momentum without leaving the dashboard.
+              Keep a quick read on monthly performance and historical target coverage.
             </CardDescription>
           </CardHeader>
 
@@ -343,10 +383,10 @@ export default function DashboardPage() {
             ) : (
               <div className="h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={stats.monthlyRevenueTrend}
-                    margin={{ top: 6, right: 6, left: -24, bottom: 0 }}
-                  >
+                    <BarChart
+                      data={stats.monthlyRevenueTrend}
+                      margin={{ top: 6, right: 6, left: -24, bottom: 0 }}
+                    >
                     <XAxis
                       dataKey="month"
                       axisLine={false}
@@ -361,7 +401,10 @@ export default function DashboardPage() {
                     />
                     <Tooltip
                       cursor={{ fill: 'rgba(15, 23, 42, 0.05)' }}
-                      formatter={(value: number) => [formatCurrency(value), 'Income']}
+                      formatter={(value: number, name: string) => [
+                        formatCurrency(value),
+                        name === 'target' ? 'Target' : 'Income',
+                      ]}
                       contentStyle={{
                         borderRadius: 18,
                         border: '1px solid var(--border)',
@@ -369,6 +412,9 @@ export default function DashboardPage() {
                         boxShadow: '0 24px 60px -42px rgba(15, 23, 42, 0.35)',
                       }}
                     />
+                    {hasTargetTrend && (
+                      <Bar dataKey="target" radius={[12, 12, 0, 0]} fill="rgba(15, 23, 42, 0.22)" maxBarSize={42} />
+                    )}
                     <Bar dataKey="income" radius={[12, 12, 0, 0]} fill="var(--foreground)" maxBarSize={42} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -406,6 +452,86 @@ export default function DashboardPage() {
                   </Link>
                 )
               })}
+            </CardContent>
+          </Card>
+
+          <Card className="surface-card">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="section-eyebrow">Sales target board</p>
+                  <CardTitle className="mt-2">Department and owner progress</CardTitle>
+                </div>
+                <Target className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <CardDescription>
+                Track manual team and department target entries for the current month.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-3">
+              {stats.salesTargets.length === 0 ? (
+                <div className="rounded-[22px] border border-dashed border-border/80 bg-muted/35 px-4 py-5 text-center">
+                  <p className="text-sm font-medium text-foreground">No department or member targets yet</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Add department or team targets from Settings to see them here.
+                  </p>
+                  <Button variant="outline" className="mt-4" render={<Link href="/settings" />}>
+                    Manage targets
+                  </Button>
+                </div>
+              ) : (
+                stats.salesTargets.map((target) => {
+                  const tone = getPerformanceTone(target.progress)
+                  const Icon = target.scopeType === 'DEPARTMENT' ? Building2 : UserRound
+
+                  return (
+                    <div key={target.id} className="surface-muted p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-card">
+                              <Icon className="h-4 w-4 text-foreground" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-foreground">{target.label}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {target.scopeType === 'DEPARTMENT' ? 'Department target' : 'Member target'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+                            <div>
+                              <span className="block text-[11px] uppercase tracking-[0.2em]">Target</span>
+                              <span className="mt-1 block font-medium text-foreground">
+                                {formatCurrency(target.targetAmount)}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="block text-[11px] uppercase tracking-[0.2em]">Actual</span>
+                              <span className="mt-1 block font-medium text-foreground">
+                                {formatCurrency(target.actualAmount)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Badge className={cn('border-0 shadow-none', tone.chip)}>
+                          {target.progress}%
+                        </Badge>
+                      </div>
+
+                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={cn('h-full rounded-full transition-all', tone.bar)}
+                          style={{ width: `${Math.max(8, Math.min(target.progress, 100))}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })
+              )}
             </CardContent>
           </Card>
 

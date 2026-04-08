@@ -16,6 +16,7 @@ import type * as leads from "../leads.js";
 import type * as notifications from "../notifications.js";
 import type * as projects from "../projects.js";
 import type * as reimbursements from "../reimbursements.js";
+import type * as salesTargets from "../salesTargets.js";
 import type * as seed from "../seed.js";
 import type * as settings from "../settings.js";
 import type * as tasks from "../tasks.js";
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   notifications: typeof notifications;
   projects: typeof projects;
   reimbursements: typeof reimbursements;
+  salesTargets: typeof salesTargets;
   seed: typeof seed;
   settings: typeof settings;
   tasks: typeof tasks;

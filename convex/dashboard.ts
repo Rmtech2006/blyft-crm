@@ -1,59 +1,142 @@
 import { query } from "./_generated/server";
 
+function getMonthKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
 export const getStats = query({
   args: {},
   handler: async (ctx) => {
-    const [clients, projects, leads, transactions, activityLogs, reimbursements] = await Promise.all([
+    const nowDate = new Date();
+    const currentMonthKey = getMonthKey(nowDate);
+    const startOfMonth = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1).getTime();
+    const now = Date.now();
+
+    const [
+      clients,
+      projects,
+      leads,
+      incomeTransactions,
+      activityLogs,
+      reimbursements,
+      tasks,
+      currentMonthTargets,
+      overallTargets,
+    ] = await Promise.all([
       ctx.db.query("clients").collect(),
       ctx.db.query("projects").collect(),
       ctx.db.query("leads").collect(),
-      ctx.db.query("transactions").filter((q) => q.eq(q.field("type"), "INCOME")).collect(),
+      ctx.db.query("transactions").withIndex("by_type", (q) => q.eq("type", "INCOME")).collect(),
       ctx.db.query("activityLogs").order("desc").take(8),
-      ctx.db.query("reimbursements").filter((q) => q.eq(q.field("status"), "PENDING")).collect(),
+      ctx.db.query("reimbursements").withIndex("by_status", (q) => q.eq("status", "PENDING")).collect(),
+      ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "TODO")).collect(),
+      ctx.db.query("salesTargets").withIndex("by_monthKey", (q) => q.eq("monthKey", currentMonthKey)).collect(),
+      ctx.db.query("salesTargets").withIndex("by_scopeType_and_monthKey", (q) => q.eq("scopeType", "OVERALL")).collect(),
     ]);
 
-    const totalClients = clients.filter((c) => c.status === "ACTIVE").length;
-    const activeProjects = projects.filter((p) =>
-      ["IN_PROGRESS", "NOT_STARTED", "IN_REVIEW"].includes(p.status)
+    const additionalTasks = await Promise.all([
+      ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "IN_PROGRESS")).collect(),
+      ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "IN_REVIEW")).collect(),
+    ]);
+    const activeTasks = [...tasks, ...additionalTasks.flat()];
+
+    const totalClients = clients.filter((client) => client.status === "ACTIVE").length;
+    const activeProjects = projects.filter((project) =>
+      ["IN_PROGRESS", "NOT_STARTED", "IN_REVIEW"].includes(project.status)
     ).length;
-    const openLeads = leads.filter((l) => !["WON", "LOST"].includes(l.stage)).length;
+    const openLeads = leads.filter((lead) => !["WON", "LOST"].includes(lead.stage)).length;
+    const monthlyRevenue = incomeTransactions
+      .filter((transaction) => transaction.date >= startOfMonth)
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+    const overdueCount = activeTasks.filter((task) => task.dueDate && task.dueDate < now).length;
 
-    const nowDate = new Date();
-    const startOfMonth = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1).getTime();
-    const monthlyRevenue = transactions
-      .filter((t) => t.date >= startOfMonth)
-      .reduce((sum, t) => sum + t.amount, 0);
+    const memberIds = [
+      ...new Set(
+        currentMonthTargets.flatMap((target) => (target.teamMemberId ? [target.teamMemberId] : []))
+      ),
+    ];
+    const members = await Promise.all(memberIds.map((memberId) => ctx.db.get(memberId)));
+    const memberNameMap = new Map(
+      members.filter(Boolean).map((member) => [member!._id, member!.fullName])
+    );
 
-    const now = Date.now();
-    const overdueTasks = await ctx.db.query("tasks")
-      .filter((q) => q.and(
-        q.neq(q.field("status"), "DONE"),
-        q.neq(q.field("status"), "BLOCKED"),
-      ))
-      .collect();
-    const overdueCount = overdueTasks.filter((t) => t.dueDate && t.dueDate < now).length;
+    const overallTarget = currentMonthTargets.find((target) => target.scopeType === "OVERALL") ?? null;
 
-    // Monthly revenue for last 6 months
-    const allIncome = await ctx.db.query("transactions")
-      .filter((q) => q.eq(q.field("type"), "INCOME"))
-      .collect();
-    const monthlyRevenueTrend: { month: string; income: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(new Date().getFullYear(), new Date().getMonth() - i, 1);
-      const start = d.getTime();
-      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59).getTime();
-      const label = d.toLocaleString("en-IN", { month: "short" });
-      const income = allIncome.filter((t) => t.date >= start && t.date <= end).reduce((s, t) => s + t.amount, 0);
-      monthlyRevenueTrend.push({ month: label, income });
+    const overallTargetMap = new Map<string, { targetAmount: number; updatedAt: number }>();
+    for (const target of overallTargets) {
+      const existing = overallTargetMap.get(target.monthKey);
+      if (!existing || target.updatedAt >= existing.updatedAt) {
+        overallTargetMap.set(target.monthKey, {
+          targetAmount: target.targetAmount,
+          updatedAt: target.updatedAt,
+        });
+      }
     }
 
+    const monthlyRevenueTrend: { month: string; income: number; target: number }[] = [];
+    for (let index = 5; index >= 0; index -= 1) {
+      const date = new Date(nowDate.getFullYear(), nowDate.getMonth() - index, 1);
+      const monthKey = getMonthKey(date);
+      const start = date.getTime();
+      const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59).getTime();
+      const income = incomeTransactions
+        .filter((transaction) => transaction.date >= start && transaction.date <= end)
+        .reduce((sum, transaction) => sum + transaction.amount, 0);
+
+      monthlyRevenueTrend.push({
+        month: date.toLocaleString("en-IN", { month: "short" }),
+        income,
+        target: overallTargetMap.get(monthKey)?.targetAmount ?? 0,
+      });
+    }
+
+    const salesTargets = currentMonthTargets
+      .filter((target) => target.scopeType !== "OVERALL")
+      .map((target) => {
+        const actualAmount = target.actualAmount ?? 0;
+        const label =
+          target.scopeType === "DEPARTMENT"
+            ? target.department ?? "Department"
+            : memberNameMap.get(target.teamMemberId!) ?? "Team member";
+
+        return {
+          id: target._id,
+          scopeType: target.scopeType,
+          label,
+          targetAmount: target.targetAmount,
+          actualAmount,
+          progress: target.targetAmount > 0 ? Math.round((actualAmount / target.targetAmount) * 100) : 0,
+        };
+      })
+      .sort((a, b) => {
+        if (a.scopeType !== b.scopeType) {
+          return a.scopeType === "DEPARTMENT" ? -1 : 1;
+        }
+        return a.label.localeCompare(b.label);
+      });
+
     return {
+      currentMonthKey,
       totalClients,
       activeProjects,
       openLeads,
       monthlyRevenue,
       overdueCount,
       monthlyRevenueTrend,
+      salesTarget: overallTarget
+        ? {
+            id: overallTarget._id,
+            monthKey: overallTarget.monthKey,
+            label: "Overall business",
+            targetAmount: overallTarget.targetAmount,
+            actualAmount: monthlyRevenue,
+            progress:
+              overallTarget.targetAmount > 0
+                ? Math.round((monthlyRevenue / overallTarget.targetAmount) * 100)
+                : 0,
+          }
+        : null,
+      salesTargets,
       recentActivity: activityLogs.map((log) => ({
         ...log,
         id: log._id,

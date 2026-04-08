@@ -272,4 +272,23 @@ export default defineSchema({
     notifReimbursements: v.boolean(),
     notifProjectUpdates: v.boolean(),
   }).index("by_userId", ["userId"]),
+
+  salesTargets: defineTable({
+    monthKey: v.string(),
+    scopeType: v.union(
+      v.literal("OVERALL"),
+      v.literal("DEPARTMENT"),
+      v.literal("MEMBER")
+    ),
+    targetAmount: v.number(),
+    actualAmount: v.optional(v.number()),
+    department: v.optional(v.string()),
+    teamMemberId: v.optional(v.id("teamMembers")),
+    notes: v.optional(v.string()),
+    updatedAt: v.number(),
+  })
+    .index("by_monthKey", ["monthKey"])
+    .index("by_scopeType_and_monthKey", ["scopeType", "monthKey"])
+    .index("by_teamMemberId_and_monthKey", ["teamMemberId", "monthKey"])
+    .index("by_department_and_monthKey", ["department", "monthKey"]),
 });
