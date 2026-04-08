@@ -103,7 +103,7 @@ function TopHeader() {
 
       {/* User Menu */}
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="ghost" className="flex items-center gap-2 h-8 px-2 hover:bg-accent" />}>
+        <DropdownMenuTrigger render={<button className="flex items-center gap-2 h-8 px-2 rounded-lg hover:bg-accent transition-colors outline-none" />}>
           <Avatar className="h-7 w-7">
             <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? 'User'} />
             <AvatarFallback className="text-xs bg-blue-600 text-white">
