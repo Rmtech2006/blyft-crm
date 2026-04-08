@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { StatsCard } from '@/components/dashboard/stats-card'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Card,
   CardContent,
@@ -51,6 +52,28 @@ function getActionColor(action: string): string {
   return map[action.toUpperCase()] ?? 'bg-muted-foreground'
 }
 
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div><Skeleton className="h-8 w-48 mb-2" /><Skeleton className="h-4 w-64" /></div>
+      <div className="rounded-xl border bg-card p-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i}><Skeleton className="h-4 w-24 mb-2" /><Skeleton className="h-8 w-16" /></div>
+        ))}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-16 rounded-xl" />
+        ))}
+      </div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Skeleton className="lg:col-span-2 h-64 rounded-xl" />
+        <Skeleton className="h-40 rounded-xl" />
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const { data: session } = useSession()
   const stats = useQuery(api.dashboard.getStats)
@@ -62,7 +85,7 @@ export default function DashboardPage() {
     return 'Good evening'
   })()
 
-  if (!stats) return <div className="p-8 text-center text-muted-foreground">Loading…</div>
+  if (!stats) return <DashboardSkeleton />
 
   return (
     <div className="space-y-8">
@@ -149,58 +172,31 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">Pending Approvals</CardTitle>
-              <CardDescription className="text-xs">Items awaiting your review</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Receipt className="h-4 w-4 text-amber-500" />
-                  <span className="text-sm text-foreground">Reimbursements</span>
-                </div>
-                <Badge
-                  variant={stats.pendingReimbursements > 0 ? 'default' : 'secondary'}
-                  className={stats.pendingReimbursements > 0 ? 'bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 border-0' : ''}
-                >
-                  {stats.pendingReimbursements}
-                </Badge>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold">Pending Approvals</CardTitle>
+            <CardDescription className="text-xs">Items awaiting your review</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Receipt className="h-4 w-4 text-amber-500" />
+                <span className="text-sm text-foreground">Reimbursements</span>
               </div>
-              {stats.pendingReimbursements > 0 && (
-                <Button size="sm" variant="outline" className="w-full text-xs h-8" render={<Link href="/reimbursements" />}>
-                  Review now
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">Navigate</CardTitle>
-              <CardDescription className="text-xs">Jump to any module</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                {[
-                  { label: 'Finance', href: '/finance' },
-                  { label: 'Clients', href: '/clients' },
-                  { label: 'Projects', href: '/projects' },
-                  { label: 'Tasks', href: '/tasks' },
-                  { label: 'Leads', href: '/leads' },
-                  { label: 'Team', href: '/team' },
-                  { label: 'Templates', href: '/templates' },
-                ].map((item) => (
-                  <Link key={item.href} href={item.href} className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors group">
-                    <span>{item.label}</span>
-                    <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                  </Link>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <Badge
+                variant={stats.pendingReimbursements > 0 ? 'default' : 'secondary'}
+                className={stats.pendingReimbursements > 0 ? 'bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 border-0' : ''}
+              >
+                {stats.pendingReimbursements}
+              </Badge>
+            </div>
+            {stats.pendingReimbursements > 0 && (
+              <Button size="sm" variant="outline" className="w-full text-xs h-8" render={<Link href="/reimbursements" />}>
+                Review now
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

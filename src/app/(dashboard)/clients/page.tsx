@@ -7,9 +7,11 @@ import { api } from '@convex/_generated/api'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AddClientDialog } from '@/components/clients/add-client-dialog'
-import { Users, TrendingUp, Building2, ExternalLink } from 'lucide-react'
+import { Users, TrendingUp, Building2, ExternalLink, Search } from 'lucide-react'
+import { formatEnum } from '@/lib/utils'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
@@ -22,16 +24,37 @@ const statusColors: Record<string, string> = {
   PROSPECT: 'bg-violet-500/15 text-violet-500',
 }
 
+function ClientsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i}><CardContent className="p-4 flex items-center gap-3"><Skeleton className="h-8 w-8 rounded" /><div><Skeleton className="h-3 w-20 mb-1" /><Skeleton className="h-6 w-12" /></div></CardContent></Card>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Card key={i}><CardContent className="p-5"><Skeleton className="h-4 w-32 mb-2" /><Skeleton className="h-3 w-20 mb-4" /><Skeleton className="h-3 w-full mb-1" /><Skeleton className="h-3 w-3/4" /></CardContent></Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function ClientsPage() {
   const router = useRouter()
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [search, setSearch] = useState('')
 
-  const clients = useQuery(api.clients.list) ?? []
+  const clients = useQuery(api.clients.list)
+
+  if (clients === undefined) return <ClientsSkeleton />
 
   const filtered = clients.filter((c) => {
     const matchStatus = statusFilter === 'ALL' || c.status === statusFilter
-    const matchSearch = !search || c.companyName.toLowerCase().includes(search.toLowerCase()) || (c.industry ?? '').toLowerCase().includes(search.toLowerCase())
+    const matchSearch = !search ||
+      c.companyName.toLowerCase().includes(search.toLowerCase()) ||
+      (c.industry ?? '').toLowerCase().includes(search.toLowerCase())
     return matchStatus && matchSearch
   })
 
@@ -65,7 +88,15 @@ export default function ClientsPage() {
       </div>
 
       <div className="flex gap-3">
-        <Input placeholder="Search clients…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search clients…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8"
+          />
+        </div>
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? 'ALL')}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -78,19 +109,35 @@ export default function ClientsPage() {
         </Select>
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">No clients found. Add your first client!</div>
+      {clients.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-xl">
+          <Building2 className="h-10 w-10 text-muted-foreground/40 mb-3" />
+          <p className="text-sm font-medium text-muted-foreground">No clients yet</p>
+          <p className="text-xs text-muted-foreground/60 mb-4">Add your first client to get started</p>
+          <AddClientDialog />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed rounded-xl">
+          <Building2 className="h-8 w-8 text-muted-foreground/40 mb-3" />
+          <p className="text-sm text-muted-foreground">No clients match your filters</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((client) => (
-            <Card key={client.id} className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all" onClick={() => router.push(`/clients/${client.id}`)}>
+            <Card
+              key={client.id}
+              className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
+              onClick={() => router.push(`/clients/${client.id}`)}
+            >
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-sm truncate">{client.companyName}</h3>
                     {client.industry && <p className="text-xs text-muted-foreground">{client.industry}</p>}
                   </div>
-                  <Badge className={`text-xs border-0 ${statusColors[client.status] ?? ''}`}>{client.status}</Badge>
+                  <Badge className={`text-xs border-0 shrink-0 ml-2 ${statusColors[client.status] ?? ''}`}>
+                    {formatEnum(client.status)}
+                  </Badge>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">
                   {client.retainerAmount && (
@@ -109,8 +156,14 @@ export default function ClientsPage() {
                   </div>
                 </div>
                 {client.website && (
-                  <a href={client.website} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="mt-3 flex items-center gap-1 text-xs text-primary hover:underline">
-                    <ExternalLink className="h-3 w-3" />Website
+                  <a
+                    href={client.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-3 flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <ExternalLink className="h-3 w-3" /> Website
                   </a>
                 )}
               </CardContent>

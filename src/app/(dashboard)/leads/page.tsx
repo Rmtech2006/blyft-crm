@@ -6,11 +6,13 @@ import { api } from '@convex/_generated/api'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AddLeadDialog } from '@/components/leads/add-lead-dialog'
-import { Calendar, AlertCircle, Link2 } from 'lucide-react'
+import { Calendar, AlertCircle, Link2, TrendingUp } from 'lucide-react'
 import { toast } from 'sonner'
+import { formatEnum } from '@/lib/utils'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
@@ -37,17 +39,38 @@ const sourceColors: Record<string, string> = {
   OTHER: 'bg-muted text-muted-foreground',
 }
 
-const now = Date.now()
-
 function isOverdue(followUpDate?: number | null) {
-  return followUpDate && followUpDate < now
+  return followUpDate && followUpDate < Date.now()
+}
+
+function LeadsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Card key={i}><CardContent className="p-4"><Skeleton className="h-3 w-20 mb-2" /><Skeleton className="h-6 w-12" /></CardContent></Card>
+        ))}
+      </div>
+      <div className="flex gap-3 overflow-x-auto pb-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="min-w-[240px] flex-shrink-0 space-y-2">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-20 w-full rounded-lg" />
+            <Skeleton className="h-20 w-full rounded-lg" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export default function LeadsPage() {
   const router = useRouter()
-  const leads = useQuery(api.leads.list) ?? []
-  const overdueCount = leads.filter(l => !['WON', 'LOST'].includes(l.stage) && isOverdue(l.followUpDate)).length
+  const leads = useQuery(api.leads.list)
 
+  if (leads === undefined) return <LeadsSkeleton />
+
+  const overdueCount = leads.filter(l => !['WON', 'LOST'].includes(l.stage) && isOverdue(l.followUpDate)).length
   const pipelineValue = leads.filter((l) => !['WON', 'LOST'].includes(l.stage)).reduce((s, l) => s + (l.estimatedValue ?? 0), 0)
   const wonLeads = leads.filter((l) => l.stage === 'WON').length
 
@@ -95,82 +118,109 @@ export default function LeadsPage() {
         </TabsList>
 
         <TabsContent value="pipeline">
-          <div className="grid grid-cols-7 gap-2 overflow-x-auto min-w-0">
-            {stageOrder.map((stage) => {
-              const stageLeads = leads.filter((l) => l.stage === stage)
-              return (
-                <div key={stage} className="min-w-[160px]">
-                  <div className="mb-2">
-                    <Badge className={`text-[10px] border-0 ${stageColors[stage]}`}>{stage.replace('_', ' ')}</Badge>
-                    <span className="text-xs text-muted-foreground ml-1">({stageLeads.length})</span>
-                  </div>
-                  <div className="space-y-2">
-                    {stageLeads.map((lead) => (
-                      <Card key={lead.id} className="cursor-pointer hover:border-primary/40 shadow-none" onClick={() => router.push(`/leads/${lead.id}`)}>
-                        <CardContent className="p-3">
-                          <p className="text-xs font-medium leading-tight">{lead.name}</p>
-                          {lead.company && <p className="text-[10px] text-muted-foreground">{lead.company}</p>}
-                          {lead.estimatedValue && <p className="text-[10px] font-semibold text-emerald-500 mt-1">{formatINR(lead.estimatedValue)}</p>}
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <Badge className={`text-[10px] border-0 ${sourceColors[lead.source]}`}>{lead.source.replace('_', ' ')}</Badge>
-                          </div>
-                          {lead.followUpDate && (
-                            <div className="flex items-center gap-1 mt-1">
-                              {isOverdue(lead.followUpDate) && !['WON', 'LOST'].includes(lead.stage) ? (
-                                <AlertCircle className="h-3 w-3 text-destructive" />
-                              ) : (
-                                <Calendar className="h-3 w-3 text-muted-foreground" />
-                              )}
-                              <span className={`text-[10px] ${isOverdue(lead.followUpDate) && !['WON', 'LOST'].includes(lead.stage) ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                                {new Date(lead.followUpDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
-                              </span>
+          {leads.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-xl">
+              <TrendingUp className="h-10 w-10 text-muted-foreground/40 mb-3" />
+              <p className="text-sm font-medium text-muted-foreground">No leads yet</p>
+              <p className="text-xs text-muted-foreground/60 mb-4">Add your first lead to start tracking your pipeline</p>
+              <AddLeadDialog />
+            </div>
+          ) : (
+            <div className="flex gap-3 overflow-x-auto pb-3 -mx-1 px-1">
+              {stageOrder.map((stage) => {
+                const stageLeads = leads.filter((l) => l.stage === stage)
+                return (
+                  <div key={stage} className="min-w-[240px] flex-shrink-0">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <Badge className={`text-xs border-0 ${stageColors[stage]}`}>{formatEnum(stage)}</Badge>
+                      <span className="text-xs text-muted-foreground font-medium">{stageLeads.length}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {stageLeads.map((lead) => (
+                        <Card
+                          key={lead.id}
+                          className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all shadow-none"
+                          onClick={() => router.push(`/leads/${lead.id}`)}
+                        >
+                          <CardContent className="p-3">
+                            <p className="text-sm font-medium leading-tight">{lead.name}</p>
+                            {lead.company && <p className="text-xs text-muted-foreground mt-0.5">{lead.company}</p>}
+                            {lead.estimatedValue && (
+                              <p className="text-xs font-semibold text-emerald-500 mt-1.5">{formatINR(lead.estimatedValue)}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge className={`text-[10px] border-0 ${sourceColors[lead.source]}`}>{formatEnum(lead.source)}</Badge>
                             </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                    {stageLeads.length === 0 && (
-                      <div className="border-2 border-dashed rounded-lg p-3 text-center text-[10px] text-muted-foreground">Empty</div>
-                    )}
+                            {lead.followUpDate && (
+                              <div className="flex items-center gap-1 mt-1.5">
+                                {isOverdue(lead.followUpDate) && !['WON', 'LOST'].includes(lead.stage) ? (
+                                  <AlertCircle className="h-3 w-3 text-destructive" />
+                                ) : (
+                                  <Calendar className="h-3 w-3 text-muted-foreground" />
+                                )}
+                                <span className={`text-xs ${isOverdue(lead.followUpDate) && !['WON', 'LOST'].includes(lead.stage) ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                                  {new Date(lead.followUpDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                                </span>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                      {stageLeads.length === 0 && (
+                        <div className="border-2 border-dashed rounded-lg p-4 text-center text-xs text-muted-foreground/60">
+                          No leads
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="list">
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Stage</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Est. Value</TableHead>
-                  <TableHead>Follow-up</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {leads.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">No leads yet</TableCell></TableRow>
-                )}
-                {leads.map((lead) => (
-                  <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/leads/${lead.id}`)}>
-                    <TableCell className="font-medium text-sm">{lead.name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{lead.company ?? '—'}</TableCell>
-                    <TableCell><Badge className={`text-xs border-0 ${stageColors[lead.stage]}`}>{lead.stage.replace('_', ' ')}</Badge></TableCell>
-                    <TableCell><Badge className={`text-xs border-0 ${sourceColors[lead.source]}`}>{lead.source.replace('_', ' ')}</Badge></TableCell>
-                    <TableCell className="text-sm">{lead.estimatedValue ? formatINR(lead.estimatedValue) : '—'}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {lead.followUpDate ? new Date(lead.followUpDate).toLocaleDateString('en-IN') : '—'}
-                    </TableCell>
+          {leads.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-xl">
+              <TrendingUp className="h-10 w-10 text-muted-foreground/40 mb-3" />
+              <p className="text-sm font-medium text-muted-foreground">No leads yet</p>
+              <p className="text-xs text-muted-foreground/60 mb-4">Start tracking prospects and close more deals</p>
+              <AddLeadDialog />
+            </div>
+          ) : (
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Stage</TableHead>
+                    <TableHead>Source</TableHead>
+                    <TableHead>Est. Value</TableHead>
+                    <TableHead>Follow-up</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
+                </TableHeader>
+                <TableBody>
+                  {leads.map((lead) => (
+                    <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/leads/${lead.id}`)}>
+                      <TableCell className="font-medium text-sm">{lead.name}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{lead.company ?? '—'}</TableCell>
+                      <TableCell>
+                        <Badge className={`text-xs border-0 ${stageColors[lead.stage]}`}>{formatEnum(lead.stage)}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={`text-xs border-0 ${sourceColors[lead.source]}`}>{formatEnum(lead.source)}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{lead.estimatedValue ? formatINR(lead.estimatedValue) : '—'}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {lead.followUpDate ? new Date(lead.followUpDate).toLocaleDateString('en-IN') : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>
