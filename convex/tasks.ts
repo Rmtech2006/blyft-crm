@@ -31,12 +31,22 @@ export const get = query({
     const task = await ctx.db.get(args.id);
     if (!task) return null;
     const project = task.projectId ? await ctx.db.get(task.projectId) : null;
+    const subtasks = await ctx.db
+      .query("subtasks")
+      .withIndex("by_taskId", (q) => q.eq("taskId", args.id))
+      .collect();
+    const comments = await ctx.db
+      .query("taskComments")
+      .withIndex("by_taskId", (q) => q.eq("taskId", args.id))
+      .order("asc")
+      .collect();
     return {
       ...task,
       id: task._id,
       project: project ? { id: project._id, name: project.name } : null,
       assignee: task.assigneeId ? (USERS[task.assigneeId] ?? null) : null,
-      subtasks: [],
+      subtasks: subtasks.map((s) => ({ ...s, id: s._id })).sort((a, b) => a.order - b.order),
+      comments: comments.map((c) => ({ ...c, id: c._id, createdAt: c._creationTime })),
     };
   },
 });
@@ -117,5 +127,63 @@ export const listUsers = query({
   args: {},
   handler: async () => {
     return Object.values(USERS);
+  },
+});
+
+// ── Subtasks ──────────────────────────────────────────────────────────────────
+
+export const addSubtask = mutation({
+  args: { taskId: v.id("tasks"), title: v.string() },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("subtasks")
+      .withIndex("by_taskId", (q) => q.eq("taskId", args.taskId))
+      .collect();
+    return await ctx.db.insert("subtasks", {
+      taskId: args.taskId,
+      title: args.title,
+      completed: false,
+      order: existing.length,
+    });
+  },
+});
+
+export const toggleSubtask = mutation({
+  args: { id: v.id("subtasks"), completed: v.boolean() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, { completed: args.completed });
+  },
+});
+
+export const removeSubtask = mutation({
+  args: { id: v.id("subtasks") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});
+
+// ── Comments ──────────────────────────────────────────────────────────────────
+
+export const addComment = mutation({
+  args: {
+    taskId: v.id("tasks"),
+    content: v.string(),
+    authorId: v.string(),
+    authorName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("taskComments", {
+      taskId: args.taskId,
+      content: args.content,
+      authorId: args.authorId,
+      authorName: args.authorName,
+    });
+  },
+});
+
+export const removeComment = mutation({
+  args: { id: v.id("taskComments") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
   },
 });

@@ -239,4 +239,27 @@ export default defineSchema({
     read: v.boolean(),
     link: v.optional(v.string()),
   }).index("by_userId", ["userId"]),
+
+  subtasks: defineTable({
+    taskId: v.id("tasks"),
+    title: v.string(),
+    completed: v.boolean(),
+    order: v.number(),
+  }).index("by_taskId", ["taskId"]),
+
+  taskComments: defineTable({
+    taskId: v.id("tasks"),
+    content: v.string(),
+    authorId: v.string(),
+    authorName: v.string(),
+  }).index("by_taskId", ["taskId"]),
+
+  pettyCash: defineTable({
+    description: v.string(),
+    amount: v.number(),
+    type: v.union(v.literal("IN"), v.literal("OUT")),
+    date: v.number(),
+    category: v.string(),
+    addedBy: v.string(),
+  }),
 });

@@ -250,6 +250,177 @@ function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string;
   )
 }
 
+// ── Outstanding Payments Tab ──────────────────────────────────────────────────
+function OutstandingTab() {
+  const outstanding = useQuery(api.finance.getOutstanding) ?? []
+
+  if (outstanding.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed rounded-xl">
+        <TrendingUp className="h-10 w-10 text-muted-foreground/40 mb-3" />
+        <p className="text-sm font-medium text-muted-foreground">No outstanding payments</p>
+        <p className="text-xs text-muted-foreground/60 mt-1">Add active clients with retainer amounts to track receivables.</p>
+      </div>
+    )
+  }
+
+  const totalOutstanding = outstanding.reduce((s, c) => s + c.outstanding, 0)
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">{outstanding.length} client{outstanding.length !== 1 ? 's' : ''} with outstanding payments</p>
+        <div className="text-right">
+          <p className="text-xs text-muted-foreground">Total Outstanding</p>
+          <p className="text-xl font-bold text-destructive">{formatINR(totalOutstanding)}</p>
+        </div>
+      </div>
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Client</TableHead>
+              <TableHead className="text-right">Retainer/mo</TableHead>
+              <TableHead className="text-right">Received (this month)</TableHead>
+              <TableHead className="text-right">Outstanding</TableHead>
+              <TableHead>Last Payment</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {outstanding.map((c) => (
+              <TableRow key={c.id}>
+                <TableCell className="font-medium text-sm">{c.companyName}</TableCell>
+                <TableCell className="text-right text-sm text-muted-foreground">{formatINR(c.retainerAmount)}</TableCell>
+                <TableCell className="text-right text-sm text-emerald-500 font-medium">{formatINR(c.receivedThisMonth)}</TableCell>
+                <TableCell className="text-right">
+                  <span className="font-bold text-destructive text-sm">{formatINR(c.outstanding)}</span>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {c.lastPaymentDate
+                    ? `${formatDate(c.lastPaymentDate)} (${c.daysSincePayment}d ago)`
+                    : 'Never'}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
+  )
+}
+
+// ── Petty Cash Tab ────────────────────────────────────────────────────────────
+function PettyCashTab() {
+  const [form, setForm] = useState({ description: '', amount: '', type: 'OUT' as 'IN' | 'OUT', category: '', date: new Date().toISOString().slice(0, 10) })
+  const [loading, setLoading] = useState(false)
+  const entries = useQuery(api.finance.listPettyCash) ?? []
+  const addEntry = useMutation(api.finance.addPettyCash)
+  const removeEntry = useMutation(api.finance.removePettyCash)
+
+  const balance = entries.reduce((s, e) => e.type === 'IN' ? s + e.amount : s - e.amount, 0)
+
+  async function handleAdd(evt: React.FormEvent) {
+    evt.preventDefault()
+    if (!form.description || !form.amount || !form.category) { toast.error('Fill all fields'); return }
+    setLoading(true)
+    try {
+      await addEntry({ description: form.description, amount: parseFloat(form.amount), type: form.type, date: new Date(form.date).getTime(), category: form.category, addedBy: 'Admin' })
+      toast.success('Entry added')
+      setForm((f) => ({ ...f, description: '', amount: '', category: '' }))
+    } catch {
+      toast.error('Failed to add entry')
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">Track small cash movements separately from bank transactions</p>
+        <div className="text-right">
+          <p className="text-xs text-muted-foreground">Petty Cash Balance</p>
+          <p className={`text-xl font-bold ${balance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{formatINR(balance)}</p>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-3"><CardTitle className="text-sm">Add Entry</CardTitle></CardHeader>
+        <CardContent>
+          <form onSubmit={handleAdd} className="flex flex-wrap gap-2 items-end">
+            <div className="space-y-1">
+              <Label className="text-xs">Type</Label>
+              <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v as 'IN' | 'OUT' }))}>
+                <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="IN">Cash In</SelectItem>
+                  <SelectItem value="OUT">Cash Out</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1 flex-1 min-w-[150px]">
+              <Label className="text-xs">Description</Label>
+              <Input className="h-8 text-sm" placeholder="What for?" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+            </div>
+            <div className="space-y-1 w-28">
+              <Label className="text-xs">Amount (₹)</Label>
+              <Input className="h-8 text-sm" type="number" step="1" placeholder="0" value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} />
+            </div>
+            <div className="space-y-1 w-32">
+              <Label className="text-xs">Category</Label>
+              <Input className="h-8 text-sm" placeholder="Travel, Food…" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} />
+            </div>
+            <div className="space-y-1 w-36">
+              <Label className="text-xs">Date</Label>
+              <Input className="h-8 text-sm" type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
+            </div>
+            <Button type="submit" size="sm" className="h-8" disabled={loading}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> Add
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead className="text-right text-emerald-700">Cash In</TableHead>
+              <TableHead className="text-right text-destructive">Cash Out</TableHead>
+              <TableHead className="w-8" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {entries.length === 0 && (
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-10">No petty cash entries yet</TableCell></TableRow>
+            )}
+            {entries.map((e) => (
+              <TableRow key={e.id}>
+                <TableCell className="text-sm whitespace-nowrap">{formatDate(e.date)}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1.5">
+                    {e.type === 'IN' ? <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500 shrink-0" /> : <ArrowDownLeft className="h-3.5 w-3.5 text-red-500 shrink-0" />}
+                    <span className="text-sm font-medium">{e.description}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">{e.category}</TableCell>
+                <TableCell className="text-right font-medium text-emerald-500">{e.type === 'IN' ? formatINR(e.amount) : '—'}</TableCell>
+                <TableCell className="text-right font-medium text-destructive">{e.type === 'OUT' ? formatINR(e.amount) : '—'}</TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500" onClick={() => removeEntry({ id: e.id as Id<'pettyCash'> })}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
+  )
+}
+
 // ── Main Finance Page ─────────────────────────────────────────────────────────
 export default function FinancePage() {
   const [typeFilter, setTypeFilter] = useState('ALL')
@@ -336,7 +507,9 @@ export default function FinancePage() {
 
       <Tabs defaultValue="transactions">
         <TabsList>
-          <TabsTrigger value="transactions">All Transactions</TabsTrigger>
+          <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="outstanding">Outstanding</TabsTrigger>
+          <TabsTrigger value="petty">Petty Cash</TabsTrigger>
           <TabsTrigger value="bank">Bank Accounts</TabsTrigger>
         </TabsList>
 
@@ -404,6 +577,14 @@ export default function FinancePage() {
               </TableBody>
             </Table>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="outstanding">
+          <OutstandingTab />
+        </TabsContent>
+
+        <TabsContent value="petty">
+          <PettyCashTab />
         </TabsContent>
 
         <TabsContent value="bank" className="space-y-4">

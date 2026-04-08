@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import {
   Users,
   FolderKanban,
@@ -15,6 +16,7 @@ import {
   Receipt,
   ArrowRight,
   Activity,
+  AlertTriangle,
 } from 'lucide-react'
 import { StatsCard } from '@/components/dashboard/stats-card'
 import { Button } from '@/components/ui/button'
@@ -134,6 +136,34 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Revenue Chart */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">Revenue — Last 6 Months</CardTitle>
+          <CardDescription className="text-xs">Monthly income trend</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {(stats.monthlyRevenueTrend ?? []).every((m) => m.income === 0) ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <TrendingUp className="h-8 w-8 text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">No income recorded yet</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={stats.monthlyRevenueTrend ?? []} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `₹${(v / 1000).toFixed(0)}k` : `₹${v}`} />
+                <Tooltip
+                  formatter={(value: number) => [`₹${value.toLocaleString('en-IN')}`, 'Income']}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)' }}
+                />
+                <Bar dataKey="income" fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={48} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
@@ -194,6 +224,22 @@ export default function DashboardPage() {
               <Button size="sm" variant="outline" className="w-full text-xs h-8" render={<Link href="/reimbursements" />}>
                 Review now
               </Button>
+            )}
+            {(stats.overdueCount ?? 0) > 0 && (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                    <span className="text-sm text-foreground">Overdue Tasks</span>
+                  </div>
+                  <Badge variant="secondary" className="bg-destructive/15 text-destructive border-0">
+                    {stats.overdueCount}
+                  </Badge>
+                </div>
+                <Button size="sm" variant="outline" className="w-full text-xs h-8 border-destructive/30 text-destructive hover:text-destructive" render={<Link href="/tasks" />}>
+                  View overdue
+                </Button>
+              </>
             )}
           </CardContent>
         </Card>

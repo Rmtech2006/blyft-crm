@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AddProjectDialog } from '@/components/projects/add-project-dialog'
 import { FolderOpen, Clock, CheckCircle, PauseCircle, Calendar, Search } from 'lucide-react'
 import { formatEnum } from '@/lib/utils'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
@@ -138,55 +139,124 @@ export default function ProjectsPage() {
           <p className="text-xs text-muted-foreground/60 mb-4">Create your first project to start tracking work</p>
           <AddProjectDialog />
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed rounded-xl">
-          <FolderOpen className="h-8 w-8 text-muted-foreground/40 mb-3" />
-          <p className="text-sm text-muted-foreground">No projects match your filters</p>
-        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((project) => (
-            <Card
-              key={project.id}
-              className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
-              onClick={() => router.push(`/projects/${project.id}`)}
-            >
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-sm leading-tight flex-1 mr-2">{project.name}</h3>
-                  <Badge className={`text-xs border-0 shrink-0 ${statusColors[project.status] ?? ''}`}>
-                    {formatEnum(project.status)}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">{project.client.companyName}</p>
-                <div className="mb-3">
-                  <Badge className={`text-xs border-0 ${typeColors[project.type] ?? ''}`}>
-                    {formatEnum(project.type)}
-                  </Badge>
-                </div>
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  {project.deadline && (
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      <span>Due {new Date(project.deadline).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+        <Tabs defaultValue="grid">
+          <TabsList>
+            <TabsTrigger value="grid">Grid</TabsTrigger>
+            <TabsTrigger value="board">Board</TabsTrigger>
+          </TabsList>
+
+          {/* Grid view */}
+          <TabsContent value="grid">
+            {filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed rounded-xl">
+                <FolderOpen className="h-8 w-8 text-muted-foreground/40 mb-3" />
+                <p className="text-sm text-muted-foreground">No projects match your filters</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filtered.map((project) => (
+                  <ProjectCard key={project.id} project={project} onClick={() => router.push(`/projects/${project.id}`)} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Board / Kanban view */}
+          <TabsContent value="board">
+            <div className="flex gap-3 overflow-x-auto pb-3 -mx-1 px-1">
+              {(['NOT_STARTED', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'ON_HOLD'] as const).map((col) => {
+                const colProjects = filtered.filter((p) => p.status === col)
+                return (
+                  <div key={col} className="min-w-[240px] flex-shrink-0">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <Badge className={`text-xs border-0 ${statusColors[col]}`}>{formatEnum(col)}</Badge>
+                      <Badge variant="outline" className="text-xs h-5 px-1.5">{colProjects.length}</Badge>
                     </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span>Tasks</span>
-                    <span>{project.taskCount}</span>
+                    <div className="space-y-2">
+                      {colProjects.map((project) => (
+                        <Card
+                          key={project.id}
+                          className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all shadow-none"
+                          onClick={() => router.push(`/projects/${project.id}`)}
+                        >
+                          <CardContent className="p-3">
+                            <p className="text-sm font-medium leading-tight">{project.name}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{project.client.companyName}</p>
+                            <div className="flex items-center gap-1.5 mt-2">
+                              <Badge className={`text-[10px] border-0 ${typeColors[project.type] ?? ''}`}>
+                                {formatEnum(project.type)}
+                              </Badge>
+                            </div>
+                            {project.deadline && (
+                              <div className="flex items-center gap-1 mt-1.5">
+                                <Calendar className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(project.deadline).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                                </span>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                      {colProjects.length === 0 && (
+                        <div className="border-2 border-dashed rounded-lg p-4 text-center text-xs text-muted-foreground/60">
+                          No projects
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  {project.budgetAgreed && (
-                    <div className="flex justify-between">
-                      <span>Budget</span>
-                      <span className="font-medium text-foreground">{formatINR(project.budgetAgreed)}</span>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                )
+              })}
+            </div>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
+  )
+}
+
+type ProjectItem = {
+  id: string; name: string; status: string; type: string;
+  client: { companyName: string }; deadline?: number | null;
+  budgetAgreed?: number | null; taskCount: number;
+}
+
+function ProjectCard({ project, onClick }: { project: ProjectItem; onClick: () => void }) {
+  return (
+    <Card className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all" onClick={onClick}>
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between mb-2">
+          <h3 className="font-semibold text-sm leading-tight flex-1 mr-2">{project.name}</h3>
+          <Badge className={`text-xs border-0 shrink-0 ${statusColors[project.status] ?? ''}`}>
+            {formatEnum(project.status)}
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">{project.client.companyName}</p>
+        <div className="mb-3">
+          <Badge className={`text-xs border-0 ${typeColors[project.type] ?? ''}`}>
+            {formatEnum(project.type)}
+          </Badge>
+        </div>
+        <div className="space-y-1 text-xs text-muted-foreground">
+          {project.deadline && (
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              <span>Due {new Date(project.deadline).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <span>Tasks</span>
+            <span>{project.taskCount}</span>
+          </div>
+          {project.budgetAgreed && (
+            <div className="flex justify-between">
+              <span>Budget</span>
+              <span className="font-medium text-foreground">{formatINR(project.budgetAgreed)}</span>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

@@ -152,3 +152,99 @@ export const removeBankAccount = mutation({
     await ctx.db.patch(args.id, { isActive: false });
   },
 });
+
+// ── Financial Snapshot ────────────────────────────────────────────────────────
+
+export const getSnapshot = query({
+  args: {},
+  handler: async (ctx) => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
+    const transactions = await ctx.db.query("transactions").collect();
+
+    const monthIncome = transactions.filter((t) => t.type === "INCOME" && t.date >= startOfMonth).reduce((s, t) => s + t.amount, 0);
+    const monthExpense = transactions.filter((t) => t.type === "EXPENSE" && t.date >= startOfMonth).reduce((s, t) => s + t.amount, 0);
+    const ytdIncome = transactions.filter((t) => t.type === "INCOME" && t.date >= startOfYear).reduce((s, t) => s + t.amount, 0);
+    const ytdExpense = transactions.filter((t) => t.type === "EXPENSE" && t.date >= startOfYear).reduce((s, t) => s + t.amount, 0);
+
+    // Monthly revenue for last 6 months
+    const monthlyRevenue: { month: string; income: number; expense: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const start = d.getTime();
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59).getTime();
+      const label = d.toLocaleString("en-IN", { month: "short", year: "2-digit" });
+      const income = transactions.filter((t) => t.type === "INCOME" && t.date >= start && t.date <= end).reduce((s, t) => s + t.amount, 0);
+      const expense = transactions.filter((t) => t.type === "EXPENSE" && t.date >= start && t.date <= end).reduce((s, t) => s + t.amount, 0);
+      monthlyRevenue.push({ month: label, income, expense });
+    }
+
+    return { monthIncome, monthExpense, ytdIncome, ytdExpense, monthlyRevenue };
+  },
+});
+
+// ── Outstanding Payments ──────────────────────────────────────────────────────
+
+export const getOutstanding = query({
+  args: {},
+  handler: async (ctx) => {
+    const clients = await ctx.db.query("clients").filter((q) => q.eq(q.field("status"), "ACTIVE")).collect();
+    const transactions = await ctx.db.query("transactions").filter((q) => q.eq(q.field("type"), "INCOME")).collect();
+    const now = Date.now();
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+
+    return clients
+      .filter((c) => c.retainerAmount && c.retainerAmount > 0)
+      .map((c) => {
+        const clientTransactions = transactions.filter((t) => t.clientId === c._id);
+        const receivedThisMonth = clientTransactions.filter((t) => t.date >= startOfMonth).reduce((s, t) => s + t.amount, 0);
+        const totalReceived = clientTransactions.reduce((s, t) => s + t.amount, 0);
+        const outstanding = Math.max(0, (c.retainerAmount ?? 0) - receivedThisMonth);
+        const lastPayment = clientTransactions.sort((a, b) => b.date - a.date)[0];
+        const daysSincePayment = lastPayment ? Math.floor((now - lastPayment.date) / (1000 * 60 * 60 * 24)) : null;
+        return {
+          id: c._id,
+          companyName: c.companyName,
+          retainerAmount: c.retainerAmount ?? 0,
+          receivedThisMonth,
+          outstanding,
+          totalReceived,
+          daysSincePayment,
+          lastPaymentDate: lastPayment?.date ?? null,
+        };
+      })
+      .filter((c) => c.outstanding > 0);
+  },
+});
+
+// ── Petty Cash ────────────────────────────────────────────────────────────────
+
+export const listPettyCash = query({
+  args: {},
+  handler: async (ctx) => {
+    const entries = await ctx.db.query("pettyCash").order("desc").collect();
+    return entries.map((e) => ({ ...e, id: e._id }));
+  },
+});
+
+export const addPettyCash = mutation({
+  args: {
+    description: v.string(),
+    amount: v.number(),
+    type: v.union(v.literal("IN"), v.literal("OUT")),
+    date: v.number(),
+    category: v.string(),
+    addedBy: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("pettyCash", args);
+  },
+});
+
+export const removePettyCash = mutation({
+  args: { id: v.id("pettyCash") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});

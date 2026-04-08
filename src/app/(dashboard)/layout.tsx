@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
-import { Bell, LogOut, Settings, User, ChevronDown } from 'lucide-react'
+import { LogOut, Settings, User, ChevronDown } from 'lucide-react'
+import { NotificationBell } from '@/components/layout/notification-panel'
 import {
   Sidebar,
   SidebarContent,
@@ -87,16 +88,7 @@ function TopHeader() {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Notifications */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="relative h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg"
-        aria-label="Notifications"
-      >
-        <Bell className="h-4 w-4" />
-        <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
-      </Button>
+      <NotificationBell />
 
       {/* User Menu */}
       <DropdownMenu>

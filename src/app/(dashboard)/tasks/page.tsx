@@ -26,6 +26,7 @@ import { AddTaskDialog } from '@/components/tasks/add-task-dialog'
 import { Calendar, User, Trash2, CheckSquare, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatEnum } from '@/lib/utils'
+import Link from 'next/link'
 
 const statusColumns = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'] as const
 type TaskStatus = typeof statusColumns[number]
@@ -182,7 +183,9 @@ export default function TasksPage() {
                         <Card key={task.id} className="shadow-none border hover:border-primary/30 transition-colors group">
                           <CardContent className="p-3">
                             <div className="flex items-start justify-between gap-2">
-                              <p className="text-sm font-medium leading-snug flex-1">{task.title}</p>
+                              <Link href={`/tasks/${task.id}`} className="flex-1 min-w-0">
+                                <p className="text-sm font-medium leading-snug hover:text-primary transition-colors">{task.title}</p>
+                              </Link>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -252,7 +255,9 @@ export default function TasksPage() {
                 <TableBody>
                   {filtered.map((task) => (
                     <TableRow key={task.id}>
-                      <TableCell className="font-medium text-sm">{task.title}</TableCell>
+                      <TableCell className="font-medium text-sm">
+                        <Link href={`/tasks/${task.id}`} className="hover:text-primary transition-colors">{task.title}</Link>
+                      </TableCell>
                       <TableCell>
                         <Select value={task.status} onValueChange={(v) => handleUpdateStatus(task.id, v as TaskStatus)}>
                           <SelectTrigger className="h-7 w-36 text-xs"><SelectValue /></SelectTrigger>
