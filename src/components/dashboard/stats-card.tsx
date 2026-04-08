@@ -1,5 +1,4 @@
 import { type LucideIcon, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
 interface StatsTrendProps {
@@ -55,35 +54,26 @@ export function StatsCard({
   iconClassName,
 }: StatsCardProps) {
   return (
-    <Card className={cn('relative overflow-hidden border-border/60', className)}>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              {title}
-            </p>
-            <p className="text-2xl font-bold tracking-tight text-foreground">
-              {value}
-            </p>
-            <div className="mt-2 flex items-center gap-2 flex-wrap">
-              {trend && <TrendBadge trend={trend} />}
-              {subtitle && (
-                <p className="text-xs text-muted-foreground">{subtitle}</p>
-              )}
-            </div>
+    <div className={cn('flex flex-col gap-2 py-2 border-b border-border last:border-0', className)}>
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+          {title}
+        </p>
+        {Icon && (
+          <div className={cn('flex h-7 w-7 items-center justify-center rounded-md bg-muted', iconClassName)}>
+            <Icon className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
-          {Icon && (
-            <div
-              className={cn(
-                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10',
-                iconClassName
-              )}
-            >
-              <Icon className="h-4 w-4 text-primary" />
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        )}
+      </div>
+      <p className="text-3xl font-bold tracking-tight text-foreground leading-none">
+        {value}
+      </p>
+      <div className="flex items-center gap-2 flex-wrap min-h-[18px]">
+        {trend && <TrendBadge trend={trend} />}
+        {subtitle && (
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        )}
+      </div>
+    </div>
   )
 }
