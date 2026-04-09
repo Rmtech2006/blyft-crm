@@ -111,8 +111,16 @@ export default function SettingsPage() {
   const savedSettings = useQuery(api.settings.get, userId ? { userId } : 'skip')
   const teamMembersQuery = useQuery(api.team.list)
   const teamMembers = useMemo(() => teamMembersQuery ?? [], [teamMembersQuery])
+  const [activeTab, setActiveTab] = useState('profile')
   const [selectedMonth, setSelectedMonth] = useState(getMonthKey(new Date()))
-  const salesTargets = (useQuery(api.salesTargets.listForMonth, { monthKey: selectedMonth }) ?? []) as SalesTargetRecord[]
+  const salesTargetsQuery = useQuery(
+    api.salesTargets.listForMonth,
+    activeTab === 'sales-targets' ? { monthKey: selectedMonth } : 'skip'
+  )
+  const salesTargets = useMemo(
+    () => ((salesTargetsQuery ?? []) as SalesTargetRecord[]),
+    [salesTargetsQuery]
+  )
 
   const upsertSettings = useMutation(api.settings.upsert)
   const upsertSalesTarget = useMutation(api.salesTargets.upsert)
@@ -269,6 +277,7 @@ export default function SettingsPage() {
   const totalTargetValue = salesTargets.reduce((sum, target) => sum + target.targetAmount, 0)
   const totalActualValue = salesTargets.reduce((sum, target) => sum + (target.actualAmount ?? 0), 0)
   const currentScopeMeta = scopeMeta[scopeType]
+  const salesTargetsLoading = activeTab === 'sales-targets' && salesTargetsQuery === undefined
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -280,7 +289,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="profile">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="profile" className="gap-1.5">
             <User className="h-3.5 w-3.5" /> Profile
@@ -422,15 +431,21 @@ export default function SettingsPage() {
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="surface-muted p-4">
                     <p className="section-eyebrow">Configured targets</p>
-                    <p className="mt-3 text-2xl font-semibold tracking-tight">{configuredTargets}</p>
+                    <p className="mt-3 text-2xl font-semibold tracking-tight">
+                      {salesTargetsLoading ? '...' : configuredTargets}
+                    </p>
                   </div>
                   <div className="surface-muted p-4">
                     <p className="section-eyebrow">Target value</p>
-                    <p className="mt-3 text-2xl font-semibold tracking-tight">{formatCurrency(totalTargetValue)}</p>
+                    <p className="mt-3 text-2xl font-semibold tracking-tight">
+                      {salesTargetsLoading ? 'Loading...' : formatCurrency(totalTargetValue)}
+                    </p>
                   </div>
                   <div className="surface-muted p-4">
                     <p className="section-eyebrow">Manual actuals</p>
-                    <p className="mt-3 text-2xl font-semibold tracking-tight">{formatCurrency(totalActualValue)}</p>
+                    <p className="mt-3 text-2xl font-semibold tracking-tight">
+                      {salesTargetsLoading ? 'Loading...' : formatCurrency(totalActualValue)}
+                    </p>
                   </div>
                 </div>
 
@@ -559,7 +574,15 @@ export default function SettingsPage() {
               </CardHeader>
 
               <CardContent className="space-y-3">
-                {salesTargets.length === 0 ? (
+                {salesTargetsLoading ? (
+                  <div className="flex min-h-[280px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-border bg-muted/30 px-6 text-center">
+                    <Target className="mb-3 h-8 w-8 text-muted-foreground/40" />
+                    <p className="text-sm font-medium text-foreground">Loading target data</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Pulling the latest monthly target configuration from Convex.
+                    </p>
+                  </div>
+                ) : salesTargets.length === 0 ? (
                   <div className="flex min-h-[280px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-border bg-muted/30 px-6 text-center">
                     <Target className="mb-3 h-8 w-8 text-muted-foreground/40" />
                     <p className="text-sm font-medium text-foreground">No targets configured yet</p>

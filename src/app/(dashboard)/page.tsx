@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { useQuery } from 'convex/react'
 import { formatDistanceToNow } from 'date-fns'
@@ -27,6 +28,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { normalizeDashboardStats } from '@/lib/dashboard-stats'
 import { cn } from '@/lib/utils'
 
 const quickActions = [
@@ -142,7 +144,8 @@ function DashboardSkeleton() {
 
 export default function DashboardPage() {
   const { data: session } = useSession()
-  const stats = useQuery(api.dashboard.getStats)
+  const rawStats = useQuery(api.dashboard.getStats)
+  const { data: stats, isPartial } = useMemo(() => normalizeDashboardStats(rawStats), [rawStats])
 
   const greeting = (() => {
     const hour = new Date().getHours()
@@ -151,7 +154,7 @@ export default function DashboardPage() {
     return 'Good evening'
   })()
 
-  if (!stats) return <DashboardSkeleton />
+  if (!rawStats) return <DashboardSkeleton />
 
   const monthlyAverage =
     stats.monthlyRevenueTrend.length > 0
@@ -178,6 +181,18 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {isPartial && (
+        <div className="surface-muted flex items-start gap-3 border border-amber-200/70 bg-amber-50/80 px-4 py-4 text-sm text-amber-950">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+          <div className="space-y-1">
+            <p className="font-medium">Advanced dashboard blocks are in fallback mode.</p>
+            <p className="text-amber-900/80">
+              The frontend is ahead of the Convex backend right now. Run <span className="font-mono">npm run convex:sync</span> before the next Vercel rollout to restore the full sales-target view.
+            </p>
+          </div>
+        </div>
+      )}
+
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
         <div className="surface-card hero-noise relative overflow-hidden bg-primary px-6 py-7 text-primary-foreground sm:px-8 sm:py-8">
           <div className="absolute inset-0 opacity-40">

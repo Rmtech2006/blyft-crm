@@ -20,6 +20,30 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Convex Sync
+
+This CRM depends on Convex for live queries and mutations. If the frontend is deployed before the Convex backend is synced, newer dashboard screens can be ahead of the live query shape.
+
+Use these commands when shipping backend changes:
+
+```bash
+npm run convex:sync
+```
+
+That pushes the latest local Convex functions to the currently configured deployment.
+
+If you are moving from a dev Convex deployment to a real production deployment, use:
+
+```bash
+npm run convex:deploy
+```
+
+Recommended order for releases:
+
+1. Sync or deploy Convex.
+2. Verify key queries locally.
+3. Deploy the Next.js app to Vercel.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
