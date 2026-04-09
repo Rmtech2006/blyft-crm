@@ -343,92 +343,28 @@ export default function SettingsPage() {
   return (
     <div className="max-w-5xl space-y-6">
       <div>
-        <p className="section-eyebrow">Control center</p>
+        <p className="section-eyebrow">Preferences</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Settings</h1>
         <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-          Keep personal preferences separate from business controls so the CRM stays easier to manage.
+          Manage your profile, notification rules, and the monthly sales targets required by the CRM brief.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="surface-card">
-          <CardContent className="space-y-3 p-5">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-              <User className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="section-eyebrow">Personal workspace</p>
-              <p className="mt-2 text-lg font-semibold tracking-tight">Profile, alerts, and dashboard layout</p>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Everything that shapes how this CRM feels to you day to day.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="surface-card">
-          <CardContent className="space-y-3 p-5">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500 text-white">
-              <Target className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="section-eyebrow">Business controls</p>
-              <p className="mt-2 text-lg font-semibold tracking-tight">Sales targets and security posture</p>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                The operational settings that affect reporting, leadership visibility, and account safety.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="surface-card">
-          <CardContent className="space-y-3 p-5">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-card ring-1 ring-border">
-              <LayoutDashboard className="h-4 w-4 text-foreground" />
-            </div>
-            <div>
-              <p className="section-eyebrow">Current dashboard setup</p>
-              <p className="mt-2 text-lg font-semibold tracking-tight">
-                {visibleSectionCount} blocks, {pinnedActionCount} shortcuts
-              </p>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Your dashboard already has a personal shape. Refine it here without touching the business data layer.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="flex h-auto flex-wrap justify-start gap-2 bg-transparent p-0">
-          <TabsTrigger
-            value="profile"
-            className="gap-1.5 rounded-full border border-border bg-card px-4 py-2 data-[state=active]:border-foreground data-[state=active]:bg-foreground data-[state=active]:text-background"
-          >
+        <TabsList>
+          <TabsTrigger value="profile" className="gap-1.5">
             <User className="h-3.5 w-3.5" /> Profile
           </TabsTrigger>
-          <TabsTrigger
-            value="notifications"
-            className="gap-1.5 rounded-full border border-border bg-card px-4 py-2 data-[state=active]:border-foreground data-[state=active]:bg-foreground data-[state=active]:text-background"
-          >
+          <TabsTrigger value="notifications" className="gap-1.5">
             <Bell className="h-3.5 w-3.5" /> Notifications
           </TabsTrigger>
-          <TabsTrigger
-            value="dashboard"
-            className="gap-1.5 rounded-full border border-border bg-card px-4 py-2 data-[state=active]:border-foreground data-[state=active]:bg-foreground data-[state=active]:text-background"
-          >
+          <TabsTrigger value="dashboard" className="gap-1.5">
             <LayoutDashboard className="h-3.5 w-3.5" /> Dashboard
           </TabsTrigger>
-          <TabsTrigger
-            value="sales-targets"
-            className="gap-1.5 rounded-full border border-border bg-card px-4 py-2 data-[state=active]:border-foreground data-[state=active]:bg-foreground data-[state=active]:text-background"
-          >
+          <TabsTrigger value="sales-targets" className="gap-1.5">
             <Target className="h-3.5 w-3.5" /> Sales Targets
           </TabsTrigger>
-          <TabsTrigger
-            value="security"
-            className="gap-1.5 rounded-full border border-border bg-card px-4 py-2 data-[state=active]:border-foreground data-[state=active]:bg-foreground data-[state=active]:text-background"
-          >
+          <TabsTrigger value="security" className="gap-1.5">
             <Shield className="h-3.5 w-3.5" /> Security
           </TabsTrigger>
         </TabsList>

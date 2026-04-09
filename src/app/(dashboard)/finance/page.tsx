@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import { Id } from '@convex/_generated/dataModel'
@@ -15,20 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AddTransactionDialog } from '@/components/finance/add-transaction-dialog'
 import { ExportMenu } from '@/components/shared/export-menu'
-import {
-  AlertTriangle,
-  ArrowDownLeft,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUpRight,
-  Landmark,
-  Pencil,
-  Plus,
-  TrendingDown,
-  TrendingUp,
-  Trash2,
-  Wallet,
-} from 'lucide-react'
+import { TrendingUp, TrendingDown, Landmark, Trash2, Plus, Pencil, ArrowLeft, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { exportCsv, printReport } from '@/lib/export'
 
@@ -445,7 +432,6 @@ export default function FinancePage() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState('transactions')
 
   const transactions = useQuery(api.finance.listTransactions, {
     type: typeFilter !== 'ALL' ? (typeFilter as 'INCOME' | 'EXPENSE') : undefined,
@@ -454,9 +440,6 @@ export default function FinancePage() {
   }) ?? []
 
   const bankAccounts = useQuery(api.finance.listBankAccounts) ?? []
-  const snapshot = useQuery(api.finance.getSnapshot)
-  const outstanding = useQuery(api.finance.getOutstanding) ?? []
-  const pettyCashEntries = useQuery(api.finance.listPettyCash) ?? []
   const removeTransaction = useMutation(api.finance.removeTransaction)
   const removeBankAccount = useMutation(api.finance.removeBankAccount)
 
@@ -464,66 +447,6 @@ export default function FinancePage() {
   const expense = transactions.filter((t) => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
   const net = income - expense
   const totalBankBalance = bankAccounts.reduce((s, a) => s + a.balance, 0)
-  const pettyCashBalance = pettyCashEntries.reduce(
-    (sum, entry) => (entry.type === 'IN' ? sum + entry.amount : sum - entry.amount),
-    0
-  )
-  const outstandingTotal = outstanding.reduce((sum, client) => sum + client.outstanding, 0)
-  const monthIncome = snapshot?.monthIncome ?? income
-  const monthExpense = snapshot?.monthExpense ?? expense
-  const monthNet = monthIncome - monthExpense
-  const financeFocusCount = [
-    outstandingTotal > 0,
-    pettyCashBalance < 0,
-    monthNet < 0,
-  ].filter(Boolean).length
-  const financeFocusCards = useMemo(
-    () => [
-      {
-        label: 'Receivables',
-        value: formatINR(outstandingTotal),
-        helper:
-          outstandingTotal > 0
-            ? `${outstanding.length} client${outstanding.length === 1 ? '' : 's'} still have unpaid retainer value this month.`
-            : 'No unpaid retainers are visible in the current cycle.',
-        action: 'Review outstanding',
-        onClick: () => setActiveTab('outstanding'),
-        icon: AlertTriangle,
-        tone:
-          outstandingTotal > 0
-            ? 'border-destructive/25 bg-destructive/5 text-destructive'
-            : 'border-emerald-300/80 bg-emerald-50 text-emerald-700',
-      },
-      {
-        label: 'Petty cash',
-        value: formatINR(pettyCashBalance),
-        helper:
-          pettyCashBalance < 0
-            ? 'Cash on hand is negative. Reconcile entries or replenish the float.'
-            : 'Small cash movement is within a healthy range right now.',
-        action: 'Open petty cash',
-        onClick: () => setActiveTab('petty'),
-        icon: Wallet,
-        tone:
-          pettyCashBalance < 0
-            ? 'border-amber-300/80 bg-amber-50 text-amber-700'
-            : 'border-border/80 bg-card/80 text-foreground',
-      },
-      {
-        label: 'Bank desk',
-        value: String(bankAccounts.length),
-        helper:
-          bankAccounts.length > 0
-            ? `${bankAccounts.length} active account${bankAccounts.length === 1 ? '' : 's'} ready for reconciliation and statement review.`
-            : 'No bank accounts are connected yet. Add one to track balances cleanly.',
-        action: 'Open bank accounts',
-        onClick: () => setActiveTab('bank'),
-        icon: Landmark,
-        tone: 'border-border/80 bg-card/80 text-foreground',
-      },
-    ],
-    [bankAccounts.length, outstandingTotal, outstanding.length, pettyCashBalance]
-  )
 
   function handleCsvExport() {
     exportCsv('finance-transactions.csv', transactions, [
@@ -592,128 +515,35 @@ export default function FinancePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="section-eyebrow">Business controls</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Finance</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-            Run payments, receivables, petty cash, and bank visibility from one operating desk.
-          </p>
-        </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Finance</h1>
         <div className="flex gap-2">
           <ExportMenu onCsv={handleCsvExport} onPdf={handlePdfExport} />
           <AddTransactionDialog />
         </div>
       </div>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,0.95fr))]">
-        <Card className="surface-card">
-          <CardHeader className="pb-3">
-            <p className="section-eyebrow">Finance desk</p>
-            <CardTitle className="mt-2 text-[1.8rem]">Today&apos;s money workflow</CardTitle>
-            <p className="text-sm leading-7 text-muted-foreground">
-              Start with collections and cash confidence, then drop into the tab that needs action.
-            </p>
-          </CardHeader>
-
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="text-4xl font-semibold tracking-tight">
-                  {financeFocusCount === 0 ? 'Clear' : financeFocusCount}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {financeFocusCount === 0
-                    ? 'No finance alerts are currently escalating. Use this desk to stay ahead of reconciliation.'
-                    : `${financeFocusCount} finance lane${financeFocusCount === 1 ? ' is' : 's are'} asking for attention today.`}
-                </p>
-              </div>
-
-              <div className="rounded-[20px] border border-border/80 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-                <p className="font-medium text-foreground">This month net: {formatINR(monthNet)}</p>
-                <p className="mt-1">Income {formatINR(monthIncome)} vs expense {formatINR(monthExpense)}.</p>
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="surface-muted p-4">
-                <p className="section-eyebrow">Bank coverage</p>
-                <p className={`mt-3 text-2xl font-semibold tracking-tight ${totalBankBalance >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-                  {formatINR(totalBankBalance)}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Combined live balance across tracked accounts.
-                </p>
-              </div>
-
-              <div className="surface-muted p-4">
-                <p className="section-eyebrow">Outstanding this month</p>
-                <p className={`mt-3 text-2xl font-semibold tracking-tight ${outstandingTotal > 0 ? 'text-destructive' : 'text-foreground'}`}>
-                  {formatINR(outstandingTotal)}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Retainer revenue still left to collect from active clients.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {financeFocusCards.map((item) => {
-          const Icon = item.icon
-
-          return (
-            <Card key={item.label} className="surface-card">
-              <CardContent className="flex h-full flex-col gap-5 p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${item.tone}`}>
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <Button variant="ghost" size="sm" className="h-8 px-2" onClick={item.onClick}>
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="section-eyebrow">{item.label}</p>
-                  <p className="text-3xl font-semibold tracking-tight">{item.value}</p>
-                  <p className="text-sm leading-6 text-muted-foreground">{item.helper}</p>
-                </div>
-
-                <Button variant="outline" className="mt-auto w-full" onClick={item.onClick}>
-                  {item.action}
-                </Button>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </section>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-green-500" /> This Month Income
+              <TrendingUp className="h-4 w-4 text-green-500" /> Total Income
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-emerald-500">{formatINR(monthIncome)}</p>
-          </CardContent>
+          <CardContent><p className="text-2xl font-bold text-emerald-500">{formatINR(income)}</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingDown className="h-4 w-4 text-red-500" /> This Month Expense
+              <TrendingDown className="h-4 w-4 text-red-500" /> Total Expenses
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-destructive">{formatINR(monthExpense)}</p>
-          </CardContent>
+          <CardContent><p className="text-2xl font-bold text-destructive">{formatINR(expense)}</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" /> Filtered Net
+              <TrendingUp className="h-4 w-4 text-primary" /> Net Profit
             </CardTitle>
           </CardHeader>
           <CardContent><p className={`text-2xl font-bold ${net >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{formatINR(net)}</p></CardContent>
@@ -728,7 +558,7 @@ export default function FinancePage() {
         </Card>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="transactions">
         <TabsList>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="outstanding">Outstanding</TabsTrigger>
