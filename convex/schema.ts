@@ -8,13 +8,27 @@ export default defineSchema({
     gstNumber: v.optional(v.string()),
     website: v.optional(v.string()),
     address: v.optional(v.string()),
-    status: v.union(v.literal("ACTIVE"), v.literal("PAUSED"), v.literal("COMPLETED"), v.literal("PROSPECT")),
+    status: v.union(
+      v.literal("ACTIVE"),
+      v.literal("PAUSED"),
+      v.literal("COMPLETED"),
+      v.literal("PROSPECT"),
+      v.literal("ONBOARDING")
+    ),
     retainerAmount: v.optional(v.number()),
     paymentTerms: v.optional(v.string()),
     contractFile: v.optional(v.string()),
     startDate: v.optional(v.number()),
     retainerEndDate: v.optional(v.number()),
     healthScore: v.optional(v.number()),
+    // Onboarding checklist (PDF stages 5–8)
+    contractSigned: v.optional(v.boolean()),
+    invoicePaid: v.optional(v.boolean()),
+    onboardingFormSubmitted: v.optional(v.boolean()),
+    accessGranted: v.optional(v.boolean()),
+    kickoffDone: v.optional(v.boolean()),
+    firstDeliverableSent: v.optional(v.boolean()),
+    onboardingManager: v.optional(v.string()),
   }).index("by_status", ["status"]),
 
   clientContacts: defineTable({
@@ -97,8 +111,13 @@ export default defineSchema({
       v.literal("COLD_EMAIL"), v.literal("EVENT"), v.literal("WEBSITE"), v.literal("OTHER")
     ),
     stage: v.union(
-      v.literal("NEW_LEAD"), v.literal("CONTACTED"), v.literal("DISCOVERY"),
-      v.literal("PROPOSAL_SENT"), v.literal("NEGOTIATION"), v.literal("WON"), v.literal("LOST")
+      v.literal("LEAD_CAPTURED"),
+      v.literal("QUALIFICATION_SUBMITTED"),
+      v.literal("STRATEGY_CALL"),
+      v.literal("PROPOSAL_SENT"),
+      v.literal("PROPOSAL_ACCEPTED"),
+      v.literal("NURTURE"),
+      v.literal("LOST")
     ),
     contactName: v.optional(v.string()),
     whatsapp: v.optional(v.string()),
@@ -109,6 +128,12 @@ export default defineSchema({
     lostReason: v.optional(v.string()),
     convertedClientId: v.optional(v.id("clients")),
     ownerId: v.optional(v.string()),
+    // Qualification form fields (Stage 2 in PDF)
+    goals: v.optional(v.string()),
+    budget: v.optional(v.string()),
+    servicesRequired: v.optional(v.string()),
+    timeline: v.optional(v.string()),
+    qualificationSubmittedAt: v.optional(v.number()),
   }).index("by_stage", ["stage"]),
 
   leadNotes: defineTable({

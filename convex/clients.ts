@@ -67,7 +67,7 @@ export const create = mutation({
     website: v.optional(v.string()),
     address: v.optional(v.string()),
     status: v.optional(v.union(
-      v.literal("ACTIVE"), v.literal("PAUSED"), v.literal("COMPLETED"), v.literal("PROSPECT")
+      v.literal("ACTIVE"), v.literal("PAUSED"), v.literal("COMPLETED"), v.literal("PROSPECT"), v.literal("ONBOARDING")
     )),
     retainerAmount: v.optional(v.number()),
     paymentTerms: v.optional(v.string()),
@@ -97,17 +97,38 @@ export const update = mutation({
     website: v.optional(v.string()),
     address: v.optional(v.string()),
     status: v.optional(v.union(
-      v.literal("ACTIVE"), v.literal("PAUSED"), v.literal("COMPLETED"), v.literal("PROSPECT")
+      v.literal("ACTIVE"), v.literal("PAUSED"), v.literal("COMPLETED"), v.literal("PROSPECT"), v.literal("ONBOARDING")
     )),
     retainerAmount: v.optional(v.number()),
     paymentTerms: v.optional(v.string()),
     startDate: v.optional(v.number()),
     retainerEndDate: v.optional(v.number()),
     healthScore: v.optional(v.number()),
+    contractSigned: v.optional(v.boolean()),
+    invoicePaid: v.optional(v.boolean()),
+    onboardingFormSubmitted: v.optional(v.boolean()),
+    accessGranted: v.optional(v.boolean()),
+    kickoffDone: v.optional(v.boolean()),
+    firstDeliverableSent: v.optional(v.boolean()),
+    onboardingManager: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { id, ...rest } = args;
     await ctx.db.patch(id, rest);
+    // Auto-promote to ACTIVE once onboarding fully complete
+    const updated = await ctx.db.get(id);
+    if (
+      updated &&
+      updated.status === "ONBOARDING" &&
+      updated.contractSigned &&
+      updated.invoicePaid &&
+      updated.onboardingFormSubmitted &&
+      updated.accessGranted &&
+      updated.kickoffDone &&
+      updated.firstDeliverableSent
+    ) {
+      await ctx.db.patch(id, { status: "ACTIVE" });
+    }
   },
 });
 

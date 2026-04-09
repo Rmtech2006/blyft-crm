@@ -44,7 +44,7 @@ export const getStats = query({
     const activeProjects = projects.filter((project) =>
       ["IN_PROGRESS", "NOT_STARTED", "IN_REVIEW"].includes(project.status)
     ).length;
-    const openLeads = leads.filter((lead) => !["WON", "LOST"].includes(lead.stage)).length;
+    const openLeads = leads.filter((lead) => !["PROPOSAL_ACCEPTED", "LOST"].includes(lead.stage)).length;
     const monthlyRevenue = incomeTransactions
       .filter((transaction) => transaction.date >= startOfMonth)
       .reduce((sum, transaction) => sum + transaction.amount, 0);

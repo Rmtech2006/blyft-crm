@@ -19,7 +19,11 @@ const schema = z.object({
   company: z.string().optional(),
   industry: z.string().optional(),
   source: z.enum(['INSTAGRAM', 'REFERRAL', 'LINKEDIN', 'COLD_EMAIL', 'EVENT', 'WEBSITE', 'OTHER']),
-  stage: z.enum(['NEW_LEAD', 'CONTACTED', 'DISCOVERY', 'PROPOSAL_SENT', 'NEGOTIATION', 'WON', 'LOST']),
+  stage: z.enum(['LEAD_CAPTURED', 'QUALIFICATION_SUBMITTED', 'STRATEGY_CALL', 'PROPOSAL_SENT', 'PROPOSAL_ACCEPTED', 'NURTURE', 'LOST']),
+  goals: z.string().optional(),
+  budget: z.string().optional(),
+  servicesRequired: z.string().optional(),
+  timeline: z.string().optional(),
   contactName: z.string().optional(),
   whatsapp: z.string().optional(),
   email: z.string().optional(),
@@ -45,6 +49,10 @@ interface Lead {
   serviceType?: string | null
   followUpDate?: number | null
   ownerId?: string | null
+  goals?: string | null
+  budget?: string | null
+  servicesRequired?: string | null
+  timeline?: string | null
 }
 
 interface Props {
@@ -76,6 +84,10 @@ export function EditLeadDialog({ lead, open, onClose }: Props) {
         serviceType: lead.serviceType ?? '',
         followUpDate: lead.followUpDate ? new Date(lead.followUpDate).toISOString().split('T')[0] : '',
         ownerId: lead.ownerId ?? '',
+        goals: lead.goals ?? '',
+        budget: lead.budget ?? '',
+        servicesRequired: lead.servicesRequired ?? '',
+        timeline: lead.timeline ?? '',
       })
     }
   }, [open, lead, reset])
@@ -97,6 +109,10 @@ export function EditLeadDialog({ lead, open, onClose }: Props) {
         serviceType: data.serviceType || undefined,
         followUpDate: data.followUpDate ? new Date(data.followUpDate).getTime() : undefined,
         ownerId: data.ownerId || undefined,
+        goals: data.goals || undefined,
+        budget: data.budget || undefined,
+        servicesRequired: data.servicesRequired || undefined,
+        timeline: data.timeline || undefined,
       })
       toast.success('Lead updated')
       onClose()
@@ -150,8 +166,8 @@ export function EditLeadDialog({ lead, open, onClose }: Props) {
               <Select defaultValue={lead.stage} onValueChange={(v) => setValue('stage', v as FormData['stage'])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {['NEW_LEAD', 'CONTACTED', 'DISCOVERY', 'PROPOSAL_SENT', 'NEGOTIATION', 'WON', 'LOST'].map((s) => (
-                    <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
+                  {['LEAD_CAPTURED', 'QUALIFICATION_SUBMITTED', 'STRATEGY_CALL', 'PROPOSAL_SENT', 'PROPOSAL_ACCEPTED', 'NURTURE', 'LOST'].map((s) => (
+                    <SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -193,6 +209,27 @@ export function EditLeadDialog({ lead, open, onClose }: Props) {
               </Select>
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label>Goals</Label>
+              <Input {...register('goals')} />
+            </div>
+            <div className="space-y-1">
+              <Label>Budget</Label>
+              <Input {...register('budget')} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label>Services Required</Label>
+              <Input {...register('servicesRequired')} />
+            </div>
+            <div className="space-y-1">
+              <Label>Timeline</Label>
+              <Input {...register('timeline')} />
+            </div>
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={loading}>{loading ? 'Saving…' : 'Save Changes'}</Button>

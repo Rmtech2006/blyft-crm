@@ -11,9 +11,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowLeft, Phone, Mail } from 'lucide-react'
+import { ArrowLeft, Phone, Mail, CheckCircle2, Circle } from 'lucide-react'
 import { toast } from 'sonner'
 import { ComposeEmailDialog } from '@/components/clients/compose-email-dialog'
+import { ONBOARDING_TEMPLATE } from '@/lib/leads'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
@@ -24,12 +25,24 @@ const statusColors: Record<string, string> = {
   PAUSED: 'bg-amber-500/15 text-amber-500',
   COMPLETED: 'bg-primary/15 text-primary',
   PROSPECT: 'bg-violet-500/15 text-violet-500',
+  ONBOARDING: 'bg-cyan-500/15 text-cyan-600',
 }
+
+const ONBOARDING_STEPS = [
+  { key: 'contractSigned', label: 'Contract signed' },
+  { key: 'invoicePaid', label: 'Initial payment received' },
+  { key: 'onboardingFormSubmitted', label: 'Onboarding form submitted' },
+  { key: 'accessGranted', label: 'Access granted (hosting / social / ads)' },
+  { key: 'kickoffDone', label: 'Internal kickoff complete' },
+  { key: 'firstDeliverableSent', label: 'First deliverables sent' },
+] as const
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
   const client = useQuery(api.clients.get, { id: id as Id<'clients'> })
+  const templates = useQuery(api.templates.list)
+  const updateClient = useMutation(api.clients.update)
   const addNote = useMutation(api.clients.addNote)
   const addContact = useMutation(api.clients.addContact)
   const [noteContent, setNoteContent] = useState('')
@@ -83,6 +96,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          {client.status === 'ONBOARDING' && <TabsTrigger value="onboarding">Onboarding</TabsTrigger>}
           <TabsTrigger value="contacts">Contacts ({client.contacts?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="projects">Projects ({client.projects?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="notes">Notes ({client.notes?.length ?? 0})</TabsTrigger>
@@ -126,6 +140,72 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="onboarding" className="space-y-4">
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Client Onboarding Checklist</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {ONBOARDING_STEPS.map((step) => {
+                const done = !!(client as Record<string, unknown>)[step.key]
+                return (
+                  <button
+                    key={step.key}
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await updateClient({ id: id as Id<'clients'>, [step.key]: !done })
+                        toast.success(done ? 'Marked incomplete' : 'Marked complete')
+                      } catch {
+                        toast.error('Failed to update')
+                      }
+                    }}
+                    className="flex items-center gap-3 w-full text-left p-2 rounded hover:bg-muted/50 transition"
+                  >
+                    {done ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    ) : (
+                      <Circle className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <span className={`text-sm ${done ? 'line-through text-muted-foreground' : ''}`}>{step.label}</span>
+                  </button>
+                )
+              })}
+              <p className="text-xs text-muted-foreground pt-2 border-t">
+                Client auto-promotes to ACTIVE once all steps are complete.
+              </p>
+            </CardContent>
+          </Card>
+
+          {templates && (
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Suggested onboarding emails</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                {Object.entries(ONBOARDING_TEMPLATE).map(([key, title]) => {
+                  const tpl = templates.find((t) => t.title === title)
+                  if (!tpl) return null
+                  return (
+                    <div key={key} className="flex items-center justify-between gap-3 p-2 rounded border">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Mail className="h-4 w-4 text-primary shrink-0" />
+                        <span className="text-sm truncate">{tpl.title}</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          navigator.clipboard.writeText(tpl.content)
+                          toast.success('Template copied')
+                        }}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                  )
+                })}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="contacts" className="space-y-4">

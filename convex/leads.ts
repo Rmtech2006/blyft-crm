@@ -53,8 +53,13 @@ export const create = mutation({
       v.literal("COLD_EMAIL"), v.literal("EVENT"), v.literal("WEBSITE"), v.literal("OTHER")
     ),
     stage: v.union(
-      v.literal("NEW_LEAD"), v.literal("CONTACTED"), v.literal("DISCOVERY"),
-      v.literal("PROPOSAL_SENT"), v.literal("NEGOTIATION"), v.literal("WON"), v.literal("LOST")
+      v.literal("LEAD_CAPTURED"),
+      v.literal("QUALIFICATION_SUBMITTED"),
+      v.literal("STRATEGY_CALL"),
+      v.literal("PROPOSAL_SENT"),
+      v.literal("PROPOSAL_ACCEPTED"),
+      v.literal("NURTURE"),
+      v.literal("LOST")
     ),
     contactName: v.optional(v.string()),
     whatsapp: v.optional(v.string()),
@@ -63,6 +68,10 @@ export const create = mutation({
     serviceType: v.optional(v.string()),
     followUpDate: v.optional(v.number()),
     ownerId: v.optional(v.string()),
+    goals: v.optional(v.string()),
+    budget: v.optional(v.string()),
+    servicesRequired: v.optional(v.string()),
+    timeline: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("leads", args);
@@ -80,8 +89,13 @@ export const update = mutation({
       v.literal("COLD_EMAIL"), v.literal("EVENT"), v.literal("WEBSITE"), v.literal("OTHER")
     )),
     stage: v.optional(v.union(
-      v.literal("NEW_LEAD"), v.literal("CONTACTED"), v.literal("DISCOVERY"),
-      v.literal("PROPOSAL_SENT"), v.literal("NEGOTIATION"), v.literal("WON"), v.literal("LOST")
+      v.literal("LEAD_CAPTURED"),
+      v.literal("QUALIFICATION_SUBMITTED"),
+      v.literal("STRATEGY_CALL"),
+      v.literal("PROPOSAL_SENT"),
+      v.literal("PROPOSAL_ACCEPTED"),
+      v.literal("NURTURE"),
+      v.literal("LOST")
     )),
     contactName: v.optional(v.string()),
     whatsapp: v.optional(v.string()),
@@ -91,9 +105,27 @@ export const update = mutation({
     followUpDate: v.optional(v.number()),
     lostReason: v.optional(v.string()),
     ownerId: v.optional(v.string()),
+    goals: v.optional(v.string()),
+    budget: v.optional(v.string()),
+    servicesRequired: v.optional(v.string()),
+    timeline: v.optional(v.string()),
+    qualificationSubmittedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { id, ...rest } = args;
+    // Auto-stamp qualification submission and advance stage
+    if (
+      (rest.goals || rest.budget || rest.servicesRequired || rest.timeline) &&
+      !rest.qualificationSubmittedAt
+    ) {
+      const existing = await ctx.db.get(id);
+      if (existing && !existing.qualificationSubmittedAt) {
+        rest.qualificationSubmittedAt = Date.now();
+        if (existing.stage === "LEAD_CAPTURED" && !rest.stage) {
+          rest.stage = "QUALIFICATION_SUBMITTED";
+        }
+      }
+    }
     await ctx.db.patch(id, rest);
   },
 });
@@ -136,8 +168,14 @@ export const convertToClient = mutation({
     const clientId = await ctx.db.insert("clients", {
       companyName: lead.company ?? lead.name,
       industry: lead.industry,
-      status: "ACTIVE",
+      status: "ONBOARDING",
       startDate: Date.now(),
+      contractSigned: false,
+      invoicePaid: false,
+      onboardingFormSubmitted: false,
+      accessGranted: false,
+      kickoffDone: false,
+      firstDeliverableSent: false,
     });
 
     if (lead.contactName || lead.email || lead.whatsapp) {
@@ -151,7 +189,7 @@ export const convertToClient = mutation({
     }
 
     await ctx.db.patch(args.id, {
-      stage: "WON",
+      stage: "PROPOSAL_ACCEPTED",
       convertedClientId: clientId,
     });
 

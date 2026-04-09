@@ -13,21 +13,14 @@ import { AddLeadDialog } from '@/components/leads/add-lead-dialog'
 import { Calendar, AlertCircle, Link2, TrendingUp } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatEnum } from '@/lib/utils'
+import { LEAD_STAGES, STAGE_COLORS, TERMINAL_STAGES } from '@/lib/leads'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
 }
 
-const stageOrder = ['NEW_LEAD', 'CONTACTED', 'DISCOVERY', 'PROPOSAL_SENT', 'NEGOTIATION', 'WON', 'LOST']
-const stageColors: Record<string, string> = {
-  NEW_LEAD: 'bg-muted text-muted-foreground',
-  CONTACTED: 'bg-primary/15 text-primary',
-  DISCOVERY: 'bg-violet-500/15 text-violet-500',
-  PROPOSAL_SENT: 'bg-amber-500/15 text-amber-500',
-  NEGOTIATION: 'bg-orange-500/15 text-orange-500',
-  WON: 'bg-emerald-500/15 text-emerald-500',
-  LOST: 'bg-destructive/15 text-destructive',
-}
+const stageOrder = LEAD_STAGES
+const stageColors: Record<string, string> = STAGE_COLORS
 
 const sourceColors: Record<string, string> = {
   INSTAGRAM: 'bg-pink-500/15 text-pink-500',
@@ -70,9 +63,10 @@ export default function LeadsPage() {
 
   if (leads === undefined) return <LeadsSkeleton />
 
-  const overdueCount = leads.filter(l => !['WON', 'LOST'].includes(l.stage) && isOverdue(l.followUpDate)).length
-  const pipelineValue = leads.filter((l) => !['WON', 'LOST'].includes(l.stage)).reduce((s, l) => s + (l.estimatedValue ?? 0), 0)
-  const wonLeads = leads.filter((l) => l.stage === 'WON').length
+  const isTerminal = (s: string) => (TERMINAL_STAGES as string[]).includes(s)
+  const overdueCount = leads.filter(l => !isTerminal(l.stage) && isOverdue(l.followUpDate)).length
+  const pipelineValue = leads.filter((l) => !isTerminal(l.stage)).reduce((s, l) => s + (l.estimatedValue ?? 0), 0)
+  const wonLeads = leads.filter((l) => l.stage === 'PROPOSAL_ACCEPTED').length
 
   return (
     <div className="space-y-6">
@@ -97,7 +91,7 @@ export default function LeadsPage() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           { label: 'Total Leads', value: leads.length },
-          { label: 'Won', value: wonLeads },
+          { label: 'Accepted', value: wonLeads },
           { label: 'Lost', value: leads.filter(l => l.stage === 'LOST').length },
           { label: 'Pipeline Value', value: formatINR(pipelineValue) },
           { label: 'Follow-up Overdue', value: overdueCount, highlight: overdueCount > 0 },
@@ -153,12 +147,12 @@ export default function LeadsPage() {
                             </div>
                             {lead.followUpDate && (
                               <div className="flex items-center gap-1 mt-1.5">
-                                {isOverdue(lead.followUpDate) && !['WON', 'LOST'].includes(lead.stage) ? (
+                                {isOverdue(lead.followUpDate) && !(TERMINAL_STAGES as string[]).includes(lead.stage) ? (
                                   <AlertCircle className="h-3 w-3 text-destructive" />
                                 ) : (
                                   <Calendar className="h-3 w-3 text-muted-foreground" />
                                 )}
-                                <span className={`text-xs ${isOverdue(lead.followUpDate) && !['WON', 'LOST'].includes(lead.stage) ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                                <span className={`text-xs ${isOverdue(lead.followUpDate) && !(TERMINAL_STAGES as string[]).includes(lead.stage) ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
                                   {new Date(lead.followUpDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                                 </span>
                               </div>

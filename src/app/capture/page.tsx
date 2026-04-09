@@ -70,7 +70,7 @@ export default function CapturePage() {
         email: data.email || undefined,
         serviceType: data.serviceType || undefined,
         source: data.source,
-        stage: 'NEW_LEAD',
+        stage: 'LEAD_CAPTURED',
       })
       setSubmitted(true)
     } catch {
