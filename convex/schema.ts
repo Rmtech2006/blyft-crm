@@ -117,7 +117,15 @@ export default defineSchema({
       v.literal("PROPOSAL_SENT"),
       v.literal("PROPOSAL_ACCEPTED"),
       v.literal("NURTURE"),
-      v.literal("LOST")
+      v.literal("LOST"),
+      // Legacy values — kept transitionally so existing prod data validates.
+      // Run `npx convex run migrate:migrateLeadStages` to convert, then
+      // these can be removed in a follow-up.
+      v.literal("NEW_LEAD"),
+      v.literal("CONTACTED"),
+      v.literal("DISCOVERY"),
+      v.literal("NEGOTIATION"),
+      v.literal("WON")
     ),
     contactName: v.optional(v.string()),
     whatsapp: v.optional(v.string()),
