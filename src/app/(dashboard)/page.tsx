@@ -113,6 +113,10 @@ function getPerformanceTone(value: number): {
   }
 }
 
+function pluralize(value: number, singular: string, plural: string): string {
+  return `${value} ${value === 1 ? singular : plural}`
+}
+
 function DashboardSkeleton() {
   return (
     <div className="space-y-6">
@@ -184,6 +188,61 @@ export default function DashboardPage() {
   const activePipeline = stats.openLeads + stats.activeProjects
   const opsLoad = activePipeline + stats.pendingReimbursements + stats.overdueCount
   const firstName = session?.user?.name?.split(' ')[0] ?? 'there'
+  const revenueGap = hasSalesTarget
+    ? Math.max(stats.salesTarget!.targetAmount - stats.salesTarget!.actualAmount, 0)
+    : Math.max(monthlyAverage - stats.monthlyRevenue, 0)
+  const urgentFocusCount = [stats.overdueCount, stats.pendingReimbursements].filter(
+    (value) => value > 0
+  ).length
+  const todayFocusCards = [
+    {
+      label: 'Delivery at risk',
+      value: stats.overdueCount,
+      helper:
+        stats.overdueCount > 0
+          ? `${pluralize(stats.overdueCount, 'task is', 'tasks are')} overdue and need a same-day reset.`
+          : 'No overdue tasks are pulling delivery off track right now.',
+      href: '/tasks',
+      action: stats.overdueCount > 0 ? 'Open task board' : 'Review tasks',
+      icon: AlertTriangle,
+      tone:
+        stats.overdueCount > 0
+          ? 'border-destructive/25 bg-destructive/5 text-destructive'
+          : 'border-border/80 bg-card/80 text-foreground',
+    },
+    {
+      label: 'Finance approvals',
+      value: stats.pendingReimbursements,
+      helper:
+        stats.pendingReimbursements > 0
+          ? `${pluralize(stats.pendingReimbursements, 'approval is', 'approvals are')} waiting for finance review.`
+          : 'No reimbursement approvals are queued at the moment.',
+      href: '/reimbursements',
+      action:
+        stats.pendingReimbursements > 0 ? 'Review reimbursements' : 'Open reimbursements',
+      icon: Receipt,
+      tone:
+        stats.pendingReimbursements > 0
+          ? 'border-amber-300/80 bg-amber-50 text-amber-700'
+          : 'border-border/80 bg-card/80 text-foreground',
+    },
+    {
+      label: hasSalesTarget ? 'Revenue gap' : 'Pipeline in motion',
+      value: hasSalesTarget ? formatCompactCurrency(revenueGap) : stats.openLeads,
+      helper: hasSalesTarget
+        ? revenueGap > 0
+          ? `${formatCurrency(revenueGap)} still needs to close this month to hit target.`
+          : 'Revenue target is covered. Shift focus to retention and delivery quality.'
+        : `${pluralize(stats.openLeads, 'live lead still needs', 'live leads still need')} movement toward close.`,
+      href: hasSalesTarget ? '/finance' : '/leads',
+      action: hasSalesTarget ? 'Open finance view' : 'Open lead workspace',
+      icon: hasSalesTarget ? Wallet : TrendingUp,
+      tone:
+        hasSalesTarget && revenueGap > 0
+          ? 'border-amber-300/80 bg-amber-50 text-amber-700'
+          : 'border-emerald-300/80 bg-emerald-50 text-emerald-700',
+    },
+  ] as const
   const hasMiddleCards =
     visibleSections.has('quickActions') ||
     visibleSections.has('salesBoard') ||
@@ -293,6 +352,94 @@ export default function DashboardPage() {
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {visibleSections.size > 0 && (
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,0.95fr))]">
+        <Card className="surface-card">
+          <CardHeader className="pb-3">
+            <p className="section-eyebrow">Urgent now</p>
+            <CardTitle className="mt-2 text-[1.8rem]">Today&apos;s focus lane</CardTitle>
+            <CardDescription>
+              Start here before you scan trends. This is the fastest route to unblock sales,
+              delivery, and finance.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-4xl font-semibold tracking-tight">
+                  {urgentFocusCount === 0 ? 'Clear' : urgentFocusCount}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {urgentFocusCount === 0
+                    ? 'Nothing critical is screaming for attention right now. Move into pipeline and execution.'
+                    : `${pluralize(urgentFocusCount, 'priority lane is', 'priority lanes are')} active at the top of the CRM.`}
+                </p>
+              </div>
+              <div className="rounded-[20px] border border-border/80 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">
+                  {pluralize(activePipeline, 'item is', 'items are')} in motion
+                </p>
+                <p className="mt-1">Across leads, projects, and approvals.</p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="surface-muted p-4">
+                <p className="section-eyebrow">Pipeline load</p>
+                <p className="mt-3 text-2xl font-semibold tracking-tight">{activePipeline}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Open leads plus live delivery currently needing management attention.
+                </p>
+              </div>
+
+              <div className="surface-muted p-4">
+                <p className="section-eyebrow">Operational pressure</p>
+                <p className="mt-3 text-2xl font-semibold tracking-tight">{opsLoad}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Combined active work, approvals, and overdue follow-up across the business.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {todayFocusCards.map((item) => {
+          const Icon = item.icon
+
+          return (
+            <Card key={item.label} className="surface-card">
+              <CardContent className="flex h-full flex-col gap-5 p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div
+                    className={cn(
+                      'flex h-11 w-11 items-center justify-center rounded-2xl border',
+                      item.tone
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-8 px-2" render={<Link href={item.href} />}>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="section-eyebrow">{item.label}</p>
+                  <p className="text-3xl font-semibold tracking-tight">{item.value}</p>
+                  <p className="text-sm leading-6 text-muted-foreground">{item.helper}</p>
+                </div>
+
+                <Button variant="outline" className="mt-auto w-full" render={<Link href={item.href} />}>
+                  {item.action}
+                </Button>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </section>
       )}
 
       {visibleSections.has('heroOverview') && (
