@@ -14,8 +14,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AddTransactionDialog } from '@/components/finance/add-transaction-dialog'
+import { ExportMenu } from '@/components/shared/export-menu'
 import { TrendingUp, TrendingDown, Landmark, Trash2, Plus, Pencil, ArrowLeft, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 import { toast } from 'sonner'
+import { exportCsv, printReport } from '@/lib/export'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
@@ -446,6 +448,51 @@ export default function FinancePage() {
   const net = income - expense
   const totalBankBalance = bankAccounts.reduce((s, a) => s + a.balance, 0)
 
+  function handleCsvExport() {
+    exportCsv('finance-transactions.csv', transactions, [
+      { header: 'Date', value: (transaction) => formatDate(transaction.date) },
+      { header: 'Type', value: (transaction) => transaction.type },
+      { header: 'Category', value: (transaction) => transaction.category },
+      { header: 'Description', value: (transaction) => transaction.description },
+      { header: 'Amount', value: (transaction) => transaction.amount },
+      { header: 'Payment mode', value: (transaction) => transaction.paymentMode },
+      { header: 'Client', value: (transaction) => transaction.client?.companyName ?? '—' },
+      { header: 'Project', value: (transaction) => transaction.project?.name ?? '—' },
+    ])
+  }
+
+  function handlePdfExport() {
+    printReport({
+      title: 'BLYFT Finance Report',
+      subtitle: `Generated on ${new Date().toLocaleDateString('en-IN')}`,
+      sections: [
+        {
+          title: 'Finance summary',
+          columns: ['Metric', 'Value'],
+          rows: [
+            ['Total income', formatINR(income)],
+            ['Total expenses', formatINR(expense)],
+            ['Net profit', formatINR(net)],
+            ['Bank balance', formatINR(totalBankBalance)],
+            ['Filtered transactions', transactions.length],
+          ],
+        },
+        {
+          title: 'Transaction list',
+          columns: ['Date', 'Type', 'Category', 'Description', 'Amount', 'Client'],
+          rows: transactions.map((transaction) => [
+            formatDate(transaction.date),
+            transaction.type,
+            transaction.category,
+            transaction.description,
+            formatINR(transaction.amount),
+            transaction.client?.companyName ?? '—',
+          ]),
+        },
+      ],
+    })
+  }
+
   async function deleteTransaction(id: string) {
     if (!confirm('Delete this transaction?')) return
     try {
@@ -470,7 +517,10 @@ export default function FinancePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Finance</h1>
-        <AddTransactionDialog />
+        <div className="flex gap-2">
+          <ExportMenu onCsv={handleCsvExport} onPdf={handlePdfExport} />
+          <AddTransactionDialog />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

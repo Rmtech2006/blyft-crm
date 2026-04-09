@@ -304,6 +304,8 @@ export default defineSchema({
     notifPaymentDue: v.boolean(),
     notifReimbursements: v.boolean(),
     notifProjectUpdates: v.boolean(),
+    dashboardSections: v.optional(v.array(v.string())),
+    dashboardQuickActions: v.optional(v.array(v.string())),
   }).index("by_userId", ["userId"]),
 
   salesTargets: defineTable({

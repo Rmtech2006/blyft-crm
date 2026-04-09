@@ -24,39 +24,32 @@ import {
 } from 'lucide-react'
 import { api } from '@convex/_generated/api'
 import { StatsCard } from '@/components/dashboard/stats-card'
+import { ExportMenu } from '@/components/shared/export-menu'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  DASHBOARD_QUICK_ACTION_OPTIONS,
+  DashboardQuickActionId,
+  normalizeDashboardQuickActionIds,
+  normalizeDashboardSectionIds,
+} from '@/lib/dashboard-preferences'
 import { normalizeDashboardStats } from '@/lib/dashboard-stats'
+import { exportCsv, printReport } from '@/lib/export'
 import { cn } from '@/lib/utils'
 
-const quickActions = [
-  {
-    label: 'Add lead',
-    href: '/leads',
-    icon: UserPlus,
-    description: 'Capture a new opportunity and move it into the pipeline.',
-  },
-  {
-    label: 'Add client',
-    href: '/clients',
-    icon: PlusCircle,
-    description: 'Onboard a new account and start tracking delivery.',
-  },
-  {
-    label: 'Create task',
-    href: '/tasks',
-    icon: CheckSquare,
-    description: 'Assign work fast and keep the delivery board current.',
-  },
-  {
-    label: 'Record expense',
-    href: '/finance',
-    icon: Receipt,
-    description: 'Keep operating cashflow accurate in one place.',
-  },
-]
+const quickActionIcons: Record<DashboardQuickActionId, typeof UserPlus> = {
+  'add-lead': UserPlus,
+  'add-client': PlusCircle,
+  'create-task': CheckSquare,
+  'record-expense': Receipt,
+}
+
+const quickActions = DASHBOARD_QUICK_ACTION_OPTIONS.map((action) => ({
+  ...action,
+  icon: quickActionIcons[action.id],
+}))
 
 const currencyFormatter = new Intl.NumberFormat('en-IN', {
   style: 'currency',
@@ -144,8 +137,21 @@ function DashboardSkeleton() {
 
 export default function DashboardPage() {
   const { data: session } = useSession()
+  const userId = (session?.user as { id?: string })?.id ?? session?.user?.email ?? ''
+  const savedSettings = useQuery(api.settings.get, userId ? { userId } : 'skip')
   const rawStats = useQuery(api.dashboard.getStats)
   const { data: stats, isPartial } = useMemo(() => normalizeDashboardStats(rawStats), [rawStats])
+  const visibleSections = useMemo(
+    () => new Set(normalizeDashboardSectionIds(savedSettings?.dashboardSections)),
+    [savedSettings?.dashboardSections]
+  )
+  const pinnedQuickActions = useMemo(() => {
+    const allowedIds = new Set(
+      normalizeDashboardQuickActionIds(savedSettings?.dashboardQuickActions)
+    )
+
+    return quickActions.filter((action) => allowedIds.has(action.id))
+  }, [savedSettings?.dashboardQuickActions])
 
   const greeting = (() => {
     const hour = new Date().getHours()
@@ -178,9 +184,88 @@ export default function DashboardPage() {
   const activePipeline = stats.openLeads + stats.activeProjects
   const opsLoad = activePipeline + stats.pendingReimbursements + stats.overdueCount
   const firstName = session?.user?.name?.split(' ')[0] ?? 'there'
+  const hasMiddleCards =
+    visibleSections.has('quickActions') ||
+    visibleSections.has('salesBoard') ||
+    visibleSections.has('attentionQueue')
+  const hasBottomCards =
+    visibleSections.has('activityLog') || visibleSections.has('decisionQueue')
+
+  function handleCsvExport() {
+    exportCsv(`dashboard-report-${stats.currentMonthKey}.csv`, [
+      { label: 'Active clients', value: stats.totalClients },
+      { label: 'Active projects', value: stats.activeProjects },
+      { label: 'Open leads', value: stats.openLeads },
+      { label: 'Monthly revenue', value: stats.monthlyRevenue },
+      { label: 'Overdue tasks', value: stats.overdueCount },
+      { label: 'Pending reimbursements', value: stats.pendingReimbursements },
+      {
+        label: 'Overall sales target',
+        value: stats.salesTarget?.targetAmount ?? 0,
+      },
+      {
+        label: 'Overall target progress (%)',
+        value: stats.salesTarget?.progress ?? targetProgressSource,
+      },
+    ], [
+      { header: 'Metric', value: (row) => row.label },
+      { header: 'Value', value: (row) => row.value },
+    ])
+  }
+
+  function handlePdfExport() {
+    printReport({
+      title: 'BLYFT CRM Dashboard Report',
+      subtitle: `Generated for ${formatMonthLabel(stats.currentMonthKey)} on ${new Date().toLocaleDateString('en-IN')}`,
+      sections: [
+        {
+          title: 'Executive metrics',
+          columns: ['Metric', 'Value'],
+          rows: [
+            ['Active clients', stats.totalClients],
+            ['Active projects', stats.activeProjects],
+            ['Open leads', stats.openLeads],
+            ['Monthly revenue', formatCurrency(stats.monthlyRevenue)],
+            ['Overdue tasks', stats.overdueCount],
+            ['Pending reimbursements', stats.pendingReimbursements],
+          ],
+        },
+        {
+          title: 'Revenue trend',
+          columns: ['Month', 'Income', 'Target'],
+          rows: stats.monthlyRevenueTrend.map((point) => [
+            point.month,
+            formatCurrency(point.income),
+            point.target > 0 ? formatCurrency(point.target) : '—',
+          ]),
+        },
+        {
+          title: 'Target board',
+          columns: ['Scope', 'Target', 'Actual', 'Progress'],
+          rows:
+            stats.salesTargets.length > 0
+              ? stats.salesTargets.map((target) => [
+                  target.label,
+                  formatCurrency(target.targetAmount),
+                  formatCurrency(target.actualAmount),
+                  `${target.progress}%`,
+                ])
+              : [['No department or member targets configured', '', '', '']],
+        },
+      ],
+    })
+  }
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="section-eyebrow">Workspace</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Dashboard</h1>
+        </div>
+        <ExportMenu onCsv={handleCsvExport} onPdf={handlePdfExport} />
+      </div>
+
       {isPartial && (
         <div className="surface-muted flex items-start gap-3 border border-amber-200/70 bg-amber-50/80 px-4 py-4 text-sm text-amber-950">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
@@ -193,7 +278,25 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
+      {visibleSections.size === 0 && (
+        <Card className="surface-card">
+          <CardContent className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+            <Target className="h-10 w-10 text-muted-foreground/35" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">All dashboard blocks are hidden</p>
+              <p className="text-sm text-muted-foreground">
+                Re-enable sections from Settings to rebuild your personal control room.
+              </p>
+            </div>
+            <Button variant="outline" render={<Link href="/settings" />}>
+              Open dashboard settings
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {visibleSections.has('heroOverview') && (
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
         <div className="surface-card hero-noise relative overflow-hidden bg-primary px-6 py-7 text-primary-foreground sm:px-8 sm:py-8">
           <div className="absolute inset-0 opacity-40">
             <div className="absolute -left-10 top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
@@ -336,9 +439,11 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
-      </section>
+        </section>
+      )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {visibleSections.has('metricStrip') && (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatsCard
           title="Active clients"
           value={stats.totalClients}
@@ -367,9 +472,19 @@ export default function DashboardPage() {
           icon={Wallet}
           color="amber"
         />
-      </div>
+        </div>
+      )}
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
+      {(visibleSections.has('revenueTracker') || hasMiddleCards) && (
+        <section
+          className={cn(
+            'grid gap-6',
+            visibleSections.has('revenueTracker') && hasMiddleCards
+              ? 'xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]'
+              : 'grid-cols-1'
+          )}
+        >
+      {visibleSections.has('revenueTracker') && (
         <Card className="surface-card">
           <CardHeader className="pb-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -437,8 +552,11 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
+      )}
 
+      {hasMiddleCards && (
         <div className="space-y-6">
+          {visibleSections.has('quickActions') && (
           <Card className="surface-card">
             <CardHeader className="pb-3">
               <p className="section-eyebrow">Quick actions</p>
@@ -449,27 +567,38 @@ export default function DashboardPage() {
             </CardHeader>
 
             <CardContent className="space-y-3">
-              {quickActions.map((action) => {
-                const Icon = action.icon
+              {pinnedQuickActions.length === 0 ? (
+                <div className="rounded-[22px] border border-dashed border-border/80 bg-muted/35 px-4 py-5 text-center">
+                  <p className="text-sm font-medium text-foreground">No quick actions pinned</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Pick your preferred shortcuts in Settings to show them here.
+                  </p>
+                </div>
+              ) : (
+                pinnedQuickActions.map((action) => {
+                  const Icon = action.icon
 
-                return (
-                  <Link key={action.href} href={action.href}>
-                    <div className="group flex items-center gap-3 rounded-[22px] border border-border/80 bg-card/70 px-4 py-4 transition-all hover:border-foreground/12 hover:bg-accent">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-                        <Icon className="h-4 w-4" />
+                  return (
+                    <Link key={action.href} href={action.href}>
+                      <div className="group flex items-center gap-3 rounded-[22px] border border-border/80 bg-card/70 px-4 py-4 transition-all hover:border-foreground/12 hover:bg-accent">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-foreground">{action.label}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">{action.description}</p>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-foreground">{action.label}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">{action.description}</p>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
-                    </div>
-                  </Link>
-                )
-              })}
+                    </Link>
+                  )
+                })
+              )}
             </CardContent>
           </Card>
+          )}
 
+          {visibleSections.has('salesBoard') && (
           <Card className="surface-card">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-3">
@@ -549,7 +678,9 @@ export default function DashboardPage() {
               )}
             </CardContent>
           </Card>
+          )}
 
+          {visibleSections.has('attentionQueue') && (
           <Card className="surface-card">
             <CardHeader className="pb-3">
               <p className="section-eyebrow">Attention queue</p>
@@ -598,10 +729,22 @@ export default function DashboardPage() {
               ))}
             </CardContent>
           </Card>
+          )}
         </div>
-      </section>
+      )}
+        </section>
+      )}
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
+      {hasBottomCards && (
+        <section
+          className={cn(
+            'grid gap-6',
+            visibleSections.has('activityLog') && visibleSections.has('decisionQueue')
+              ? 'xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]'
+              : 'grid-cols-1'
+          )}
+        >
+      {visibleSections.has('activityLog') && (
         <Card className="surface-card">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-3">
@@ -659,7 +802,9 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
+      )}
 
+      {visibleSections.has('decisionQueue') && (
         <Card className="surface-card">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-3">
@@ -728,7 +873,9 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-      </section>
+      )}
+        </section>
+      )}
     </div>
   )
 }

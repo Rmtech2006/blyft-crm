@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import { Id } from '@convex/_generated/dataModel'
+import { ExportMenu } from '@/components/shared/export-menu'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -25,6 +26,7 @@ import {
 import { AddTaskDialog } from '@/components/tasks/add-task-dialog'
 import { Calendar, User, Trash2, CheckSquare, Search } from 'lucide-react'
 import { toast } from 'sonner'
+import { exportCsv, printReport } from '@/lib/export'
 import { formatEnum } from '@/lib/utils'
 import Link from 'next/link'
 
@@ -74,6 +76,51 @@ export default function TasksPage() {
     return matchPriority && matchSearch
   })
 
+  function handleCsvExport() {
+    exportCsv('tasks-export.csv', filtered, [
+      { header: 'Task', value: (task) => task.title },
+      { header: 'Status', value: (task) => task.status },
+      { header: 'Priority', value: (task) => task.priority },
+      { header: 'Assignee', value: (task) => task.assignee?.name ?? '—' },
+      { header: 'Project', value: (task) => task.project?.name ?? '—' },
+      {
+        header: 'Due date',
+        value: (task) => (task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-IN') : '—'),
+      },
+    ])
+  }
+
+  function handlePdfExport() {
+    printReport({
+      title: 'BLYFT Tasks Report',
+      subtitle: `Generated on ${new Date().toLocaleDateString('en-IN')}`,
+      sections: [
+        {
+          title: 'Task summary',
+          columns: ['Metric', 'Value'],
+          rows: [
+            ['Total tasks', tasks.length],
+            ['Filtered tasks', filtered.length],
+            ['Critical tasks', tasks.filter((task) => task.priority === 'CRITICAL').length],
+            ['Blocked tasks', tasks.filter((task) => task.status === 'BLOCKED').length],
+          ],
+        },
+        {
+          title: 'Task list',
+          columns: ['Task', 'Status', 'Priority', 'Assignee', 'Project', 'Due date'],
+          rows: filtered.map((task) => [
+            task.title,
+            formatEnum(task.status),
+            formatEnum(task.priority),
+            task.assignee?.name ?? '—',
+            task.project?.name ?? '—',
+            task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-IN') : '—',
+          ]),
+        },
+      ],
+    })
+  }
+
   async function confirmDelete() {
     if (!taskToDelete) return
     try {
@@ -119,7 +166,10 @@ export default function TasksPage() {
 
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
-        <AddTaskDialog />
+        <div className="flex gap-2">
+          <ExportMenu onCsv={handleCsvExport} onPdf={handlePdfExport} />
+          <AddTaskDialog />
+        </div>
       </div>
 
       {/* Filters */}

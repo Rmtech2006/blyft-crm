@@ -6,6 +6,7 @@ import { useMutation, useQuery } from 'convex/react'
 import {
   Bell,
   Building2,
+  LayoutDashboard,
   PencilLine,
   Save,
   Shield,
@@ -28,6 +29,16 @@ import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  DASHBOARD_QUICK_ACTION_OPTIONS,
+  DASHBOARD_SECTION_OPTIONS,
+  DEFAULT_DASHBOARD_QUICK_ACTIONS,
+  DEFAULT_DASHBOARD_SECTIONS,
+  DashboardQuickActionId,
+  DashboardSectionId,
+  normalizeDashboardQuickActionIds,
+  normalizeDashboardSectionIds,
+} from '@/lib/dashboard-preferences'
 
 function getInitials(name: string | null | undefined) {
   if (!name) return 'U'
@@ -136,6 +147,13 @@ export default function SettingsPage() {
     notifProjectUpdates: false,
   })
   const [savingNotifs, setSavingNotifs] = useState(false)
+  const [dashboardSections, setDashboardSections] = useState<DashboardSectionId[]>(
+    DEFAULT_DASHBOARD_SECTIONS
+  )
+  const [dashboardQuickActions, setDashboardQuickActions] = useState<DashboardQuickActionId[]>(
+    DEFAULT_DASHBOARD_QUICK_ACTIONS
+  )
+  const [savingDashboard, setSavingDashboard] = useState(false)
 
   const [editingTargetId, setEditingTargetId] = useState<string | null>(null)
   const [scopeType, setScopeType] = useState<SalesTargetScope>('OVERALL')
@@ -165,8 +183,32 @@ export default function SettingsPage() {
         notifReimbursements: savedSettings.notifReimbursements,
         notifProjectUpdates: savedSettings.notifProjectUpdates,
       })
+      setDashboardSections(normalizeDashboardSectionIds(savedSettings.dashboardSections))
+      setDashboardQuickActions(
+        normalizeDashboardQuickActionIds(savedSettings.dashboardQuickActions)
+      )
     }
   }, [savedSettings])
+
+  function toggleDashboardSection(sectionId: DashboardSectionId, enabled: boolean) {
+    setDashboardSections((current) => {
+      if (enabled) {
+        return current.includes(sectionId) ? current : [...current, sectionId]
+      }
+
+      return current.filter((id) => id !== sectionId)
+    })
+  }
+
+  function toggleDashboardQuickAction(actionId: DashboardQuickActionId, enabled: boolean) {
+    setDashboardQuickActions((current) => {
+      if (enabled) {
+        return current.includes(actionId) ? current : [...current, actionId]
+      }
+
+      return current.filter((id) => id !== actionId)
+    })
+  }
 
   function resetTargetForm(nextScope: SalesTargetScope = 'OVERALL') {
     setEditingTargetId(null)
@@ -211,6 +253,23 @@ export default function SettingsPage() {
       toast.error('Failed to save preferences')
     } finally {
       setSavingNotifs(false)
+    }
+  }
+
+  async function saveDashboardPreferences() {
+    if (!userId) return
+    setSavingDashboard(true)
+    try {
+      await upsertSettings({
+        userId,
+        dashboardSections,
+        dashboardQuickActions,
+      })
+      toast.success('Dashboard preferences saved')
+    } catch {
+      toast.error('Failed to save dashboard preferences')
+    } finally {
+      setSavingDashboard(false)
     }
   }
 
@@ -278,6 +337,8 @@ export default function SettingsPage() {
   const totalActualValue = salesTargets.reduce((sum, target) => sum + (target.actualAmount ?? 0), 0)
   const currentScopeMeta = scopeMeta[scopeType]
   const salesTargetsLoading = activeTab === 'sales-targets' && salesTargetsQuery === undefined
+  const visibleSectionCount = dashboardSections.length
+  const pinnedActionCount = dashboardQuickActions.length
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -296,6 +357,9 @@ export default function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="notifications" className="gap-1.5">
             <Bell className="h-3.5 w-3.5" /> Notifications
+          </TabsTrigger>
+          <TabsTrigger value="dashboard" className="gap-1.5">
+            <LayoutDashboard className="h-3.5 w-3.5" /> Dashboard
           </TabsTrigger>
           <TabsTrigger value="sales-targets" className="gap-1.5">
             <Target className="h-3.5 w-3.5" /> Sales Targets
@@ -398,6 +462,93 @@ export default function SettingsPage() {
             <Save className="h-3.5 w-3.5" />
             {savingNotifs ? 'Saving…' : 'Save Preferences'}
           </Button>
+        </TabsContent>
+
+        <TabsContent value="dashboard" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Dashboard Layout</CardTitle>
+              <CardDescription className="text-xs">
+                Personalize which dashboard blocks you see and which shortcuts stay pinned for you.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="surface-muted p-4">
+                  <p className="section-eyebrow">Visible blocks</p>
+                  <p className="mt-3 text-2xl font-semibold tracking-tight">{visibleSectionCount}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Hide less important widgets and keep your daily control room focused.
+                  </p>
+                </div>
+                <div className="surface-muted p-4">
+                  <p className="section-eyebrow">Pinned shortcuts</p>
+                  <p className="mt-3 text-2xl font-semibold tracking-tight">{pinnedActionCount}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Control which quick actions stay visible on your personal dashboard.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                {DASHBOARD_SECTION_OPTIONS.map((section, index) => (
+                  <div key={section.id}>
+                    {index > 0 && <Separator className="my-3" />}
+                    <div className="flex items-start justify-between gap-4 py-1">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-medium">{section.label}</p>
+                        <p className="text-xs text-muted-foreground">{section.description}</p>
+                      </div>
+                      <Switch
+                        checked={dashboardSections.includes(section.id)}
+                        onCheckedChange={(checked) => toggleDashboardSection(section.id, checked)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Separator />
+
+              <div className="space-y-1">
+                {DASHBOARD_QUICK_ACTION_OPTIONS.map((action, index) => (
+                  <div key={action.id}>
+                    {index > 0 && <Separator className="my-3" />}
+                    <div className="flex items-start justify-between gap-4 py-1">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-medium">{action.label}</p>
+                        <p className="text-xs text-muted-foreground">{action.description}</p>
+                      </div>
+                      <Switch
+                        checked={dashboardQuickActions.includes(action.id)}
+                        onCheckedChange={(checked) => toggleDashboardQuickAction(action.id, checked)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={saveDashboardPreferences}
+                  disabled={savingDashboard}
+                  className="gap-1.5"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  {savingDashboard ? 'Saving...' : 'Save Dashboard'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDashboardSections(DEFAULT_DASHBOARD_SECTIONS)
+                    setDashboardQuickActions(DEFAULT_DASHBOARD_QUICK_ACTIONS)
+                  }}
+                >
+                  Reset defaults
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="sales-targets" className="space-y-4">

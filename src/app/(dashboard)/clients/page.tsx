@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
+import { ExportMenu } from '@/components/shared/export-menu'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -11,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AddClientDialog } from '@/components/clients/add-client-dialog'
 import { Users, TrendingUp, Building2, ExternalLink, Search } from 'lucide-react'
+import { exportCsv, printReport } from '@/lib/export'
 import { formatEnum } from '@/lib/utils'
 
 function formatINR(amount: number) {
@@ -61,11 +63,57 @@ export default function ClientsPage() {
   const activeClients = clients.filter((c) => c.status === 'ACTIVE')
   const totalRetainer = activeClients.reduce((s, c) => s + (c.retainerAmount ?? 0), 0)
 
+  function handleCsvExport() {
+    exportCsv('clients-export.csv', filtered, [
+      { header: 'Company', value: (client) => client.companyName },
+      { header: 'Status', value: (client) => client.status },
+      { header: 'Industry', value: (client) => client.industry ?? '—' },
+      { header: 'Retainer', value: (client) => client.retainerAmount ?? 0 },
+      { header: 'Contacts', value: (client) => client.contacts.length },
+      { header: 'Projects', value: (client) => client.projects.length },
+      { header: 'Website', value: (client) => client.website ?? '—' },
+    ])
+  }
+
+  function handlePdfExport() {
+    printReport({
+      title: 'BLYFT Clients Report',
+      subtitle: `Generated on ${new Date().toLocaleDateString('en-IN')}`,
+      sections: [
+        {
+          title: 'Client summary',
+          columns: ['Metric', 'Value'],
+          rows: [
+            ['Total clients', clients.length],
+            ['Active clients', activeClients.length],
+            ['Filtered records', filtered.length],
+            ['Monthly retainer', formatINR(totalRetainer)],
+          ],
+        },
+        {
+          title: 'Client list',
+          columns: ['Company', 'Status', 'Industry', 'Retainer', 'Contacts', 'Projects'],
+          rows: filtered.map((client) => [
+            client.companyName,
+            formatEnum(client.status),
+            client.industry ?? '—',
+            client.retainerAmount ? formatINR(client.retainerAmount) : '—',
+            client.contacts.length,
+            client.projects.length,
+          ]),
+        },
+      ],
+    })
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Clients</h1>
-        <AddClientDialog />
+        <div className="flex gap-2">
+          <ExportMenu onCsv={handleCsvExport} onPdf={handlePdfExport} />
+          <AddClientDialog />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

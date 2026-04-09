@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
+import { ExportMenu } from '@/components/shared/export-menu'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -11,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AddProjectDialog } from '@/components/projects/add-project-dialog'
 import { FolderOpen, Clock, CheckCircle, PauseCircle, Calendar, Search } from 'lucide-react'
+import { exportCsv, printReport } from '@/lib/export'
 import { formatEnum } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
@@ -76,11 +78,60 @@ export default function ProjectsPage() {
   const completed = projects.filter((p) => p.status === 'COMPLETED').length
   const onHold = projects.filter((p) => p.status === 'ON_HOLD').length
 
+  function handleCsvExport() {
+    exportCsv('projects-export.csv', filtered, [
+      { header: 'Project', value: (project) => project.name },
+      { header: 'Client', value: (project) => project.client.companyName },
+      { header: 'Status', value: (project) => project.status },
+      { header: 'Type', value: (project) => project.type },
+      { header: 'Task count', value: (project) => project.taskCount },
+      {
+        header: 'Deadline',
+        value: (project) => (project.deadline ? new Date(project.deadline).toLocaleDateString('en-IN') : '—'),
+      },
+    ])
+  }
+
+  function handlePdfExport() {
+    printReport({
+      title: 'BLYFT Projects Report',
+      subtitle: `Generated on ${new Date().toLocaleDateString('en-IN')}`,
+      sections: [
+        {
+          title: 'Project summary',
+          columns: ['Metric', 'Value'],
+          rows: [
+            ['Total projects', projects.length],
+            ['In progress', inProgress],
+            ['Completed', completed],
+            ['On hold', onHold],
+            ['Filtered records', filtered.length],
+          ],
+        },
+        {
+          title: 'Project list',
+          columns: ['Project', 'Client', 'Status', 'Type', 'Tasks', 'Deadline'],
+          rows: filtered.map((project) => [
+            project.name,
+            project.client.companyName,
+            formatEnum(project.status),
+            formatEnum(project.type),
+            project.taskCount,
+            project.deadline ? new Date(project.deadline).toLocaleDateString('en-IN') : '—',
+          ]),
+        },
+      ],
+    })
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
-        <AddProjectDialog />
+        <div className="flex gap-2">
+          <ExportMenu onCsv={handleCsvExport} onPdf={handlePdfExport} />
+          <AddProjectDialog />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

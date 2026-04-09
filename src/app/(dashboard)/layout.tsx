@@ -9,6 +9,7 @@ import {
   Settings,
   User,
 } from 'lucide-react'
+import { GlobalSearch } from '@/components/layout/global-search'
 import { NotificationBell } from '@/components/layout/notification-panel'
 import { SidebarNav } from '@/components/layout/sidebar-nav'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -136,6 +137,8 @@ function TopHeader() {
           <p className="section-eyebrow">Workspace</p>
           <p className="truncate text-sm font-medium text-foreground">{pageLabel}</p>
         </div>
+
+        <GlobalSearch />
 
         <div className="hidden items-center gap-2 rounded-full border border-border/80 bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground lg:flex">
           <span className="h-2 w-2 rounded-full bg-emerald-500" />

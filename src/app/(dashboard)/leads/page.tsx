@@ -1,17 +1,21 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
+import { ExportMenu } from '@/components/shared/export-menu'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AddLeadDialog } from '@/components/leads/add-lead-dialog'
-import { Calendar, AlertCircle, Link2, TrendingUp } from 'lucide-react'
+import { Calendar, AlertCircle, Link2, Search, TrendingUp } from 'lucide-react'
 import { toast } from 'sonner'
+import { exportCsv, printReport } from '@/lib/export'
 import { formatEnum } from '@/lib/utils'
 import { LEAD_STAGES, STAGE_COLORS, TERMINAL_STAGES } from '@/lib/leads'
 
@@ -59,6 +63,7 @@ function LeadsSkeleton() {
 
 export default function LeadsPage() {
   const router = useRouter()
+  const [search, setSearch] = useState('')
   const leads = useQuery(api.leads.list)
 
   if (leads === undefined) return <LeadsSkeleton />
@@ -67,12 +72,66 @@ export default function LeadsPage() {
   const overdueCount = leads.filter(l => !isTerminal(l.stage) && isOverdue(l.followUpDate)).length
   const pipelineValue = leads.filter((l) => !isTerminal(l.stage)).reduce((s, l) => s + (l.estimatedValue ?? 0), 0)
   const wonLeads = leads.filter((l) => l.stage === 'PROPOSAL_ACCEPTED').length
+  const filteredLeads = leads.filter((lead) =>
+    !search ||
+    lead.name.toLowerCase().includes(search.toLowerCase()) ||
+    (lead.company ?? '').toLowerCase().includes(search.toLowerCase()) ||
+    (lead.contactName ?? '').toLowerCase().includes(search.toLowerCase()) ||
+    lead.stage.toLowerCase().includes(search.toLowerCase())
+  )
+
+  function handleCsvExport() {
+    exportCsv('leads-export.csv', filteredLeads, [
+      { header: 'Lead', value: (lead) => lead.name },
+      { header: 'Company', value: (lead) => lead.company ?? '—' },
+      { header: 'Stage', value: (lead) => lead.stage },
+      { header: 'Source', value: (lead) => lead.source },
+      { header: 'Estimated value', value: (lead) => lead.estimatedValue ?? 0 },
+      {
+        header: 'Follow-up',
+        value: (lead) => (lead.followUpDate ? new Date(lead.followUpDate).toLocaleDateString('en-IN') : '—'),
+      },
+    ])
+  }
+
+  function handlePdfExport() {
+    printReport({
+      title: 'BLYFT Leads Report',
+      subtitle: `Generated on ${new Date().toLocaleDateString('en-IN')}`,
+      sections: [
+        {
+          title: 'Lead summary',
+          columns: ['Metric', 'Value'],
+          rows: [
+            ['Total leads', leads.length],
+            ['Accepted', wonLeads],
+            ['Lost', leads.filter((lead) => lead.stage === 'LOST').length],
+            ['Pipeline value', formatINR(pipelineValue)],
+            ['Filtered leads', filteredLeads.length],
+          ],
+        },
+        {
+          title: 'Lead list',
+          columns: ['Lead', 'Company', 'Stage', 'Source', 'Value', 'Follow-up'],
+          rows: filteredLeads.map((lead) => [
+            lead.name,
+            lead.company ?? '—',
+            formatEnum(lead.stage),
+            formatEnum(lead.source),
+            lead.estimatedValue ? formatINR(lead.estimatedValue) : '—',
+            lead.followUpDate ? new Date(lead.followUpDate).toLocaleDateString('en-IN') : '—',
+          ]),
+        },
+      ],
+    })
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
         <div className="flex gap-2">
+          <ExportMenu onCsv={handleCsvExport} onPdf={handlePdfExport} />
           <Button
             size="sm"
             variant="outline"
@@ -105,6 +164,16 @@ export default function LeadsPage() {
         ))}
       </div>
 
+      <div className="relative max-w-xs">
+        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search leads, company, stage…"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          className="pl-8"
+        />
+      </div>
+
       <Tabs defaultValue="pipeline">
         <TabsList>
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
@@ -119,10 +188,15 @@ export default function LeadsPage() {
               <p className="text-xs text-muted-foreground/60 mb-4">Add your first lead to start tracking your pipeline</p>
               <AddLeadDialog />
             </div>
+          ) : filteredLeads.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed rounded-xl">
+              <TrendingUp className="h-8 w-8 text-muted-foreground/40 mb-3" />
+              <p className="text-sm text-muted-foreground">No leads match your search</p>
+            </div>
           ) : (
             <div className="flex gap-3 overflow-x-auto pb-3 -mx-1 px-1">
               {stageOrder.map((stage) => {
-                const stageLeads = leads.filter((l) => l.stage === stage)
+                const stageLeads = filteredLeads.filter((l) => l.stage === stage)
                 return (
                   <div key={stage} className="min-w-[240px] flex-shrink-0">
                     <div className="flex items-center gap-2 mb-2.5">
@@ -181,6 +255,11 @@ export default function LeadsPage() {
               <p className="text-xs text-muted-foreground/60 mb-4">Start tracking prospects and close more deals</p>
               <AddLeadDialog />
             </div>
+          ) : filteredLeads.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed rounded-xl">
+              <TrendingUp className="h-8 w-8 text-muted-foreground/40 mb-3" />
+              <p className="text-sm text-muted-foreground">No leads match your search</p>
+            </div>
           ) : (
             <Card>
               <Table>
@@ -195,7 +274,7 @@ export default function LeadsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {leads.map((lead) => (
+                  {filteredLeads.map((lead) => (
                     <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/leads/${lead.id}`)}>
                       <TableCell className="font-medium text-sm">{lead.name}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{lead.company ?? '—'}</TableCell>

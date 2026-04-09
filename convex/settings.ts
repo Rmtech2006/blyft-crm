@@ -17,6 +17,8 @@ export const upsert = mutation({
     notifPaymentDue: v.optional(v.boolean()),
     notifReimbursements: v.optional(v.boolean()),
     notifProjectUpdates: v.optional(v.boolean()),
+    dashboardSections: v.optional(v.array(v.string())),
+    dashboardQuickActions: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const { userId, ...rest } = args;
@@ -32,6 +34,8 @@ export const upsert = mutation({
         notifPaymentDue: rest.notifPaymentDue ?? true,
         notifReimbursements: rest.notifReimbursements ?? true,
         notifProjectUpdates: rest.notifProjectUpdates ?? false,
+        dashboardSections: rest.dashboardSections,
+        dashboardQuickActions: rest.dashboardQuickActions,
       });
     }
   },
