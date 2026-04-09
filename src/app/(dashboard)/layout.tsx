@@ -4,10 +4,12 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
 import {
+  ChevronLeft,
   ChevronDown,
   LogOut,
   Settings,
   User,
+  X,
 } from 'lucide-react'
 import { GlobalSearch } from '@/components/layout/global-search'
 import { NotificationBell } from '@/components/layout/notification-panel'
@@ -23,6 +25,7 @@ import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { BlyftLogo } from '@/components/brand/blyft-logo'
 
@@ -59,25 +62,39 @@ function getPageLabel(pathname: string): string {
 }
 
 function AppSidebar() {
+  const { isMobile, toggleSidebar } = useSidebar()
+
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
-        <Link href="/" className="group flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
-          <div className="flex items-center gap-3 group-data-[collapsible=icon]:hidden">
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-sidebar-foreground/40">
-                Agency OS
-              </p>
-              <div className="mt-1">
-                <BlyftLogo size="sm" variant="white" priority className="opacity-95" />
+        <div className="flex items-start justify-between gap-2 group-data-[collapsible=icon]:justify-center">
+          <Link href="/" className="group flex min-w-0 items-center gap-3 group-data-[collapsible=icon]:justify-center">
+            <div className="flex items-center gap-3 group-data-[collapsible=icon]:hidden">
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-sidebar-foreground/40">
+                  Agency OS
+                </p>
+                <div className="mt-1">
+                  <BlyftLogo size="sm" variant="white" priority className="opacity-95" />
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-[20px] bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_22px_38px_-24px_rgba(255,255,255,0.4)] group-data-[collapsible=icon]:flex">
-            <span className="text-sm font-black tracking-[0.18em]">B</span>
-          </div>
-        </Link>
+            <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-[20px] bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_22px_38px_-24px_rgba(255,255,255,0.4)] group-data-[collapsible=icon]:flex">
+              <span className="text-sm font-black tracking-[0.18em]">B</span>
+            </div>
+          </Link>
+
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-sidebar-foreground/72 transition-colors hover:bg-white/[0.08] hover:text-sidebar-foreground group-data-[collapsible=icon]:hidden"
+            aria-label={isMobile ? 'Close sidebar' : 'Collapse sidebar'}
+            title={isMobile ? 'Close sidebar' : 'Collapse sidebar'}
+          >
+            {isMobile ? <X className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
+        </div>
       </SidebarHeader>
 
       <SidebarContent className="px-3 py-4">
