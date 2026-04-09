@@ -27,8 +27,11 @@ function downloadBlob(filename: string, blob: Blob) {
   const anchor = document.createElement('a')
   anchor.href = url
   anchor.download = filename
+  anchor.style.display = 'none'
+  document.body.appendChild(anchor)
   anchor.click()
-  URL.revokeObjectURL(url)
+  anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 export function exportCsv<T>(
@@ -150,6 +153,6 @@ export function printReport(options: {
 
   popup.document.close()
   popup.focus()
-  popup.print()
+  window.setTimeout(() => popup.print(), 150)
   return true
 }

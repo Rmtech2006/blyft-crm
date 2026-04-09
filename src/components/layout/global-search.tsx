@@ -1,7 +1,7 @@
 'use client'
 
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useQuery } from 'convex/react'
 import { Command, CornerDownLeft, Search } from 'lucide-react'
 import { api } from '@convex/_generated/api'
@@ -27,7 +27,6 @@ const quickLinks = [
 ] as const
 
 export function GlobalSearch() {
-  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query.trim())
@@ -61,10 +60,9 @@ export function GlobalSearch() {
     return Array.from(sections.entries())
   }, [results])
 
-  function handleSelect(href: string) {
+  function handleSelect() {
     setOpen(false)
     setQuery('')
-    router.push(href)
   }
 
   return (
@@ -117,15 +115,15 @@ export function GlobalSearch() {
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {quickLinks.map((link) => (
-                    <button
+                    <Link
                       key={link.href}
-                      type="button"
-                      onClick={() => handleSelect(link.href)}
+                      href={link.href}
+                      onClick={handleSelect}
                       className="flex items-center justify-between rounded-2xl border border-border/80 bg-card px-4 py-3 text-left transition-colors hover:bg-accent"
                     >
                       <span className="text-sm font-medium text-foreground">{link.label}</span>
                       <CornerDownLeft className="h-4 w-4 text-muted-foreground" />
-                    </button>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -151,10 +149,10 @@ export function GlobalSearch() {
 
                     <div className="space-y-2">
                       {items.map((item) => (
-                        <button
+                        <Link
                           key={`${section}-${item.id}`}
-                          type="button"
-                          onClick={() => handleSelect(item.href)}
+                          href={item.href}
+                          onClick={handleSelect}
                           className="flex w-full items-start justify-between gap-3 rounded-2xl border border-border/80 bg-card px-4 py-3 text-left transition-colors hover:bg-accent"
                         >
                           <div className="min-w-0">
@@ -166,7 +164,7 @@ export function GlobalSearch() {
                             )}
                           </div>
                           <CornerDownLeft className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                        </button>
+                        </Link>
                       ))}
                     </div>
                   </div>

@@ -21,6 +21,10 @@ function includesQuery(query: string, ...values: Array<string | undefined | null
   return values.some((value) => value?.toLowerCase().includes(query))
 }
 
+function detailHref(section: 'clients' | 'projects' | 'tasks' | 'leads' | 'team', id: string) {
+  return `/${section}/${encodeURIComponent(id)}`
+}
+
 export const global = query({
   args: { query: v.string() },
   handler: async (ctx, args) => {
@@ -69,7 +73,7 @@ export const global = query({
           id: String(client._id),
           title: client.companyName,
           subtitle: [client.industry, client.status].filter(Boolean).join(' | '),
-          href: `/clients/${client._id}`,
+          href: detailHref('clients', String(client._id)),
           section: 'Clients',
         })
       })
@@ -93,7 +97,7 @@ export const global = query({
           subtitle: [clientNameMap.get(project.clientId), project.status].filter(Boolean).join(
             ' | '
           ),
-          href: `/projects/${project._id}`,
+          href: detailHref('projects', String(project._id)),
           section: 'Projects',
         })
       })
@@ -118,7 +122,7 @@ export const global = query({
           subtitle: [task.status, task.projectId ? projectNameMap.get(task.projectId) : undefined]
             .filter(Boolean)
             .join(' | '),
-          href: `/tasks/${task._id}`,
+          href: detailHref('tasks', String(task._id)),
           section: 'Tasks',
         })
       })
@@ -141,7 +145,7 @@ export const global = query({
           id: String(lead._id),
           title: lead.name,
           subtitle: [lead.company, lead.stage].filter(Boolean).join(' | '),
-          href: `/leads/${lead._id}`,
+          href: detailHref('leads', String(lead._id)),
           section: 'Leads',
         })
       })
@@ -164,7 +168,7 @@ export const global = query({
           id: String(member._id),
           title: member.fullName,
           subtitle: [member.department, member.status].filter(Boolean).join(' | '),
-          href: `/team/${member._id}`,
+          href: detailHref('team', String(member._id)),
           section: 'Team',
         })
       })

@@ -2,12 +2,6 @@
 
 import { Download, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 
 type ExportMenuProps = {
   csvLabel?: string
@@ -18,32 +12,22 @@ type ExportMenuProps = {
 
 export function ExportMenu({
   csvLabel = 'Export CSV',
-  pdfLabel = 'Print / Save PDF',
+  pdfLabel = 'Save PDF',
   onCsv,
   onPdf,
 }: ExportMenuProps) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button size="sm" variant="outline" className="gap-1.5" />
-        }
-      >
+    <div className="flex items-center gap-2">
+      <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={onCsv}>
         <Download className="h-4 w-4" />
-        Export
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem onClick={onCsv}>
-          <Download className="mr-2 h-4 w-4" />
-          {csvLabel}
-        </DropdownMenuItem>
-        {onPdf && (
-          <DropdownMenuItem onClick={onPdf}>
-            <FileText className="mr-2 h-4 w-4" />
-            {pdfLabel}
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+        {csvLabel}
+      </Button>
+      {onPdf && (
+        <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={onPdf}>
+          <FileText className="h-4 w-4" />
+          {pdfLabel}
+        </Button>
+      )}
+    </div>
   )
 }
