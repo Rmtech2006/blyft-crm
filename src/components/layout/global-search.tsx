@@ -18,12 +18,16 @@ type SearchResult = {
 }
 
 const quickLinks = [
-  { label: 'Dashboard', href: '/' },
-  { label: 'Clients', href: '/clients' },
-  { label: 'Projects', href: '/projects' },
-  { label: 'Tasks', href: '/tasks' },
-  { label: 'Leads', href: '/leads' },
-  { label: 'Finance', href: '/finance' },
+  { label: 'Dashboard', href: '/', section: 'Navigation', subtitle: 'Executive overview' },
+  { label: 'Clients', href: '/clients', section: 'Navigation', subtitle: 'Client relationships' },
+  { label: 'Projects', href: '/projects', section: 'Navigation', subtitle: 'Delivery pipeline' },
+  { label: 'Tasks', href: '/tasks', section: 'Navigation', subtitle: 'Execution board' },
+  { label: 'Leads', href: '/leads', section: 'Navigation', subtitle: 'Sales pipeline' },
+  { label: 'Finance', href: '/finance', section: 'Navigation', subtitle: 'Transactions and accounts' },
+  { label: 'Team', href: '/team', section: 'Navigation', subtitle: 'People and departments' },
+  { label: 'Templates', href: '/templates', section: 'Navigation', subtitle: 'Email and message templates' },
+  { label: 'Reimbursements', href: '/reimbursements', section: 'Navigation', subtitle: 'Expense claims' },
+  { label: 'Settings', href: '/settings', section: 'Navigation', subtitle: 'Preferences and targets' },
 ] as const
 
 export function GlobalSearch() {
@@ -34,7 +38,33 @@ export function GlobalSearch() {
     api.search.global,
     deferredQuery.length >= 2 ? { query: deferredQuery } : 'skip'
   )
-  const results = useMemo(() => (queriedResults ?? []) as SearchResult[], [queriedResults])
+  const results = useMemo(() => {
+    const queryText = deferredQuery.toLowerCase()
+    const navigationMatches =
+      queryText.length >= 2
+        ? quickLinks
+            .filter(
+              (link) =>
+                link.label.toLowerCase().includes(queryText) ||
+                link.subtitle.toLowerCase().includes(queryText)
+            )
+            .map(
+              (link): SearchResult => ({
+                id: link.href,
+                title: link.label,
+                subtitle: link.subtitle,
+                href: link.href,
+                section: link.section,
+              })
+            )
+        : []
+
+    const recordResults = ((queriedResults ?? []) as SearchResult[]).filter(
+      (item) => !navigationMatches.some((link) => link.href === item.href && link.title === item.title)
+    )
+
+    return [...navigationMatches, ...recordResults]
+  }, [deferredQuery, queriedResults])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -121,7 +151,10 @@ export function GlobalSearch() {
                       onClick={handleSelect}
                       className="flex items-center justify-between rounded-2xl border border-border/80 bg-card px-4 py-3 text-left transition-colors hover:bg-accent"
                     >
-                      <span className="text-sm font-medium text-foreground">{link.label}</span>
+                      <div>
+                        <span className="text-sm font-medium text-foreground">{link.label}</span>
+                        <p className="mt-1 text-xs text-muted-foreground">{link.subtitle}</p>
+                      </div>
                       <CornerDownLeft className="h-4 w-4 text-muted-foreground" />
                     </Link>
                   ))}
