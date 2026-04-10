@@ -271,7 +271,8 @@ export default defineSchema({
     type: v.string(),
     read: v.boolean(),
     link: v.optional(v.string()),
-  }).index("by_userId", ["userId"]),
+  }).index("by_userId", ["userId"])
+    .index("by_userId_and_read", ["userId", "read"]),
 
   subtasks: defineTable({
     taskId: v.id("tasks"),

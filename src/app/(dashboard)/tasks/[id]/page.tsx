@@ -38,9 +38,7 @@ const priorityColors: Record<string, string> = {
 export default function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
-  const { data: session } = useSession()
-  const userName = session?.user?.name ?? 'User'
-  const userId = (session?.user as { id?: string })?.id ?? session?.user?.email ?? 'unknown'
+  useSession()
 
   const task = useQuery(api.tasks.get, { id: id as Id<'tasks'> })
   const updateStatus = useMutation(api.tasks.updateStatus)
@@ -78,7 +76,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     if (!comment.trim()) return
     setPostingComment(true)
     try {
-      await addComment({ taskId: id as Id<'tasks'>, content: comment.trim(), authorId: userId, authorName: userName })
+      await addComment({ taskId: id as Id<'tasks'>, content: comment.trim() })
       setComment('')
     } catch {
       toast.error('Failed to post comment')

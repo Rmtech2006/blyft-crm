@@ -4,7 +4,7 @@ import { v } from "convex/values";
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const clients = await ctx.db.query("clients").order("desc").collect();
+    const clients = await ctx.db.query("clients").order("desc").take(150);
     return await Promise.all(
       clients.map(async (client) => {
         const contacts = await ctx.db
@@ -135,9 +135,9 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id("clients") },
   handler: async (ctx, args) => {
-    const contacts = await ctx.db.query("clientContacts").withIndex("by_clientId", (q) => q.eq("clientId", args.id)).collect();
+    const contacts = await ctx.db.query("clientContacts").withIndex("by_clientId", (q) => q.eq("clientId", args.id)).take(100);
     for (const c of contacts) await ctx.db.delete(c._id);
-    const notes = await ctx.db.query("clientNotes").withIndex("by_clientId", (q) => q.eq("clientId", args.id)).collect();
+    const notes = await ctx.db.query("clientNotes").withIndex("by_clientId", (q) => q.eq("clientId", args.id)).take(100);
     for (const n of notes) await ctx.db.delete(n._id);
     await ctx.db.delete(args.id);
   },

@@ -23,8 +23,10 @@ import {
   Wallet,
 } from 'lucide-react'
 import { api } from '@convex/_generated/api'
+import { DashboardPageHeader } from '@/components/dashboard/page-header'
+import { DashboardPartialModeAlert } from '@/components/dashboard/partial-mode-alert'
 import { StatsCard } from '@/components/dashboard/stats-card'
-import { ExportMenu } from '@/components/shared/export-menu'
+import { EmptyDashboardState } from '@/components/dashboard/empty-dashboard-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -137,8 +139,7 @@ function DashboardSkeleton() {
 
 export default function DashboardPage() {
   const { data: session } = useSession()
-  const userId = (session?.user as { id?: string })?.id ?? session?.user?.email ?? ''
-  const savedSettings = useQuery(api.settings.get, userId ? { userId } : 'skip')
+  const savedSettings = useQuery(api.settings.get, session?.user ? {} : 'skip')
   const rawStats = useQuery(api.dashboard.getStats)
   const { data: stats, isPartial } = useMemo(() => normalizeDashboardStats(rawStats), [rawStats])
   const visibleSections = useMemo(
@@ -258,42 +259,11 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="section-eyebrow">Workspace</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Dashboard</h1>
-        </div>
-        <ExportMenu onCsv={handleCsvExport} onPdf={handlePdfExport} />
-      </div>
+      <DashboardPageHeader onCsv={handleCsvExport} onPdf={handlePdfExport} />
 
-      {isPartial && (
-        <div className="surface-muted flex items-start gap-3 border border-amber-200/70 bg-amber-50/80 px-4 py-4 text-sm text-amber-950">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-          <div className="space-y-1">
-            <p className="font-medium">Advanced dashboard blocks are in fallback mode.</p>
-            <p className="text-amber-900/80">
-              The frontend is ahead of the Convex backend right now. Run <span className="font-mono">npm run convex:sync</span> before the next Vercel rollout to restore the full sales-target view.
-            </p>
-          </div>
-        </div>
-      )}
+      {isPartial && <DashboardPartialModeAlert />}
 
-      {visibleSections.size === 0 && (
-        <Card className="surface-card">
-          <CardContent className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-            <Target className="h-10 w-10 text-muted-foreground/35" />
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">All dashboard blocks are hidden</p>
-              <p className="text-sm text-muted-foreground">
-                Re-enable sections from Settings to rebuild your personal control room.
-              </p>
-            </div>
-            <Button variant="outline" render={<Link href="/settings" />}>
-              Open dashboard settings
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      {visibleSections.size === 0 && <EmptyDashboardState />}
 
       {visibleSections.has('heroOverview') && (
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
@@ -531,10 +501,13 @@ export default function DashboardPage() {
                     />
                     <Tooltip
                       cursor={{ fill: 'rgba(15, 23, 42, 0.05)' }}
-                      formatter={(value: number, name: string) => [
-                        formatCurrency(value),
-                        name === 'target' ? 'Target' : 'Income',
-                      ]}
+                      formatter={(value, name) => {
+                        const numericValue = typeof value === 'number' ? value : Number(value ?? 0)
+                        return [
+                          formatCurrency(numericValue),
+                          name === 'target' ? 'Target' : 'Income',
+                        ]
+                      }}
                       contentStyle={{
                         borderRadius: 18,
                         border: '1px solid var(--border)',

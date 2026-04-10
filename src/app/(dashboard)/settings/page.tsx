@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner'
 import { api } from '@convex/_generated/api'
 import { Id } from '@convex/_generated/dataModel'
+import { SettingsPageHeader } from '@/components/settings/page-header'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -119,7 +120,7 @@ export default function SettingsPage() {
   const user = session?.user
   const userId = (user as { id?: string })?.id ?? user?.email ?? ''
 
-  const savedSettings = useQuery(api.settings.get, userId ? { userId } : 'skip')
+  const savedSettings = useQuery(api.settings.get, userId ? {} : 'skip')
   const teamMembersQuery = useQuery(api.team.list)
   const teamMembers = useMemo(() => teamMembersQuery ?? [], [teamMembersQuery])
   const [activeTab, setActiveTab] = useState('profile')
@@ -234,7 +235,7 @@ export default function SettingsPage() {
     if (!userId) return
     setSavingProfile(true)
     try {
-      await upsertSettings({ userId, displayName: displayName.trim() || undefined })
+      await upsertSettings({ displayName: displayName.trim() || undefined })
       toast.success('Profile updated')
     } catch {
       toast.error('Failed to save profile')
@@ -247,7 +248,7 @@ export default function SettingsPage() {
     if (!userId) return
     setSavingNotifs(true)
     try {
-      await upsertSettings({ userId, ...notifPrefs })
+      await upsertSettings({ ...notifPrefs })
       toast.success('Notification preferences saved')
     } catch {
       toast.error('Failed to save preferences')
@@ -261,7 +262,6 @@ export default function SettingsPage() {
     setSavingDashboard(true)
     try {
       await upsertSettings({
-        userId,
         dashboardSections,
         dashboardQuickActions,
       })
@@ -342,13 +342,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-5xl space-y-6">
-      <div>
-        <p className="section-eyebrow">Preferences</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Settings</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-          Manage your profile, notification rules, and the monthly sales targets required by the CRM brief.
-        </p>
-      </div>
+      <SettingsPageHeader />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
@@ -645,7 +639,7 @@ export default function SettingsPage() {
                   {scopeType === 'DEPARTMENT' && (
                     <div className="space-y-2">
                       <Label>Department</Label>
-                      <Select value={department} onValueChange={setDepartment}>
+                      <Select value={department} onValueChange={(value) => setDepartment(value ?? '')}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select department" />
                         </SelectTrigger>
@@ -663,7 +657,7 @@ export default function SettingsPage() {
                   {scopeType === 'MEMBER' && (
                     <div className="space-y-2">
                       <Label>Team member</Label>
-                      <Select value={teamMemberId} onValueChange={setTeamMemberId}>
+                      <Select value={teamMemberId} onValueChange={(value) => setTeamMemberId(value ?? '')}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select team member" />
                         </SelectTrigger>

@@ -62,10 +62,11 @@ export default function ProjectsPage() {
   const [search, setSearch] = useState('')
 
   const projects = useQuery(api.projects.list)
+  const projectRecords = projects ?? []
 
   if (projects === undefined) return <ProjectsSkeleton />
 
-  const filtered = projects.filter((p) => {
+  const filtered = projectRecords.filter((p) => {
     const matchStatus = statusFilter === 'ALL' || p.status === statusFilter
     const matchType = typeFilter === 'ALL' || p.type === typeFilter
     const matchSearch = !search ||
@@ -74,9 +75,9 @@ export default function ProjectsPage() {
     return matchStatus && matchType && matchSearch
   })
 
-  const inProgress = projects.filter((p) => p.status === 'IN_PROGRESS').length
-  const completed = projects.filter((p) => p.status === 'COMPLETED').length
-  const onHold = projects.filter((p) => p.status === 'ON_HOLD').length
+  const inProgress = projectRecords.filter((p) => p.status === 'IN_PROGRESS').length
+  const completed = projectRecords.filter((p) => p.status === 'COMPLETED').length
+  const onHold = projectRecords.filter((p) => p.status === 'ON_HOLD').length
 
   function handleCsvExport() {
     exportCsv('projects-export.csv', filtered, [
@@ -101,7 +102,7 @@ export default function ProjectsPage() {
           title: 'Project summary',
           columns: ['Metric', 'Value'],
           rows: [
-            ['Total projects', projects.length],
+            ['Total projects', projectRecords.length],
             ['In progress', inProgress],
             ['Completed', completed],
             ['On hold', onHold],
@@ -136,7 +137,7 @@ export default function ProjectsPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total', value: projects.length, icon: FolderOpen, color: 'text-primary' },
+          { label: 'Total', value: projectRecords.length, icon: FolderOpen, color: 'text-primary' },
           { label: 'In Progress', value: inProgress, icon: Clock, color: 'text-primary' },
           { label: 'Completed', value: completed, icon: CheckCircle, color: 'text-green-500' },
           { label: 'On Hold', value: onHold, icon: PauseCircle, color: 'text-red-500' },

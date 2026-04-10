@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { getCurrentUserId, requireIdentity } from "./auth";
 
 const USERS: Record<string, { id: string; name: string; email: string }> = {
   ritish: { id: "ritish", name: "Ritish", email: "ritish@blyftit.com" },
@@ -9,7 +10,7 @@ const USERS: Record<string, { id: string; name: string; email: string }> = {
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const tasks = await ctx.db.query("tasks").order("desc").collect();
+    const tasks = await ctx.db.query("tasks").order("desc").take(250);
     return await Promise.all(
       tasks.map(async (task) => {
         const project = task.projectId ? await ctx.db.get(task.projectId) : null;
@@ -68,9 +69,9 @@ export const create = mutation({
     )),
     projectId: v.optional(v.id("projects")),
     assigneeId: v.optional(v.string()),
-    createdById: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const createdById = await getCurrentUserId(ctx);
     return await ctx.db.insert("tasks", {
       title: args.title,
       description: args.description,
@@ -80,7 +81,7 @@ export const create = mutation({
       recurringType: args.recurringType ?? "NONE",
       projectId: args.projectId,
       assigneeId: args.assigneeId,
-      createdById: args.createdById,
+      createdById,
     });
   },
 });
@@ -138,7 +139,7 @@ export const addSubtask = mutation({
     const existing = await ctx.db
       .query("subtasks")
       .withIndex("by_taskId", (q) => q.eq("taskId", args.taskId))
-      .collect();
+      .take(100);
     return await ctx.db.insert("subtasks", {
       taskId: args.taskId,
       title: args.title,
@@ -168,15 +169,14 @@ export const addComment = mutation({
   args: {
     taskId: v.id("tasks"),
     content: v.string(),
-    authorId: v.string(),
-    authorName: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
     return await ctx.db.insert("taskComments", {
       taskId: args.taskId,
       content: args.content,
-      authorId: args.authorId,
-      authorName: args.authorName,
+      authorId: identity.subject,
+      authorName: identity.name ?? identity.email ?? "User",
     });
   },
 });

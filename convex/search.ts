@@ -41,14 +41,14 @@ export const global = query({
       transactions,
       reimbursements,
     ] = await Promise.all([
-      ctx.db.query('clients').collect(),
-      ctx.db.query('projects').collect(),
-      ctx.db.query('tasks').collect(),
-      ctx.db.query('leads').collect(),
-      ctx.db.query('teamMembers').collect(),
-      ctx.db.query('messageTemplates').collect(),
-      ctx.db.query('transactions').collect(),
-      ctx.db.query('reimbursements').collect(),
+      ctx.db.query('clients').order('desc').take(150),
+      ctx.db.query('projects').order('desc').take(150),
+      ctx.db.query('tasks').order('desc').take(200),
+      ctx.db.query('leads').order('desc').take(150),
+      ctx.db.query('teamMembers').order('desc').take(100),
+      ctx.db.query('messageTemplates').order('desc').take(100),
+      ctx.db.query('transactions').order('desc').take(200),
+      ctx.db.query('reimbursements').order('desc').take(150),
     ])
 
     const clientNameMap = new Map(clients.map((client) => [client._id, client.companyName]))

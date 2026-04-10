@@ -62,12 +62,13 @@ export default function TasksPage() {
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
 
   const tasks = useQuery(api.tasks.list)
+  const taskRecords = tasks ?? []
   const removeTask = useMutation(api.tasks.remove)
   const updateStatus = useMutation(api.tasks.updateStatus)
 
   if (tasks === undefined) return <TasksSkeleton />
 
-  const filtered = tasks.filter((t) => {
+  const filtered = taskRecords.filter((t) => {
     const matchPriority = priorityFilter === 'ALL' || t.priority === priorityFilter
     const matchSearch = !search ||
       t.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -99,10 +100,10 @@ export default function TasksPage() {
           title: 'Task summary',
           columns: ['Metric', 'Value'],
           rows: [
-            ['Total tasks', tasks.length],
+            ['Total tasks', taskRecords.length],
             ['Filtered tasks', filtered.length],
-            ['Critical tasks', tasks.filter((task) => task.priority === 'CRITICAL').length],
-            ['Blocked tasks', tasks.filter((task) => task.status === 'BLOCKED').length],
+            ['Critical tasks', taskRecords.filter((task) => task.priority === 'CRITICAL').length],
+            ['Blocked tasks', taskRecords.filter((task) => task.status === 'BLOCKED').length],
           ],
         },
         {
@@ -201,7 +202,7 @@ export default function TasksPage() {
         </TabsList>
 
         <TabsContent value="board">
-          {tasks.length === 0 ? (
+          {taskRecords.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-xl">
               <CheckSquare className="h-10 w-10 text-muted-foreground/40 mb-3" />
               <p className="text-sm font-medium text-muted-foreground">No tasks yet</p>

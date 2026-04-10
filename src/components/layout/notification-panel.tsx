@@ -22,10 +22,8 @@ const typeConfig: Record<string, { icon: React.ElementType; color: string }> = {
 }
 
 export function NotificationPanel({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const { data: session } = useSession()
-  const userId = (session?.user as { id?: string })?.id ?? session?.user?.email ?? 'unknown'
-
-  const notifications = useQuery(api.notifications.list, { userId })
+  useSession()
+  const notifications = useQuery(api.notifications.list, {})
   const markRead = useMutation(api.notifications.markRead)
   const markAllRead = useMutation(api.notifications.markAllRead)
   const remove = useMutation(api.notifications.remove)
@@ -33,7 +31,7 @@ export function NotificationPanel({ open, onOpenChange }: { open: boolean; onOpe
   const unread = (notifications ?? []).filter((n) => !n.read).length
 
   async function handleMarkAll() {
-    await markAllRead({ userId })
+    await markAllRead({})
   }
 
   return (
@@ -132,9 +130,8 @@ export function NotificationPanel({ open, onOpenChange }: { open: boolean; onOpe
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false)
-  const { data: session } = useSession()
-  const userId = (session?.user as { id?: string })?.id ?? session?.user?.email ?? 'unknown'
-  const unread = useQuery(api.notifications.unreadCount, { userId }) ?? 0
+  useSession()
+  const unread = useQuery(api.notifications.unreadCount, {}) ?? 0
 
   return (
     <>
