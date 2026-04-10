@@ -9,11 +9,15 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    "**/.next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
     // Generated code:
     "convex/_generated/**",
+    // Local git worktrees are used for isolated development and may contain
+    // nested apps plus generated artifacts that should not be linted here.
+    ".worktrees/**",
   ]),
 ]);
 
