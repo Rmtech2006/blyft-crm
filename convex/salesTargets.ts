@@ -12,7 +12,7 @@ export const listForMonth = query({
     const targets = await ctx.db
       .query("salesTargets")
       .withIndex("by_monthKey", (q) => q.eq("monthKey", args.monthKey))
-      .collect();
+      .take(50);
 
     const memberIds = [...new Set(targets.flatMap((target) => (target.teamMemberId ? [target.teamMemberId] : [])))];
     const members = await Promise.all(memberIds.map((memberId) => ctx.db.get(memberId)));
@@ -92,7 +92,7 @@ export const upsert = mutation({
       .withIndex("by_scopeType_and_monthKey", (q) =>
         q.eq("scopeType", args.scopeType).eq("monthKey", args.monthKey)
       )
-      .collect();
+      .take(50);
 
     const duplicate = possibleMatches.find((target) => {
       if (args.scopeType === "OVERALL") return true;

@@ -1,11 +1,56 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { authConfig } from '@/lib/auth.config'
+import { APP_ROLES, type AppRole } from '@/lib/roles'
 
-const ADMIN_USERS = [
-  { id: 'ritish', name: 'Ritish', email: 'ritish@blyftit.com', password: 'Ritish@2826', role: 'SUPER_ADMIN' as const },
-  { id: 'eshaan', name: 'Eshaan', email: 'eshaan@blyftit.com', password: 'Eshaan@2026', role: 'SUPER_ADMIN' as const },
-]
+type AuthUserRecord = {
+  id: string
+  name: string
+  email: string
+  password: string
+  role: AppRole
+}
+
+function isAppRole(value: unknown): value is AppRole {
+  return typeof value === 'string' && APP_ROLES.includes(value as AppRole)
+}
+
+function getConfiguredUsers(): AuthUserRecord[] {
+  const raw = process.env.BLYFT_AUTH_USERS_JSON
+  if (!raw) return []
+
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+
+    return parsed.flatMap((entry): AuthUserRecord[] => {
+      if (!entry || typeof entry !== 'object') return []
+
+      const candidate = entry as Partial<AuthUserRecord>
+      if (
+        typeof candidate.id !== 'string' ||
+        typeof candidate.name !== 'string' ||
+        typeof candidate.email !== 'string' ||
+        typeof candidate.password !== 'string' ||
+        !isAppRole(candidate.role)
+      ) {
+        return []
+      }
+
+      return [
+        {
+          id: candidate.id,
+          name: candidate.name,
+          email: candidate.email.toLowerCase(),
+          password: candidate.password,
+          role: candidate.role,
+        },
+      ]
+    })
+  } catch {
+    return []
+  }
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -17,12 +62,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
+        const email = typeof credentials?.email === 'string' ? credentials.email.toLowerCase() : ''
+        const password = typeof credentials?.password === 'string' ? credentials.password : ''
 
-        const user = ADMIN_USERS.find(
+        if (!email || !password) return null
+
+        const user = getConfiguredUsers().find(
           (u) =>
-            u.email === credentials.email &&
-            u.password === credentials.password
+            u.email === email &&
+            u.password === password
         )
 
         if (!user) return null
@@ -38,14 +86,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.role = ((user as { role?: string }).role ?? 'SUPER_ADMIN') as 'SUPER_ADMIN'
+        token.role = ((user as { role?: AppRole }).role ?? 'TEAM_MEMBER') as AppRole
       }
       return token
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string
-        session.user.role = token.role as 'SUPER_ADMIN'
+        session.user.role = (token.role as AppRole | undefined) ?? 'TEAM_MEMBER'
       }
       return session
     },

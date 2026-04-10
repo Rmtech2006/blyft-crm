@@ -65,14 +65,15 @@ export default function LeadsPage() {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const leads = useQuery(api.leads.list)
+  const leadRecords = leads ?? []
 
   if (leads === undefined) return <LeadsSkeleton />
 
   const isTerminal = (s: string) => (TERMINAL_STAGES as string[]).includes(s)
-  const overdueCount = leads.filter(l => !isTerminal(l.stage) && isOverdue(l.followUpDate)).length
-  const pipelineValue = leads.filter((l) => !isTerminal(l.stage)).reduce((s, l) => s + (l.estimatedValue ?? 0), 0)
-  const wonLeads = leads.filter((l) => l.stage === 'PROPOSAL_ACCEPTED').length
-  const filteredLeads = leads.filter((lead) =>
+  const overdueCount = leadRecords.filter(l => !isTerminal(l.stage) && isOverdue(l.followUpDate)).length
+  const pipelineValue = leadRecords.filter((l) => !isTerminal(l.stage)).reduce((s, l) => s + (l.estimatedValue ?? 0), 0)
+  const wonLeads = leadRecords.filter((l) => l.stage === 'PROPOSAL_ACCEPTED').length
+  const filteredLeads = leadRecords.filter((lead) =>
     !search ||
     lead.name.toLowerCase().includes(search.toLowerCase()) ||
     (lead.company ?? '').toLowerCase().includes(search.toLowerCase()) ||
@@ -103,9 +104,9 @@ export default function LeadsPage() {
           title: 'Lead summary',
           columns: ['Metric', 'Value'],
           rows: [
-            ['Total leads', leads.length],
+            ['Total leads', leadRecords.length],
             ['Accepted', wonLeads],
-            ['Lost', leads.filter((lead) => lead.stage === 'LOST').length],
+            ['Lost', leadRecords.filter((lead) => lead.stage === 'LOST').length],
             ['Pipeline value', formatINR(pipelineValue)],
             ['Filtered leads', filteredLeads.length],
           ],
@@ -149,9 +150,9 @@ export default function LeadsPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
-          { label: 'Total Leads', value: leads.length },
+          { label: 'Total Leads', value: leadRecords.length },
           { label: 'Accepted', value: wonLeads },
-          { label: 'Lost', value: leads.filter(l => l.stage === 'LOST').length },
+          { label: 'Lost', value: leadRecords.filter(l => l.stage === 'LOST').length },
           { label: 'Pipeline Value', value: formatINR(pipelineValue) },
           { label: 'Follow-up Overdue', value: overdueCount, highlight: overdueCount > 0 },
         ].map(({ label, value, highlight }) => (
@@ -181,7 +182,7 @@ export default function LeadsPage() {
         </TabsList>
 
         <TabsContent value="pipeline">
-          {leads.length === 0 ? (
+          {leadRecords.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-xl">
               <TrendingUp className="h-10 w-10 text-muted-foreground/40 mb-3" />
               <p className="text-sm font-medium text-muted-foreground">No leads yet</p>

@@ -7,10 +7,11 @@ function getMonthKey(date: Date) {
 export const getStats = query({
   args: {},
   handler: async (ctx) => {
-    const nowDate = new Date();
-    const currentMonthKey = getMonthKey(nowDate);
-    const startOfMonth = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1).getTime();
-    const now = Date.now();
+const nowDate = new Date();
+const currentMonthKey = getMonthKey(nowDate);
+const startOfMonth = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1).getTime();
+const now = Date.now();
+const SIX_MONTH_WINDOW = new Date(nowDate.getFullYear(), nowDate.getMonth() - 5, 1).getTime();
 
     const [
       clients,
@@ -23,29 +24,36 @@ export const getStats = query({
       currentMonthTargets,
       overallTargets,
     ] = await Promise.all([
-      ctx.db.query("clients").collect(),
-      ctx.db.query("projects").collect(),
-      ctx.db.query("leads").collect(),
-      ctx.db.query("transactions").withIndex("by_type", (q) => q.eq("type", "INCOME")).collect(),
+      ctx.db.query("clients").order("desc").take(250),
+      ctx.db.query("projects").order("desc").take(250),
+      ctx.db.query("leads").order("desc").take(250),
+      ctx.db
+        .query("transactions")
+        .withIndex("by_type", (q) => q.eq("type", "INCOME"))
+        .order("desc")
+        .take(500),
       ctx.db.query("activityLogs").order("desc").take(8),
-      ctx.db.query("reimbursements").withIndex("by_status", (q) => q.eq("status", "PENDING")).collect(),
-      ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "TODO")).collect(),
-      ctx.db.query("salesTargets").withIndex("by_monthKey", (q) => q.eq("monthKey", currentMonthKey)).collect(),
-      ctx.db.query("salesTargets").withIndex("by_scopeType_and_monthKey", (q) => q.eq("scopeType", "OVERALL")).collect(),
+      ctx.db.query("reimbursements").withIndex("by_status", (q) => q.eq("status", "PENDING")).take(100),
+      ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "TODO")).take(200),
+      ctx.db.query("salesTargets").withIndex("by_monthKey", (q) => q.eq("monthKey", currentMonthKey)).take(50),
+      ctx.db.query("salesTargets").withIndex("by_scopeType_and_monthKey", (q) => q.eq("scopeType", "OVERALL")).take(24),
     ]);
 
     const additionalTasks = await Promise.all([
-      ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "IN_PROGRESS")).collect(),
-      ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "IN_REVIEW")).collect(),
+      ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "IN_PROGRESS")).take(200),
+      ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "IN_REVIEW")).take(200),
     ]);
     const activeTasks = [...tasks, ...additionalTasks.flat()];
+    const sixMonthIncomeTransactions = incomeTransactions.filter(
+      (transaction) => transaction.date >= SIX_MONTH_WINDOW
+    );
 
     const totalClients = clients.filter((client) => client.status === "ACTIVE").length;
     const activeProjects = projects.filter((project) =>
       ["IN_PROGRESS", "NOT_STARTED", "IN_REVIEW"].includes(project.status)
     ).length;
     const openLeads = leads.filter((lead) => !["PROPOSAL_ACCEPTED", "LOST"].includes(lead.stage)).length;
-    const monthlyRevenue = incomeTransactions
+    const monthlyRevenue = sixMonthIncomeTransactions
       .filter((transaction) => transaction.date >= startOfMonth)
       .reduce((sum, transaction) => sum + transaction.amount, 0);
     const overdueCount = activeTasks.filter((task) => task.dueDate && task.dueDate < now).length;
@@ -79,7 +87,7 @@ export const getStats = query({
       const monthKey = getMonthKey(date);
       const start = date.getTime();
       const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59).getTime();
-      const income = incomeTransactions
+      const income = sixMonthIncomeTransactions
         .filter((transaction) => transaction.date >= start && transaction.date <= end)
         .reduce((sum, transaction) => sum + transaction.amount, 0);
 

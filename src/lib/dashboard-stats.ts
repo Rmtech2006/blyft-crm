@@ -138,23 +138,21 @@ export function normalizeDashboardStats(value: unknown): DashboardStatsCompat {
     : []
 
   const recentActivity = Array.isArray(source.recentActivity)
-    ? source.recentActivity
-        .map((entry) => {
-          const item = asObject(entry)
-          if (!item) return null
+    ? source.recentActivity.flatMap((entry): DashboardActivity[] => {
+        const item = asObject(entry)
+        if (!item) return []
 
-          const user = asObject(item.user)
+        const user = asObject(item.user)
 
-          return {
-            id: asString(item.id, `${asString(item.entity, 'entity')}-${asNumber(item.createdAt, Date.now())}`),
-            action: asString(item.action, 'UPDATE'),
-            entity: asString(item.entity, 'ITEM'),
-            details: typeof item.details === 'string' ? item.details : undefined,
-            createdAt: asNumber(item.createdAt, Date.now()),
-            user: user ? { name: typeof user.name === 'string' ? user.name : undefined } : null,
-          }
-        })
-        .filter((entry): entry is DashboardActivity => Boolean(entry))
+        return [{
+          id: asString(item.id, `${asString(item.entity, 'entity')}-${asNumber(item.createdAt, Date.now())}`),
+          action: asString(item.action, 'UPDATE'),
+          entity: asString(item.entity, 'ITEM'),
+          details: typeof item.details === 'string' ? item.details : undefined,
+          createdAt: asNumber(item.createdAt, Date.now()),
+          user: user ? { name: typeof user.name === 'string' ? user.name : undefined } : null,
+        }]
+      })
     : []
 
   const isPartial =

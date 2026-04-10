@@ -1,14 +1,52 @@
 'use client'
 
-import { SessionProvider } from 'next-auth/react'
-import { ConvexProvider, ConvexReactClient } from 'convex/react'
+import { useMemo } from 'react'
+import { SessionProvider, useSession } from 'next-auth/react'
+import { ConvexProviderWithAuth, ConvexReactClient } from 'convex/react'
 
-const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
+function useNextAuthToken() {
+  const { status } = useSession()
+
+  return useMemo(() => ({
+    isLoading: status === 'loading',
+    isAuthenticated: status === 'authenticated',
+    fetchAccessToken: async () => {
+      if (status !== 'authenticated') return null
+
+      const response = await fetch('/api/convex/token', {
+        credentials: 'include',
+        cache: 'no-store',
+      })
+
+      if (!response.ok) return null
+
+      const data = (await response.json()) as { token?: string }
+      return data.token ?? null
+    },
+  }), [status])
+}
+
+function ConvexSessionBridge({ children }: { children: React.ReactNode }) {
+  const convex = useMemo(
+    () =>
+      new ConvexReactClient(
+        process.env.NEXT_PUBLIC_CONVEX_URL ?? 'https://placeholder.convex.cloud'
+      ),
+    []
+  )
+  const auth = useNextAuthToken()
+
+  return (
+    <ConvexProviderWithAuth client={convex} useAuth={() => auth}>
+      {children}
+    </ConvexProviderWithAuth>
+  )
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ConvexProvider client={convex}>
-      <SessionProvider>{children}</SessionProvider>
-    </ConvexProvider>
+    <SessionProvider>
+      <ConvexSessionBridge>{children}</ConvexSessionBridge>
+    </SessionProvider>
   )
 }

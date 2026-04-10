@@ -14,8 +14,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AddTransactionDialog } from '@/components/finance/add-transaction-dialog'
+import { FinanceSummaryCards } from '@/components/finance/summary-cards'
 import { ExportMenu } from '@/components/shared/export-menu'
-import { TrendingUp, TrendingDown, Landmark, Trash2, Plus, Pencil, ArrowLeft, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import { TrendingUp, Landmark, Trash2, Plus, Pencil, ArrowLeft, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { exportCsv, printReport } from '@/lib/export'
 
@@ -523,40 +524,13 @@ export default function FinancePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-green-500" /> Total Income
-            </CardTitle>
-          </CardHeader>
-          <CardContent><p className="text-2xl font-bold text-emerald-500">{formatINR(income)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingDown className="h-4 w-4 text-red-500" /> Total Expenses
-            </CardTitle>
-          </CardHeader>
-          <CardContent><p className="text-2xl font-bold text-destructive">{formatINR(expense)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" /> Net Profit
-            </CardTitle>
-          </CardHeader>
-          <CardContent><p className={`text-2xl font-bold ${net >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{formatINR(net)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Landmark className="h-4 w-4 text-purple-500" /> Total Bank Balance
-            </CardTitle>
-          </CardHeader>
-          <CardContent><p className={`text-2xl font-bold ${totalBankBalance >= 0 ? 'text-purple-600' : 'text-destructive'}`}>{formatINR(totalBankBalance)}</p></CardContent>
-        </Card>
-      </div>
+      <FinanceSummaryCards
+        income={income}
+        expense={expense}
+        net={net}
+        totalBankBalance={totalBankBalance}
+        formatINR={formatINR}
+      />
 
       <Tabs defaultValue="transactions">
         <TabsList>

@@ -49,10 +49,11 @@ export default function ClientsPage() {
   const [search, setSearch] = useState('')
 
   const clients = useQuery(api.clients.list)
+  const clientRecords = clients ?? []
 
   if (clients === undefined) return <ClientsSkeleton />
 
-  const filtered = clients.filter((c) => {
+  const filtered = clientRecords.filter((c) => {
     const matchStatus = statusFilter === 'ALL' || c.status === statusFilter
     const matchSearch = !search ||
       c.companyName.toLowerCase().includes(search.toLowerCase()) ||
@@ -60,7 +61,7 @@ export default function ClientsPage() {
     return matchStatus && matchSearch
   })
 
-  const activeClients = clients.filter((c) => c.status === 'ACTIVE')
+  const activeClients = clientRecords.filter((c) => c.status === 'ACTIVE')
   const totalRetainer = activeClients.reduce((s, c) => s + (c.retainerAmount ?? 0), 0)
 
   function handleCsvExport() {
@@ -84,7 +85,7 @@ export default function ClientsPage() {
           title: 'Client summary',
           columns: ['Metric', 'Value'],
           rows: [
-            ['Total clients', clients.length],
+            ['Total clients', clientRecords.length],
             ['Active clients', activeClients.length],
             ['Filtered records', filtered.length],
             ['Monthly retainer', formatINR(totalRetainer)],
@@ -118,9 +119,9 @@ export default function ClientsPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Clients', value: clients.length, icon: Building2, color: 'text-primary' },
+          { label: 'Total Clients', value: clientRecords.length, icon: Building2, color: 'text-primary' },
           { label: 'Active', value: activeClients.length, icon: Users, color: 'text-green-500' },
-          { label: 'Prospects', value: clients.filter(c => c.status === 'PROSPECT').length, icon: TrendingUp, color: 'text-purple-500' },
+          { label: 'Prospects', value: clientRecords.filter(c => c.status === 'PROSPECT').length, icon: TrendingUp, color: 'text-purple-500' },
           { label: 'Monthly Retainer', value: formatINR(totalRetainer), icon: TrendingUp, color: 'text-orange-500' },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label}>
@@ -157,7 +158,7 @@ export default function ClientsPage() {
         </Select>
       </div>
 
-      {clients.length === 0 ? (
+      {clientRecords.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-xl">
           <Building2 className="h-10 w-10 text-muted-foreground/40 mb-3" />
           <p className="text-sm font-medium text-muted-foreground">No clients yet</p>
