@@ -11,9 +11,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowLeft, Phone, Mail, CheckCircle2, Circle } from 'lucide-react'
+import { ArrowLeft, Phone, Mail, CheckCircle2, Circle, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ComposeEmailDialog } from '@/components/clients/compose-email-dialog'
+import { EditClientDialog } from '@/components/clients/edit-client-dialog'
 import { ONBOARDING_TEMPLATE } from '@/lib/leads'
 
 function formatINR(amount: number) {
@@ -43,6 +44,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const client = useQuery(api.clients.get, { id: id as Id<'clients'> })
   const templates = useQuery(api.templates.list)
   const updateClient = useMutation(api.clients.update)
+  const removeClient = useMutation(api.clients.remove)
   const addNote = useMutation(api.clients.addNote)
   const addContact = useMutation(api.clients.addContact)
   const [noteContent, setNoteContent] = useState('')
@@ -80,6 +82,18 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     }
   }
 
+  async function handleDeleteClient() {
+    if (!client) return
+    if (!confirm(`Delete ${client.companyName}? This will remove the client, contacts, and notes.`)) return
+    try {
+      await removeClient({ id: id as Id<'clients'> })
+      toast.success('Client deleted')
+      router.push('/clients')
+    } catch {
+      toast.error('Failed to delete client')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -90,6 +104,12 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             <Badge className={`border-0 ${statusColors[client.status] ?? ''}`}>{client.status}</Badge>
           </div>
           {client.industry && <p className="text-sm text-muted-foreground">{client.industry}</p>}
+        </div>
+        <div className="flex items-center gap-2">
+          <EditClientDialog client={client} />
+          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleDeleteClient}>
+            <Trash2 className="h-4 w-4 mr-1" /> Delete
+          </Button>
         </div>
       </div>
 
@@ -127,7 +147,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <CardContent className="space-y-3 text-sm">
                 {[
                   ['Status', client.status],
-                  ['Retainer', client.retainerAmount ? formatINR(client.retainerAmount) + '/mo' : null],
                   ['Payment Terms', client.paymentTerms],
                   ['Start Date', client.startDate ? new Date(client.startDate).toLocaleDateString('en-IN') : null],
                   ['Health Score', client.healthScore ? `${client.healthScore}/10` : null],

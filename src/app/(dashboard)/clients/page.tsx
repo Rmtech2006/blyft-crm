@@ -2,28 +2,29 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useQuery } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
+import { Id } from '@convex/_generated/dataModel'
 import { ExportMenu } from '@/components/shared/export-menu'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AddClientDialog } from '@/components/clients/add-client-dialog'
-import { Users, TrendingUp, Building2, ExternalLink, Search } from 'lucide-react'
+import { EditClientDialog } from '@/components/clients/edit-client-dialog'
+import { Users, TrendingUp, Building2, ExternalLink, Search, Pencil, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { exportCsv, printReport } from '@/lib/export'
 import { formatEnum } from '@/lib/utils'
-
-function formatINR(amount: number) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
-}
 
 const statusColors: Record<string, string> = {
   ACTIVE: 'bg-emerald-500/15 text-emerald-500',
   PAUSED: 'bg-amber-500/15 text-amber-500',
   COMPLETED: 'bg-primary/15 text-primary',
   PROSPECT: 'bg-violet-500/15 text-violet-500',
+  ONBOARDING: 'bg-cyan-500/15 text-cyan-600',
 }
 
 function ClientsSkeleton() {
@@ -49,6 +50,7 @@ export default function ClientsPage() {
   const [search, setSearch] = useState('')
 
   const clients = useQuery(api.clients.list)
+  const removeClient = useMutation(api.clients.remove)
   const clientRecords = clients ?? []
 
   if (clients === undefined) return <ClientsSkeleton />
@@ -62,14 +64,22 @@ export default function ClientsPage() {
   })
 
   const activeClients = clientRecords.filter((c) => c.status === 'ACTIVE')
-  const totalRetainer = activeClients.reduce((s, c) => s + (c.retainerAmount ?? 0), 0)
+
+  async function handleDeleteClient(client: { id: string; companyName: string }) {
+    if (!confirm(`Delete ${client.companyName}? This will remove the client, contacts, and notes.`)) return
+    try {
+      await removeClient({ id: client.id as Id<'clients'> })
+      toast.success('Client deleted')
+    } catch {
+      toast.error('Failed to delete client')
+    }
+  }
 
   function handleCsvExport() {
     exportCsv('clients-export.csv', filtered, [
       { header: 'Company', value: (client) => client.companyName },
       { header: 'Status', value: (client) => client.status },
       { header: 'Industry', value: (client) => client.industry ?? '—' },
-      { header: 'Retainer', value: (client) => client.retainerAmount ?? 0 },
       { header: 'Contacts', value: (client) => client.contacts.length },
       { header: 'Projects', value: (client) => client.projects.length },
       { header: 'Website', value: (client) => client.website ?? '—' },
@@ -88,17 +98,15 @@ export default function ClientsPage() {
             ['Total clients', clientRecords.length],
             ['Active clients', activeClients.length],
             ['Filtered records', filtered.length],
-            ['Monthly retainer', formatINR(totalRetainer)],
           ],
         },
         {
           title: 'Client list',
-          columns: ['Company', 'Status', 'Industry', 'Retainer', 'Contacts', 'Projects'],
+          columns: ['Company', 'Status', 'Industry', 'Contacts', 'Projects'],
           rows: filtered.map((client) => [
             client.companyName,
             formatEnum(client.status),
             client.industry ?? '—',
-            client.retainerAmount ? formatINR(client.retainerAmount) : '—',
             client.contacts.length,
             client.projects.length,
           ]),
@@ -122,7 +130,7 @@ export default function ClientsPage() {
           { label: 'Total Clients', value: clientRecords.length, icon: Building2, color: 'text-primary' },
           { label: 'Active', value: activeClients.length, icon: Users, color: 'text-green-500' },
           { label: 'Prospects', value: clientRecords.filter(c => c.status === 'PROSPECT').length, icon: TrendingUp, color: 'text-purple-500' },
-          { label: 'Monthly Retainer', value: formatINR(totalRetainer), icon: TrendingUp, color: 'text-orange-500' },
+          { label: 'Onboarding', value: clientRecords.filter(c => c.status === 'ONBOARDING').length, icon: TrendingUp, color: 'text-cyan-500' },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label}>
             <CardContent className="p-4 flex items-center gap-3">
@@ -184,17 +192,33 @@ export default function ClientsPage() {
                     <h3 className="font-semibold text-sm truncate">{client.companyName}</h3>
                     {client.industry && <p className="text-xs text-muted-foreground">{client.industry}</p>}
                   </div>
-                  <Badge className={`text-xs border-0 shrink-0 ml-2 ${statusColors[client.status] ?? ''}`}>
-                    {formatEnum(client.status)}
-                  </Badge>
+                  <div className="flex items-center gap-1 ml-2" onClick={(e) => e.stopPropagation()}>
+                    <EditClientDialog
+                      client={client}
+                      trigger={
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" title="Edit client">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      }
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      title="Delete client"
+                      onClick={() => handleDeleteClient(client)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">
-                  {client.retainerAmount && (
-                    <div className="flex justify-between">
-                      <span>Retainer</span>
-                      <span className="font-medium text-foreground">{formatINR(client.retainerAmount)}/mo</span>
-                    </div>
-                  )}
+                  <div className="flex justify-between">
+                    <span>Status</span>
+                    <Badge className={`text-xs border-0 shrink-0 ${statusColors[client.status] ?? ''}`}>
+                      {formatEnum(client.status)}
+                    </Badge>
+                  </div>
                   <div className="flex justify-between">
                     <span>Contacts</span>
                     <span>{client.contacts.length}</span>

@@ -1,18 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { useMutation } from 'convex/react'
 import { api } from '@convex/_generated/api'
+import { Id } from '@convex/_generated/dataModel'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 
 const schema = z.object({
   companyName: z.string().min(1, 'Company name is required'),
@@ -20,27 +21,74 @@ const schema = z.object({
   gstNumber: z.string().optional(),
   website: z.string().optional(),
   address: z.string().optional(),
-  status: z.enum(['ACTIVE', 'PAUSED', 'COMPLETED', 'PROSPECT']),
+  status: z.enum(['ACTIVE', 'PAUSED', 'COMPLETED', 'PROSPECT', 'ONBOARDING']),
   paymentTerms: z.string().optional(),
   startDate: z.string().optional(),
 })
 
 type FormData = z.infer<typeof schema>
 
-export function AddClientDialog() {
+type EditableClient = {
+  id: string
+  companyName: string
+  industry?: string
+  gstNumber?: string
+  website?: string
+  address?: string
+  status: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'PROSPECT' | 'ONBOARDING'
+  paymentTerms?: string
+  startDate?: number
+}
+
+function dateInputValue(date?: number) {
+  if (!date) return ''
+  return new Date(date).toISOString().slice(0, 10)
+}
+
+export function EditClientDialog({
+  client,
+  trigger,
+}: {
+  client: EditableClient
+  trigger?: ReactElement
+}) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const createClient = useMutation(api.clients.create)
+  const updateClient = useMutation(api.clients.update)
 
-  const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, reset, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { status: 'PROSPECT' },
+    defaultValues: {
+      companyName: client.companyName,
+      industry: client.industry ?? '',
+      gstNumber: client.gstNumber ?? '',
+      website: client.website ?? '',
+      address: client.address ?? '',
+      status: client.status,
+      paymentTerms: client.paymentTerms ?? '',
+      startDate: dateInputValue(client.startDate),
+    },
   })
+
+  useEffect(() => {
+    if (!open) return
+    reset({
+      companyName: client.companyName,
+      industry: client.industry ?? '',
+      gstNumber: client.gstNumber ?? '',
+      website: client.website ?? '',
+      address: client.address ?? '',
+      status: client.status,
+      paymentTerms: client.paymentTerms ?? '',
+      startDate: dateInputValue(client.startDate),
+    })
+  }, [client, open, reset])
 
   async function onSubmit(data: FormData) {
     setLoading(true)
     try {
-      await createClient({
+      await updateClient({
+        id: client.id as Id<'clients'>,
         companyName: data.companyName,
         industry: data.industry || undefined,
         gstNumber: data.gstNumber || undefined,
@@ -50,11 +98,10 @@ export function AddClientDialog() {
         paymentTerms: data.paymentTerms || undefined,
         startDate: data.startDate ? new Date(data.startDate).getTime() : undefined,
       })
-      toast.success('Client added')
-      reset()
+      toast.success('Client updated')
       setOpen(false)
     } catch {
-      toast.error('Failed to add client')
+      toast.error('Failed to update client')
     } finally {
       setLoading(false)
     }
@@ -62,12 +109,16 @@ export function AddClientDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" />}>
-        <Plus className="h-4 w-4 mr-1" /> Add Client
-      </DialogTrigger>
+      {trigger ? (
+        <DialogTrigger render={trigger} />
+      ) : (
+        <DialogTrigger render={<Button size="sm" variant="outline" />}>
+          <Pencil className="h-4 w-4 mr-1" /> Edit
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add New Client</DialogTitle>
+          <DialogTitle>Edit Client</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1">
@@ -83,10 +134,11 @@ export function AddClientDialog() {
             </div>
             <div className="space-y-1">
               <Label>Status</Label>
-              <Select defaultValue="PROSPECT" onValueChange={(v) => setValue('status', v as FormData['status'])}>
+              <Select value={watch('status')} onValueChange={(v) => setValue('status', v as FormData['status'])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="PROSPECT">Prospect</SelectItem>
+                  <SelectItem value="ONBOARDING">Onboarding</SelectItem>
                   <SelectItem value="ACTIVE">Active</SelectItem>
                   <SelectItem value="PAUSED">Paused</SelectItem>
                   <SelectItem value="COMPLETED">Completed</SelectItem>
@@ -125,7 +177,7 @@ export function AddClientDialog() {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? 'Adding…' : 'Add Client'}</Button>
+            <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save Client'}</Button>
           </div>
         </form>
       </DialogContent>
