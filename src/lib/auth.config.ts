@@ -11,6 +11,7 @@ export const authConfig: NextAuthConfig = {
       const isLoggedIn = !!auth?.user
       const isPublic =
         nextUrl.pathname === '/login' ||
+        nextUrl.pathname === '/capture' ||
         nextUrl.pathname.startsWith('/api/auth') ||
         nextUrl.pathname.startsWith('/api/convex')
 
