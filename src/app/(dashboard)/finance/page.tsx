@@ -19,7 +19,12 @@ import { ExportMenu } from '@/components/shared/export-menu'
 import { TrendingUp, Landmark, Trash2, Plus, Pencil, ArrowLeft, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { exportCsv, printReport } from '@/lib/export'
-import { sumNonOperatingIncome, sumOperatingIncome } from '@/lib/finance-classification.mjs'
+import {
+  buildStatementRowsFromCurrentBalance,
+  sortTransactionsByDateDesc,
+  sumNonOperatingIncome,
+  sumOperatingIncome,
+} from '@/lib/finance-classification.mjs'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
@@ -164,18 +169,7 @@ function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string;
 
   if (!account) return null
 
-  const txns = [...account.transactions].sort((a, b) => a.date - b.date)
-  const rows = txns.reduce<Array<(typeof txns)[number] & { runningBalance: number }>>((acc, transaction) => {
-    const previousBalance = acc.at(-1)?.runningBalance ?? 0
-    const delta = transaction.type === 'INCOME' ? transaction.amount : -transaction.amount
-
-    acc.push({
-      ...transaction,
-      runningBalance: previousBalance + delta,
-    })
-
-    return acc
-  }, []).reverse()
+  const rows = buildStatementRowsFromCurrentBalance(account.transactions, account.balance)
 
   async function deleteTransaction(id: string) {
     if (!confirm('Delete this transaction? The bank balance will be reversed.')) return
@@ -435,11 +429,12 @@ export default function FinancePage() {
   const [dateTo, setDateTo] = useState('')
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
 
-  const transactions = useQuery(api.finance.listTransactions, {
+  const transactionsQuery = useQuery(api.finance.listTransactions, {
     type: typeFilter !== 'ALL' ? (typeFilter as 'INCOME' | 'EXPENSE') : undefined,
     dateFrom: dateFrom ? new Date(dateFrom).getTime() : undefined,
     dateTo: dateTo ? new Date(dateTo).getTime() : undefined,
   }) ?? []
+  const transactions = sortTransactionsByDateDesc(transactionsQuery)
 
   const bankAccounts = useQuery(api.finance.listBankAccounts) ?? []
   const removeTransaction = useMutation(api.finance.removeTransaction)

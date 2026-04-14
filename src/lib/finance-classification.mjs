@@ -30,3 +30,29 @@ export function sumNonOperatingIncome(transactions) {
     .filter(isNonOperatingIncome)
     .reduce((sum, transaction) => sum + transaction.amount, 0);
 }
+
+function creationTimeOf(transaction) {
+  return typeof transaction?._creationTime === "number" ? transaction._creationTime : 0;
+}
+
+export function sortTransactionsByDateDesc(transactions) {
+  return [...transactions].sort((a, b) => {
+    if (b.date !== a.date) return b.date - a.date;
+    return creationTimeOf(b) - creationTimeOf(a);
+  });
+}
+
+export function buildStatementRowsFromCurrentBalance(transactions, currentBalance) {
+  const sortedDesc = sortTransactionsByDateDesc(transactions);
+  let balance = currentBalance;
+
+  return sortedDesc.map((transaction) => {
+    const row = {
+      ...transaction,
+      runningBalance: balance,
+    };
+    const delta = transaction.type === "INCOME" ? transaction.amount : -transaction.amount;
+    balance -= delta;
+    return row;
+  });
+}
