@@ -4,6 +4,16 @@ function getMonthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
+const NON_OPERATING_INCOME_CATEGORIES = new Set([
+  "bank interest",
+  "non-operating income",
+  "non operating income",
+]);
+
+function isOperatingIncome(transaction: { category: string }) {
+  return !NON_OPERATING_INCOME_CATEGORIES.has(transaction.category.trim().toLowerCase());
+}
+
 export const getStats = query({
   args: {},
   handler: async (ctx) => {
@@ -45,7 +55,7 @@ const SIX_MONTH_WINDOW = new Date(nowDate.getFullYear(), nowDate.getMonth() - 5,
     ]);
     const activeTasks = [...tasks, ...additionalTasks.flat()];
     const sixMonthIncomeTransactions = incomeTransactions.filter(
-      (transaction) => transaction.date >= SIX_MONTH_WINDOW
+      (transaction) => transaction.date >= SIX_MONTH_WINDOW && isOperatingIncome(transaction)
     );
 
     const totalClients = clients.filter((client) => client.status === "ACTIVE").length;

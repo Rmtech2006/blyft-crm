@@ -3,12 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export function FinanceSummaryCards({
   income,
+  nonOperatingIncome,
   expense,
   net,
   totalBankBalance,
   formatINR,
 }: {
   income: number
+  nonOperatingIncome: number
   expense: number
   net: number
   totalBankBalance: number
@@ -19,7 +21,7 @@ export function FinanceSummaryCards({
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <TrendingUp className="h-4 w-4 text-green-500" /> Total Income
+            <TrendingUp className="h-4 w-4 text-green-500" /> Operating Income
           </CardTitle>
         </CardHeader>
         <CardContent><p className="text-2xl font-bold text-emerald-500">{formatINR(income)}</p></CardContent>
@@ -35,7 +37,7 @@ export function FinanceSummaryCards({
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <TrendingUp className="h-4 w-4 text-primary" /> Net Profit
+            <TrendingUp className="h-4 w-4 text-primary" /> Operating Profit
           </CardTitle>
         </CardHeader>
         <CardContent><p className={`text-2xl font-bold ${net >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{formatINR(net)}</p></CardContent>
@@ -48,6 +50,11 @@ export function FinanceSummaryCards({
         </CardHeader>
         <CardContent><p className={`text-2xl font-bold ${totalBankBalance >= 0 ? 'text-purple-600' : 'text-destructive'}`}>{formatINR(totalBankBalance)}</p></CardContent>
       </Card>
+      {nonOperatingIncome > 0 && (
+        <p className="text-xs text-muted-foreground md:col-span-4">
+          Non-operating income recorded separately: {formatINR(nonOperatingIncome)}
+        </p>
+      )}
     </div>
   )
 }

@@ -19,6 +19,7 @@ import { ExportMenu } from '@/components/shared/export-menu'
 import { TrendingUp, Landmark, Trash2, Plus, Pencil, ArrowLeft, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { exportCsv, printReport } from '@/lib/export'
+import { sumNonOperatingIncome, sumOperatingIncome } from '@/lib/finance-classification.mjs'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
@@ -444,7 +445,8 @@ export default function FinancePage() {
   const removeTransaction = useMutation(api.finance.removeTransaction)
   const removeBankAccount = useMutation(api.finance.removeBankAccount)
 
-  const income = transactions.filter((t) => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
+  const income = sumOperatingIncome(transactions)
+  const nonOperatingIncome = sumNonOperatingIncome(transactions)
   const expense = transactions.filter((t) => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
   const net = income - expense
   const totalBankBalance = bankAccounts.reduce((s, a) => s + a.balance, 0)
@@ -471,9 +473,10 @@ export default function FinancePage() {
           title: 'Finance summary',
           columns: ['Metric', 'Value'],
           rows: [
-            ['Total income', formatINR(income)],
+            ['Operating income', formatINR(income)],
+            ['Non-operating income', formatINR(nonOperatingIncome)],
             ['Total expenses', formatINR(expense)],
-            ['Net profit', formatINR(net)],
+            ['Operating profit', formatINR(net)],
             ['Bank balance', formatINR(totalBankBalance)],
             ['Filtered transactions', transactions.length],
           ],
@@ -526,6 +529,7 @@ export default function FinancePage() {
 
       <FinanceSummaryCards
         income={income}
+        nonOperatingIncome={nonOperatingIncome}
         expense={expense}
         net={net}
         totalBankBalance={totalBankBalance}

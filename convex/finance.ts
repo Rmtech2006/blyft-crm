@@ -1,6 +1,26 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
+const NON_OPERATING_INCOME_CATEGORIES = new Set([
+  "bank interest",
+  "non-operating income",
+  "non operating income",
+]);
+
+function isOperatingIncome(transaction: { type: "INCOME" | "EXPENSE"; category: string }) {
+  return (
+    transaction.type === "INCOME" &&
+    !NON_OPERATING_INCOME_CATEGORIES.has(transaction.category.trim().toLowerCase())
+  );
+}
+
+function isNonOperatingIncome(transaction: { type: "INCOME" | "EXPENSE"; category: string }) {
+  return (
+    transaction.type === "INCOME" &&
+    NON_OPERATING_INCOME_CATEGORIES.has(transaction.category.trim().toLowerCase())
+  );
+}
+
 export const listTransactions = query({
   args: {
     type: v.optional(v.union(v.literal("INCOME"), v.literal("EXPENSE"))),
@@ -163,9 +183,11 @@ export const getSnapshot = query({
     const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
     const transactions = await ctx.db.query("transactions").collect();
 
-    const monthIncome = transactions.filter((t) => t.type === "INCOME" && t.date >= startOfMonth).reduce((s, t) => s + t.amount, 0);
+    const monthIncome = transactions.filter((t) => isOperatingIncome(t) && t.date >= startOfMonth).reduce((s, t) => s + t.amount, 0);
+    const monthNonOperatingIncome = transactions.filter((t) => isNonOperatingIncome(t) && t.date >= startOfMonth).reduce((s, t) => s + t.amount, 0);
     const monthExpense = transactions.filter((t) => t.type === "EXPENSE" && t.date >= startOfMonth).reduce((s, t) => s + t.amount, 0);
-    const ytdIncome = transactions.filter((t) => t.type === "INCOME" && t.date >= startOfYear).reduce((s, t) => s + t.amount, 0);
+    const ytdIncome = transactions.filter((t) => isOperatingIncome(t) && t.date >= startOfYear).reduce((s, t) => s + t.amount, 0);
+    const ytdNonOperatingIncome = transactions.filter((t) => isNonOperatingIncome(t) && t.date >= startOfYear).reduce((s, t) => s + t.amount, 0);
     const ytdExpense = transactions.filter((t) => t.type === "EXPENSE" && t.date >= startOfYear).reduce((s, t) => s + t.amount, 0);
 
     // Monthly revenue for last 6 months
@@ -175,12 +197,12 @@ export const getSnapshot = query({
       const start = d.getTime();
       const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59).getTime();
       const label = d.toLocaleString("en-IN", { month: "short", year: "2-digit" });
-      const income = transactions.filter((t) => t.type === "INCOME" && t.date >= start && t.date <= end).reduce((s, t) => s + t.amount, 0);
+      const income = transactions.filter((t) => isOperatingIncome(t) && t.date >= start && t.date <= end).reduce((s, t) => s + t.amount, 0);
       const expense = transactions.filter((t) => t.type === "EXPENSE" && t.date >= start && t.date <= end).reduce((s, t) => s + t.amount, 0);
       monthlyRevenue.push({ month: label, income, expense });
     }
 
-    return { monthIncome, monthExpense, ytdIncome, ytdExpense, monthlyRevenue };
+    return { monthIncome, monthNonOperatingIncome, monthExpense, ytdIncome, ytdNonOperatingIncome, ytdExpense, monthlyRevenue };
   },
 });
 

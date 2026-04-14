@@ -8,10 +8,12 @@
  * @module
  */
 
+import type * as auth from "../auth.js";
 import type * as clients from "../clients.js";
 import type * as dashboard from "../dashboard.js";
 import type * as files from "../files.js";
 import type * as finance from "../finance.js";
+import type * as importFinanceSnapshot from "../importFinanceSnapshot.js";
 import type * as leads from "../leads.js";
 import type * as migrate from "../migrate.js";
 import type * as notifications from "../notifications.js";
@@ -32,10 +34,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  auth: typeof auth;
   clients: typeof clients;
   dashboard: typeof dashboard;
   files: typeof files;
   finance: typeof finance;
+  importFinanceSnapshot: typeof importFinanceSnapshot;
   leads: typeof leads;
   migrate: typeof migrate;
   notifications: typeof notifications;
