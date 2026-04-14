@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { useMutation } from 'convex/react'
 import { CheckCircle2, Clock3, MessageSquareText, ShieldCheck } from 'lucide-react'
 import { api } from '@convex/_generated/api'
+import { BlyftLogo } from '@/components/brand/blyft-logo'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -83,15 +84,16 @@ export default function CapturePage() {
   if (submitted) {
     return (
       <div className="grid w-full gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <section className="surface-card hero-noise bg-primary px-8 py-10 text-primary-foreground">
+        <section className="premium-panel px-8 py-10">
           <div className="space-y-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-primary-foreground/55">
+            <BlyftLogo variant="white" size="md" priority className="opacity-95" />
+            <p className="premium-eyebrow">
               Inquiry received
             </p>
-            <h1 className="font-heading text-4xl font-semibold tracking-tight">
+            <h1 className="font-heading text-4xl font-semibold">
               Thanks for reaching out to BLYFT.
             </h1>
-            <p className="max-w-lg text-sm leading-7 text-primary-foreground/72">
+            <p className="max-w-lg text-sm leading-7 text-white/72">
               Your request is now in our intake queue and the team will follow up with the next step shortly.
             </p>
           </div>
@@ -116,26 +118,24 @@ export default function CapturePage() {
 
   return (
     <div className="grid w-full gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-      <section className="surface-card hero-noise bg-primary px-8 py-10 text-primary-foreground">
+      <section className="premium-panel px-8 py-10">
         <div className="flex h-full flex-col justify-between gap-10">
           <div className="space-y-6">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-white text-sm font-black tracking-[0.2em] text-black">
-                B
-              </div>
+              <BlyftLogo variant="white" size="md" priority className="opacity-95" />
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-primary-foreground/55">
+                <p className="premium-eyebrow text-[10px]">
                   Lead intake
                 </p>
-                <p className="font-heading text-xl font-semibold tracking-tight">BLYFT CRM</p>
+                <p className="font-heading text-xl font-semibold">BLYFT CRM</p>
               </div>
             </div>
 
             <div className="space-y-3">
-              <h1 className="font-heading text-4xl font-semibold tracking-tight leading-tight">
+              <h1 className="font-heading text-4xl font-semibold leading-tight">
                 Tell us what you need and we will take it from there.
               </h1>
-              <p className="max-w-lg text-sm leading-7 text-primary-foreground/72">
+              <p className="max-w-lg text-sm leading-7 text-white/72">
                 Share a few details about your business or project. Your inquiry will land directly inside our CRM for fast internal routing.
               </p>
             </div>
@@ -148,7 +148,7 @@ export default function CapturePage() {
               return (
                 <div
                   key={item.title}
-                  className="rounded-[24px] border border-white/12 bg-white/6 px-4 py-4 backdrop-blur-sm"
+                  className="premium-panel-muted px-4 py-4"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10">
@@ -156,7 +156,7 @@ export default function CapturePage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium">{item.title}</p>
-                      <p className="mt-1 text-sm leading-6 text-primary-foreground/68">
+                      <p className="mt-1 text-sm leading-6 text-white/68">
                         {item.description}
                       </p>
                     </div>

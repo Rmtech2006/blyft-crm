@@ -270,6 +270,22 @@
     @apply rounded-[28px] border border-border/80 bg-card/92 shadow-[0_32px_80px_-56px_rgba(15,23,42,0.45)] backdrop-blur-sm;
   }
 
+  .premium-panel {
+    @apply relative overflow-hidden rounded-[28px] border border-white/10 bg-[#080807] text-white shadow-[0_36px_96px_-56px_rgba(0,0,0,0.82)];
+    background-image:
+      radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.2), transparent 26%),
+      radial-gradient(circle at 84% 0%, rgba(255, 255, 255, 0.13), transparent 22%),
+      linear-gradient(145deg, rgba(255, 255, 255, 0.08), transparent 42%);
+  }
+
+  .premium-panel-muted {
+    @apply rounded-[22px] border border-white/12 bg-white/6 backdrop-blur-sm;
+  }
+
+  .premium-eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50;
+  }
+
   .surface-muted {
     @apply rounded-[24px] border border-border/70 bg-muted/55;
   }
