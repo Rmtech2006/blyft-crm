@@ -37,7 +37,9 @@ npm run convex:sync
 
 That pushes the latest local Convex functions to the currently configured deployment.
 
-If you are moving from a dev Convex deployment to a real production deployment, use:
+Production uses the Convex deployment at `https://tacit-goose-673.convex.cloud`.
+Before shipping frontend code that changes Convex functions or schema, push the
+backend first:
 
 ```bash
 npm run convex:deploy
@@ -45,7 +47,7 @@ npm run convex:deploy
 
 Recommended order for releases:
 
-1. Sync or deploy Convex.
+1. Deploy Convex production with `npm run convex:deploy`.
 2. Run `npm run lint`.
 3. Run `npm run build`.
 4. Verify login, dashboard, settings, notifications, finance, and tasks locally.

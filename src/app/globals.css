@@ -6,9 +6,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Segoe UI", "Inter", system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono);
-  --font-heading: "Aptos", "Segoe UI", "Inter", system-ui, sans-serif;
+  --font-sans: "Aptos", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  --font-heading: "Aptos Display", "Aptos", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -254,6 +254,8 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
+    letter-spacing: 0;
+    text-wrap: balance;
   }
 }
 
@@ -273,7 +275,7 @@
   }
 
   .section-eyebrow {
-    @apply text-[11px] font-semibold uppercase tracking-[0.32em] text-muted-foreground;
+    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground;
   }
 
   .hero-noise {

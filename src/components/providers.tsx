@@ -26,12 +26,17 @@ function useNextAuthToken() {
   }), [status])
 }
 
+function getConvexUrl() {
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL
+  if (!convexUrl) {
+    throw new Error('Missing NEXT_PUBLIC_CONVEX_URL')
+  }
+  return convexUrl
+}
+
 function ConvexSessionBridge({ children }: { children: React.ReactNode }) {
   const convex = useMemo(
-    () =>
-      new ConvexReactClient(
-        process.env.NEXT_PUBLIC_CONVEX_URL ?? 'https://placeholder.convex.cloud'
-      ),
+    () => new ConvexReactClient(getConvexUrl()),
     []
   )
   const auth = useNextAuthToken()
