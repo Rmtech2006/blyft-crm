@@ -241,6 +241,7 @@ export default defineSchema({
     amount: v.number(),
     category: v.string(),
     description: v.string(),
+    notes: v.optional(v.string()),
     date: v.number(),
     paymentMode: v.union(
       v.literal("CASH"), v.literal("UPI"), v.literal("BANK_TRANSFER"),

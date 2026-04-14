@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import { Id } from '@convex/_generated/dataModel'
@@ -14,13 +14,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { Pencil, Plus } from 'lucide-react'
 
 const schema = z.object({
   type: z.enum(['INCOME', 'EXPENSE']),
   amount: z.string().min(1, 'Amount is required'),
   category: z.string().min(1, 'Category is required'),
   description: z.string().min(1, 'Description is required'),
+  notes: z.string().optional(),
   date: z.string().min(1, 'Date is required'),
   paymentMode: z.enum(['CASH', 'UPI', 'BANK_TRANSFER', 'CHEQUE', 'CARD', 'OTHER']),
   bankAccountId: z.string().optional(),
@@ -30,20 +32,42 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
+type EditableTransaction = {
+  id: string
+  type: 'INCOME' | 'EXPENSE'
+  amount: number
+  category: string
+  description: string
+  notes?: string
+  date: number
+  paymentMode: FormData['paymentMode']
+  bankAccountId?: string
+  gstTagged?: boolean
+  gstAmount?: number
+}
+
 interface AddTransactionDialogProps {
   defaultBankAccountId?: string
   triggerLabel?: string
+  transaction?: EditableTransaction
+}
+
+function toDateInput(date: number) {
+  return new Date(date).toISOString().split('T')[0]
 }
 
 export function AddTransactionDialog({
   defaultBankAccountId,
   triggerLabel = 'Add Transaction',
+  transaction,
 }: AddTransactionDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const isEditing = Boolean(transaction)
 
   const bankAccounts = useQuery(api.finance.listBankAccounts) ?? []
   const createTransaction = useMutation(api.finance.createTransaction)
+  const updateTransaction = useMutation(api.finance.updateTransaction)
 
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -53,26 +77,58 @@ export function AddTransactionDialog({
       gstTagged: false,
       bankAccountId: defaultBankAccountId ?? '',
       date: new Date().toISOString().split('T')[0],
+      notes: '',
     },
   })
 
+  useEffect(() => {
+    if (!open) return
+
+    reset({
+      type: transaction?.type ?? 'INCOME',
+      paymentMode: transaction?.paymentMode ?? 'UPI',
+      gstTagged: transaction?.gstTagged ?? false,
+      bankAccountId: transaction?.bankAccountId ?? defaultBankAccountId ?? '',
+      date: transaction ? toDateInput(transaction.date) : new Date().toISOString().split('T')[0],
+      amount: transaction ? String(transaction.amount) : '',
+      category: transaction?.category ?? '',
+      description: transaction?.description ?? '',
+      notes: transaction?.notes ?? '',
+      gstAmount: transaction?.gstAmount ? String(transaction.gstAmount) : '',
+    })
+  }, [defaultBankAccountId, open, reset, transaction])
+
   const gstTagged = watch('gstTagged')
+  const type = watch('type')
+  const paymentMode = watch('paymentMode')
+  const bankAccountId = watch('bankAccountId')
 
   async function onSubmit(data: FormData) {
     setLoading(true)
     try {
-      await createTransaction({
+      const payload = {
         type: data.type,
         amount: parseFloat(data.amount),
         category: data.category,
         description: data.description,
+        notes: data.notes?.trim() || undefined,
         date: new Date(data.date).getTime(),
         paymentMode: data.paymentMode,
         bankAccountId: (data.bankAccountId || undefined) as Id<'bankAccounts'> | undefined,
         gstTagged: data.gstTagged,
         gstAmount: data.gstAmount ? parseFloat(data.gstAmount) : undefined,
-      })
-      toast.success('Transaction recorded')
+      }
+
+      if (transaction) {
+        await updateTransaction({
+          id: transaction.id as Id<'transactions'>,
+          ...payload,
+        })
+      } else {
+        await createTransaction(payload)
+      }
+
+      toast.success(transaction ? 'Transaction updated' : 'Transaction recorded')
       reset({
         type: 'INCOME',
         paymentMode: 'UPI',
@@ -82,10 +138,11 @@ export function AddTransactionDialog({
         amount: '',
         category: '',
         description: '',
+        notes: '',
       })
       setOpen(false)
     } catch {
-      toast.error('Failed to record transaction')
+      toast.error(transaction ? 'Failed to update transaction' : 'Failed to record transaction')
     } finally {
       setLoading(false)
     }
@@ -93,16 +150,25 @@ export function AddTransactionDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" />}>
-        <Plus className="h-4 w-4 mr-1" /> {triggerLabel}
+      <DialogTrigger
+        render={
+          <Button
+            size={isEditing ? 'icon' : 'sm'}
+            variant={isEditing ? 'ghost' : 'default'}
+            className={isEditing ? 'h-7 w-7 text-muted-foreground hover:text-foreground' : undefined}
+            title={isEditing ? 'Edit transaction' : undefined}
+          />
+        }
+      >
+        {isEditing ? <Pencil className="h-3.5 w-3.5" /> : <><Plus className="h-4 w-4 mr-1" /> {triggerLabel}</>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader><DialogTitle>Record Transaction</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isEditing ? 'Edit Transaction' : 'Record Transaction'}</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label>Type</Label>
-              <Select defaultValue="INCOME" onValueChange={(v) => setValue('type', v as 'INCOME' | 'EXPENSE')}>
+              <Select value={type} onValueChange={(v) => setValue('type', v as 'INCOME' | 'EXPENSE')}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="INCOME">Credit (Income)</SelectItem>
@@ -124,6 +190,11 @@ export function AddTransactionDialog({
           </div>
 
           <div className="space-y-1">
+            <Label>Notes</Label>
+            <Textarea placeholder="Add internal notes, invoice reference, or context" {...register('notes')} />
+          </div>
+
+          <div className="space-y-1">
             <Label>Category</Label>
             <Input placeholder="e.g. Client Payment, Salary, Ads, Tools" {...register('category')} />
             {errors.category && <p className="text-xs text-red-500">{errors.category.message}</p>}
@@ -136,7 +207,7 @@ export function AddTransactionDialog({
             </div>
             <div className="space-y-1">
               <Label>Payment Mode</Label>
-              <Select defaultValue="UPI" onValueChange={(v) => setValue('paymentMode', v as FormData['paymentMode'])}>
+              <Select value={paymentMode} onValueChange={(v) => setValue('paymentMode', v as FormData['paymentMode'])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {['CASH', 'UPI', 'BANK_TRANSFER', 'CHEQUE', 'CARD', 'OTHER'].map((m) => (
@@ -154,7 +225,7 @@ export function AddTransactionDialog({
                 {bankAccounts.find((a) => a.id === defaultBankAccountId)?.name ?? 'Selected account'}
               </p>
             ) : (
-              <Select defaultValue="" onValueChange={(v) => setValue('bankAccountId', v == null ? '' : v === 'none' ? '' : v)}>
+              <Select value={bankAccountId || 'none'} onValueChange={(v) => setValue('bankAccountId', v == null ? '' : v === 'none' ? '' : v)}>
                 <SelectTrigger><SelectValue placeholder="No account" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No account</SelectItem>
@@ -180,7 +251,7 @@ export function AddTransactionDialog({
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? 'Saving…' : 'Record'}</Button>
+            <Button type="submit" disabled={loading}>{loading ? 'Saving...' : isEditing ? 'Save Changes' : 'Record'}</Button>
           </div>
         </form>
       </DialogContent>

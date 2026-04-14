@@ -1,5 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
+import { getTransactionEditBankAdjustments } from "../src/lib/finance-classification.mjs";
 
 const NON_OPERATING_INCOME_CATEGORIES = new Set([
   "bank interest",
@@ -61,6 +63,7 @@ export const createTransaction = mutation({
     amount: v.number(),
     category: v.string(),
     description: v.string(),
+    notes: v.optional(v.string()),
     date: v.number(),
     paymentMode: v.union(
       v.literal("CASH"), v.literal("UPI"), v.literal("BANK_TRANSFER"),
@@ -78,6 +81,7 @@ export const createTransaction = mutation({
       amount: args.amount,
       category: args.category,
       description: args.description,
+      notes: args.notes,
       date: args.date,
       paymentMode: args.paymentMode,
       bankAccountId: args.bankAccountId,
@@ -97,6 +101,64 @@ export const createTransaction = mutation({
       }
     }
     return id;
+  },
+});
+
+export const updateTransaction = mutation({
+  args: {
+    id: v.id("transactions"),
+    type: v.union(v.literal("INCOME"), v.literal("EXPENSE")),
+    amount: v.number(),
+    category: v.string(),
+    description: v.string(),
+    notes: v.optional(v.string()),
+    date: v.number(),
+    paymentMode: v.union(
+      v.literal("CASH"), v.literal("UPI"), v.literal("BANK_TRANSFER"),
+      v.literal("CHEQUE"), v.literal("CARD"), v.literal("OTHER")
+    ),
+    bankAccountId: v.optional(v.id("bankAccounts")),
+    clientId: v.optional(v.id("clients")),
+    projectId: v.optional(v.id("projects")),
+    gstTagged: v.optional(v.boolean()),
+    gstAmount: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const transaction = await ctx.db.get(args.id);
+    if (!transaction) return;
+
+    const nextTransaction = {
+      type: args.type,
+      amount: args.amount,
+      bankAccountId: args.bankAccountId,
+    };
+    const adjustments = getTransactionEditBankAdjustments(transaction, nextTransaction);
+
+    for (const adjustment of adjustments) {
+      const bankAccountId = adjustment.bankAccountId as Id<"bankAccounts">;
+      const account = await ctx.db.get(bankAccountId);
+      if (account) {
+        await ctx.db.patch(bankAccountId, {
+          balance: account.balance + adjustment.delta,
+          lastUpdated: Date.now(),
+        });
+      }
+    }
+
+    await ctx.db.patch(args.id, {
+      type: args.type,
+      amount: args.amount,
+      category: args.category,
+      description: args.description,
+      notes: args.notes,
+      date: args.date,
+      paymentMode: args.paymentMode,
+      bankAccountId: args.bankAccountId,
+      clientId: args.clientId,
+      projectId: args.projectId,
+      gstTagged: args.gstTagged ?? false,
+      gstAmount: args.gstAmount,
+    });
   },
 });
 

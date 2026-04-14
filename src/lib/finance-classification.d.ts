@@ -5,6 +5,8 @@ export type FinanceTransaction = {
   category?: string;
   date: number;
   _creationTime?: number;
+  bankAccountId?: string;
+  notes?: string;
 };
 
 export function isNonOperatingIncome(transaction: FinanceTransaction): boolean;
@@ -16,3 +18,7 @@ export function buildStatementRowsFromCurrentBalance<T extends FinanceTransactio
   transactions: T[],
   currentBalance: number
 ): Array<T & { runningBalance: number }>;
+export function getTransactionEditBankAdjustments(
+  previousTransaction: Pick<FinanceTransaction, "type" | "amount" | "bankAccountId">,
+  nextTransaction: Pick<FinanceTransaction, "type" | "amount" | "bankAccountId">
+): Array<{ bankAccountId: string; delta: number }>;

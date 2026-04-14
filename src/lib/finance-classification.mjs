@@ -56,3 +56,23 @@ export function buildStatementRowsFromCurrentBalance(transactions, currentBalanc
     return row;
   });
 }
+
+function bankDelta(transaction) {
+  return transaction.type === "INCOME" ? transaction.amount : -transaction.amount;
+}
+
+export function getTransactionEditBankAdjustments(previousTransaction, nextTransaction) {
+  const adjustments = new Map();
+
+  function addAdjustment(bankAccountId, delta) {
+    if (!bankAccountId || delta === 0) return;
+    adjustments.set(bankAccountId, (adjustments.get(bankAccountId) ?? 0) + delta);
+  }
+
+  addAdjustment(previousTransaction.bankAccountId, -bankDelta(previousTransaction));
+  addAdjustment(nextTransaction.bankAccountId, bankDelta(nextTransaction));
+
+  return [...adjustments.entries()]
+    .filter(([, delta]) => delta !== 0)
+    .map(([bankAccountId, delta]) => ({ bankAccountId, delta }));
+}

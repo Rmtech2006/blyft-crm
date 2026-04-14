@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   buildStatementRowsFromCurrentBalance,
+  getTransactionEditBankAdjustments,
   isOperatingIncome,
   sortTransactionsByDateDesc,
   sumOperatingIncome,
@@ -49,4 +50,16 @@ test("bank statement rows set off from the current bank balance", () => {
   assert.deepEqual(rows.map((row) => row.id), ["expense", "income"]);
   assert.equal(rows[0].runningBalance, 58967);
   assert.equal(rows[1].runningBalance, 59167);
+});
+
+test("transaction edits reverse old bank movement and apply new bank movement", () => {
+  const adjustments = getTransactionEditBankAdjustments(
+    { type: "INCOME", amount: 1000, bankAccountId: "old-account" },
+    { type: "EXPENSE", amount: 400, bankAccountId: "new-account" },
+  );
+
+  assert.deepEqual(adjustments, [
+    { bankAccountId: "old-account", delta: -1000 },
+    { bankAccountId: "new-account", delta: -400 },
+  ]);
 });

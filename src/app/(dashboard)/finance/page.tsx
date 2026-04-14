@@ -157,8 +157,12 @@ type BankAccountWithTx = {
     amount: number
     category: string
     description: string
+    notes?: string
     date: number
-    paymentMode: string
+    paymentMode: 'CASH' | 'UPI' | 'BANK_TRANSFER' | 'CHEQUE' | 'CARD' | 'OTHER'
+    bankAccountId?: string
+    gstTagged?: boolean
+    gstAmount?: number
     client?: { companyName: string } | null
   }>
 }
@@ -228,6 +232,7 @@ function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string;
                     {t.type === 'INCOME' ? <ArrowUpRight className="h-3.5 w-3.5 text-green-500 shrink-0" /> : <ArrowDownLeft className="h-3.5 w-3.5 text-red-500 shrink-0" />}
                     <div>
                       <p className="font-medium text-sm">{t.description}</p>
+                      {t.notes && <p className="text-xs text-muted-foreground">{t.notes}</p>}
                       {t.client && <p className="text-xs text-muted-foreground">{t.client.companyName}</p>}
                     </div>
                   </div>
@@ -238,9 +243,12 @@ function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string;
                 <TableCell className="text-right font-medium text-destructive">{t.type === 'EXPENSE' ? formatINR(t.amount) : '—'}</TableCell>
                 <TableCell className={`text-right font-semibold text-sm ${t.runningBalance >= 0 ? 'text-foreground' : 'text-destructive'}`}>{formatINR(t.runningBalance)}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500" onClick={() => deleteTransaction(t.id)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex justify-end gap-1">
+                    <AddTransactionDialog transaction={t} />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500" onClick={() => deleteTransaction(t.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -452,6 +460,7 @@ export default function FinancePage() {
       { header: 'Type', value: (transaction) => transaction.type },
       { header: 'Category', value: (transaction) => transaction.category },
       { header: 'Description', value: (transaction) => transaction.description },
+      { header: 'Notes', value: (transaction) => transaction.notes ?? '' },
       { header: 'Amount', value: (transaction) => transaction.amount },
       { header: 'Payment mode', value: (transaction) => transaction.paymentMode },
       { header: 'Client', value: (transaction) => transaction.client?.companyName ?? '—' },
@@ -478,12 +487,13 @@ export default function FinancePage() {
         },
         {
           title: 'Transaction list',
-          columns: ['Date', 'Type', 'Category', 'Description', 'Amount', 'Client'],
+          columns: ['Date', 'Type', 'Category', 'Description', 'Notes', 'Amount', 'Client'],
           rows: transactions.map((transaction) => [
             formatDate(transaction.date),
             transaction.type,
             transaction.category,
             transaction.description,
+            transaction.notes ?? '',
             formatINR(transaction.amount),
             transaction.client?.companyName ?? '—',
           ]),
@@ -584,6 +594,7 @@ export default function FinancePage() {
                         {t.type === 'INCOME' ? <ArrowUpRight className="h-3.5 w-3.5 text-green-500 shrink-0" /> : <ArrowDownLeft className="h-3.5 w-3.5 text-red-500 shrink-0" />}
                         <div>
                           <p className="font-medium text-sm">{t.description}</p>
+                          {t.notes && <p className="text-xs text-muted-foreground">{t.notes}</p>}
                           {t.client && <p className="text-xs text-muted-foreground">{t.client.companyName}</p>}
                         </div>
                       </div>
@@ -594,9 +605,12 @@ export default function FinancePage() {
                     <TableCell className="text-right font-medium text-emerald-500">{t.type === 'INCOME' ? formatINR(t.amount) : '—'}</TableCell>
                     <TableCell className="text-right font-medium text-destructive">{t.type === 'EXPENSE' ? formatINR(t.amount) : '—'}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500" onClick={() => deleteTransaction(t.id)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <AddTransactionDialog transaction={t} />
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500" onClick={() => deleteTransaction(t.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
