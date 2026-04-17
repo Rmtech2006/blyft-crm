@@ -65,64 +65,71 @@ function AppSidebar() {
   const { isMobile, toggleSidebar } = useSidebar()
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
-      <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
-        <div className="flex items-start justify-between gap-2 group-data-[collapsible=icon]:justify-center">
-          <Link href="/" className="group flex min-w-0 items-center gap-3 group-data-[collapsible=icon]:justify-center">
-            <div className="flex items-center gap-3 group-data-[collapsible=icon]:hidden">
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-sidebar-foreground/40">
-                  Agency OS
-                </p>
-                <div className="mt-1">
-                  <BlyftLogo size="sm" variant="white" priority className="opacity-95" />
+    <Sidebar collapsible="icon" className="border-r border-white/10 bg-primary">
+      <div className="hero-noise relative flex size-full flex-col overflow-hidden bg-primary text-sidebar-foreground">
+        <div className="absolute inset-0 opacity-40">
+          <div className="absolute -left-16 top-24 h-44 w-44 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute right-0 top-0 h-56 w-56 rounded-full bg-white/8 blur-3xl" />
+        </div>
+
+        <SidebarHeader className="relative z-10 border-b border-white/10 px-4 py-4">
+          <div className="flex items-start justify-between gap-2 group-data-[collapsible=icon]:justify-center">
+            <Link href="/" className="group flex min-w-0 items-center gap-3 group-data-[collapsible=icon]:justify-center">
+              <div className="flex items-center gap-3 group-data-[collapsible=icon]:hidden">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-sidebar-foreground/40">
+                    Agency OS
+                  </p>
+                  <div className="mt-1">
+                    <BlyftLogo size="sm" variant="white" priority className="opacity-95" />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-[20px] bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_22px_38px_-24px_rgba(255,255,255,0.4)] group-data-[collapsible=icon]:flex">
-              <span className="text-sm font-black tracking-[0.18em]">B</span>
-            </div>
-          </Link>
+              <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-[20px] bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_22px_38px_-24px_rgba(255,255,255,0.4)] group-data-[collapsible=icon]:flex">
+                <span className="text-sm font-black tracking-[0.18em]">B</span>
+              </div>
+            </Link>
 
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-sidebar-foreground/72 transition-colors hover:bg-white/[0.08] hover:text-sidebar-foreground group-data-[collapsible=icon]:hidden"
-            aria-label={isMobile ? 'Close sidebar' : 'Collapse sidebar'}
-            title={isMobile ? 'Close sidebar' : 'Collapse sidebar'}
-          >
-            {isMobile ? <X className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </button>
-        </div>
-      </SidebarHeader>
-
-      <SidebarContent className="px-3 py-4">
-        <div className="mb-4 surface-muted border-white/5 bg-white/[0.04] p-3 text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sidebar-foreground/38">
-            Command Center
-          </p>
-          <p className="mt-2 text-sm leading-relaxed text-sidebar-foreground/78">
-            Keep sales, delivery, finance, and support aligned in one executive workspace.
-          </p>
-        </div>
-
-        <SidebarNav />
-      </SidebarContent>
-
-      <SidebarFooter className="border-t border-sidebar-border p-3">
-        <div className="surface-muted border-white/5 bg-white/[0.04] p-3 group-data-[collapsible=icon]:hidden">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sidebar-foreground/38">
-            System
-          </p>
-          <div className="mt-2 flex items-center justify-between gap-3 text-xs text-sidebar-foreground/75">
-            <span>Live sync</span>
-            <span className="rounded-full bg-emerald-500/12 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-300">
-              Online
-            </span>
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-sidebar-foreground/72 transition-colors hover:bg-white/[0.08] hover:text-sidebar-foreground group-data-[collapsible=icon]:hidden"
+              aria-label={isMobile ? 'Close sidebar' : 'Collapse sidebar'}
+              title={isMobile ? 'Close sidebar' : 'Collapse sidebar'}
+            >
+              {isMobile ? <X className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </button>
           </div>
-        </div>
-      </SidebarFooter>
+        </SidebarHeader>
+
+        <SidebarContent className="relative z-10 px-3 py-4">
+          <div className="mb-4 surface-muted border-white/5 bg-white/[0.04] p-3 text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sidebar-foreground/38">
+              Command Center
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-sidebar-foreground/78">
+              Keep sales, delivery, finance, and support aligned in one executive workspace.
+            </p>
+          </div>
+
+          <SidebarNav />
+        </SidebarContent>
+
+        <SidebarFooter className="relative z-10 border-t border-white/10 p-3">
+          <div className="surface-muted border-white/5 bg-white/[0.04] p-3 group-data-[collapsible=icon]:hidden">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sidebar-foreground/38">
+              System
+            </p>
+            <div className="mt-2 flex items-center justify-between gap-3 text-xs text-sidebar-foreground/75">
+              <span>Live sync</span>
+              <span className="rounded-full bg-emerald-500/12 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-300">
+                Online
+              </span>
+            </div>
+          </div>
+        </SidebarFooter>
+      </div>
     </Sidebar>
   )
 }

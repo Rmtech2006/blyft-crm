@@ -23,7 +23,6 @@ import {
   Handshake,
   Pencil,
   Search,
-  Sparkles,
   Trash2,
   TrendingUp,
   Users,
@@ -238,22 +237,23 @@ export default function ClientsPage() {
 
   return (
     <div className="space-y-5 pb-3">
-      <section className="relative overflow-hidden rounded-lg border border-neutral-900 bg-[linear-gradient(135deg,#050505_0%,#111111_58%,#1b1b1b_100%)] text-white shadow-[0_34px_90px_-56px_rgba(0,0,0,0.85)]">
-        <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:44px_44px] opacity-45" />
+      <section className="surface-card hero-noise relative overflow-hidden bg-primary text-primary-foreground">
+        <div className="absolute inset-0 opacity-40">
+          <div className="absolute -left-10 top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute right-0 top-0 h-52 w-52 rounded-full bg-white/8 blur-3xl" />
+        </div>
 
         <div className="relative grid gap-6 p-5 sm:p-6 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-md border border-white/12 bg-white/8 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/62">
-              <Sparkles className="h-3.5 w-3.5 text-cyan-300" />
-              Client Command Center
+            <div className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary-foreground/65">
+              Client operations
             </div>
             <div className="mt-5 space-y-3">
               <h1 className="text-3xl font-semibold tracking-normal text-white sm:text-4xl">
-                Premium client control, without the noise.
+                Clients
               </h1>
               <p className="max-w-2xl text-sm leading-6 text-white/68 sm:text-base">
-                Track the client book, onboard new accounts, and keep delivery relationships sharp from one focused CRM workspace.
+                Monitor retained accounts, onboarding status, contacts, and linked delivery work.
               </p>
             </div>
           </div>
