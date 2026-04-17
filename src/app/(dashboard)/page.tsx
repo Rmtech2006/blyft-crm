@@ -448,14 +448,14 @@ export default function DashboardPage() {
       {(visibleSections.has('revenueTracker') || hasMiddleCards) && (
         <section
           className={cn(
-            'grid gap-6',
+            'grid items-start gap-6',
             visibleSections.has('revenueTracker') && hasMiddleCards
               ? 'xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]'
               : 'grid-cols-1'
           )}
         >
       {visibleSections.has('revenueTracker') && (
-        <Card className="surface-card">
+        <Card className="surface-card self-start">
           <CardHeader className="pb-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
