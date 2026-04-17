@@ -185,13 +185,14 @@ export default function DashboardPage() {
   const activePipeline = stats.openLeads + stats.activeProjects
   const opsLoad = activePipeline + stats.pendingReimbursements + stats.overdueCount
   const firstName = session?.user?.name?.split(' ')[0] ?? 'there'
-  const hasMiddleCards =
+  const hasLeftRailCards =
+    visibleSections.has('revenueTracker') ||
+    visibleSections.has('attentionQueue') ||
+    visibleSections.has('activityLog')
+  const hasRightRailCards =
     visibleSections.has('quickActions') ||
     visibleSections.has('salesBoard') ||
-    visibleSections.has('attentionQueue')
-  const hasLeftRailCards =
-    visibleSections.has('revenueTracker') || visibleSections.has('activityLog')
-  const hasRightRailCards = hasMiddleCards || visibleSections.has('decisionQueue')
+    visibleSections.has('decisionQueue')
 
   function handleCsvExport() {
     exportCsv(`dashboard-report-${stats.currentMonthKey}.csv`, [
@@ -530,6 +531,57 @@ export default function DashboardPage() {
         </Card>
       )}
 
+      {visibleSections.has('attentionQueue') && (
+        <Card className="surface-card">
+          <CardHeader className="pb-3">
+            <p className="section-eyebrow">Attention queue</p>
+            <CardTitle className="mt-2">What needs you next</CardTitle>
+          </CardHeader>
+
+          <CardContent className="space-y-3">
+            {[
+              {
+                label: 'Overdue tasks',
+                value: stats.overdueCount,
+                tone: stats.overdueCount > 0 ? 'tone-danger' : 'tone-neutral',
+                helper: stats.overdueCount > 0 ? 'Delivery risk is building' : 'No overdue work',
+              },
+              {
+                label: 'Pending reimbursements',
+                value: stats.pendingReimbursements,
+                tone: stats.pendingReimbursements > 0 ? 'tone-warning' : 'tone-neutral',
+                helper:
+                  stats.pendingReimbursements > 0
+                    ? 'Approvals waiting for finance review'
+                    : 'Approval queue is clear',
+              },
+              {
+                label: 'Live pipeline',
+                value: activePipeline,
+                tone: activePipeline > 0 ? 'tone-success' : 'tone-neutral',
+                helper:
+                  activePipeline > 0
+                    ? 'Opportunities and delivery are active'
+                    : 'Pipeline is currently quiet',
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="surface-muted flex items-start justify-between gap-4 p-4"
+              >
+                <div>
+                  <p className="text-sm font-medium text-foreground">{item.label}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{item.helper}</p>
+                </div>
+                <span className={cn('rounded-full px-3 py-1 text-sm font-semibold', item.tone)}>
+                  {item.value}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {visibleSections.has('activityLog') && (
         <Card className="surface-card">
           <CardHeader className="pb-3">
@@ -714,57 +766,6 @@ export default function DashboardPage() {
                   )
                 })
               )}
-            </CardContent>
-          </Card>
-          )}
-
-          {visibleSections.has('attentionQueue') && (
-          <Card className="surface-card">
-            <CardHeader className="pb-3">
-              <p className="section-eyebrow">Attention queue</p>
-              <CardTitle className="mt-2">What needs you next</CardTitle>
-            </CardHeader>
-
-            <CardContent className="space-y-3">
-              {[
-                {
-                  label: 'Overdue tasks',
-                  value: stats.overdueCount,
-                  tone: stats.overdueCount > 0 ? 'tone-danger' : 'tone-neutral',
-                  helper: stats.overdueCount > 0 ? 'Delivery risk is building' : 'No overdue work',
-                },
-                {
-                  label: 'Pending reimbursements',
-                  value: stats.pendingReimbursements,
-                  tone: stats.pendingReimbursements > 0 ? 'tone-warning' : 'tone-neutral',
-                  helper:
-                    stats.pendingReimbursements > 0
-                      ? 'Approvals waiting for finance review'
-                      : 'Approval queue is clear',
-                },
-                {
-                  label: 'Live pipeline',
-                  value: activePipeline,
-                  tone: activePipeline > 0 ? 'tone-success' : 'tone-neutral',
-                  helper:
-                    activePipeline > 0
-                      ? 'Opportunities and delivery are active'
-                      : 'Pipeline is currently quiet',
-                },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="surface-muted flex items-start justify-between gap-4 p-4"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{item.label}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{item.helper}</p>
-                  </div>
-                  <span className={cn('rounded-full px-3 py-1 text-sm font-semibold', item.tone)}>
-                    {item.value}
-                  </span>
-                </div>
-              ))}
             </CardContent>
           </Card>
           )}
