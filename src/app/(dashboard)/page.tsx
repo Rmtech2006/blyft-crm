@@ -189,8 +189,9 @@ export default function DashboardPage() {
     visibleSections.has('quickActions') ||
     visibleSections.has('salesBoard') ||
     visibleSections.has('attentionQueue')
-  const hasBottomCards =
-    visibleSections.has('activityLog') || visibleSections.has('decisionQueue')
+  const hasLeftRailCards =
+    visibleSections.has('revenueTracker') || visibleSections.has('activityLog')
+  const hasRightRailCards = hasMiddleCards || visibleSections.has('decisionQueue')
 
   function handleCsvExport() {
     exportCsv(`dashboard-report-${stats.currentMonthKey}.csv`, [
@@ -445,15 +446,17 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {(visibleSections.has('revenueTracker') || hasMiddleCards) && (
+      {(hasLeftRailCards || hasRightRailCards) && (
         <section
           className={cn(
             'grid items-start gap-6',
-            visibleSections.has('revenueTracker') && hasMiddleCards
+            hasLeftRailCards && hasRightRailCards
               ? 'xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]'
               : 'grid-cols-1'
           )}
         >
+        {hasLeftRailCards && (
+          <div className="space-y-6">
       {visibleSections.has('revenueTracker') && (
         <Card className="surface-card self-start">
           <CardHeader className="pb-3">
@@ -527,7 +530,69 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {hasMiddleCards && (
+      {visibleSections.has('activityLog') && (
+        <Card className="surface-card">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="section-eyebrow">Activity log</p>
+                <CardTitle className="mt-2">Recent workspace activity</CardTitle>
+              </div>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <CardDescription>
+              See the latest movement across your agency in one timeline.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            {stats.recentActivity.length === 0 ? (
+              <div className="flex min-h-[240px] flex-col items-center justify-center text-center">
+                <Activity className="mb-3 h-10 w-10 text-muted-foreground/35" />
+                <p className="text-sm font-medium text-foreground">No activity recorded yet</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Activity will appear here as your team starts using the CRM.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {stats.recentActivity.map((log) => (
+                  <div
+                    key={log.id}
+                    className="surface-muted flex items-start gap-4 p-4 transition-colors hover:bg-accent"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-card">
+                      <span className={cn('h-2.5 w-2.5 rounded-full', getActionColor(log.action))} />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm leading-6 text-foreground">
+                        <span className="font-medium">
+                          {(log.user as { name?: string } | null)?.name ?? 'System'}
+                        </span>{' '}
+                        <span className="text-muted-foreground">
+                          {log.action.toLowerCase()}d a {log.entity.toLowerCase()}
+                        </span>
+                      </p>
+                      {log.details && (
+                        <p className="mt-1 text-sm text-muted-foreground">{log.details}</p>
+                      )}
+                    </div>
+
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+          </div>
+        )}
+
+      {hasRightRailCards && (
         <div className="space-y-6">
           {visibleSections.has('quickActions') && (
           <Card className="surface-card">
@@ -703,79 +768,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
           )}
-        </div>
-      )}
-        </section>
-      )}
-
-      {hasBottomCards && (
-        <section
-          className={cn(
-            'grid gap-6',
-            visibleSections.has('activityLog') && visibleSections.has('decisionQueue')
-              ? 'xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]'
-              : 'grid-cols-1'
-          )}
-        >
-      {visibleSections.has('activityLog') && (
-        <Card className="surface-card">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="section-eyebrow">Activity log</p>
-                <CardTitle className="mt-2">Recent workspace activity</CardTitle>
-              </div>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <CardDescription>
-              See the latest movement across your agency in one timeline.
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            {stats.recentActivity.length === 0 ? (
-              <div className="flex min-h-[240px] flex-col items-center justify-center text-center">
-                <Activity className="mb-3 h-10 w-10 text-muted-foreground/35" />
-                <p className="text-sm font-medium text-foreground">No activity recorded yet</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Activity will appear here as your team starts using the CRM.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {stats.recentActivity.map((log) => (
-                  <div
-                    key={log.id}
-                    className="surface-muted flex items-start gap-4 p-4 transition-colors hover:bg-accent"
-                  >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-card">
-                      <span className={cn('h-2.5 w-2.5 rounded-full', getActionColor(log.action))} />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm leading-6 text-foreground">
-                        <span className="font-medium">
-                          {(log.user as { name?: string } | null)?.name ?? 'System'}
-                        </span>{' '}
-                        <span className="text-muted-foreground">
-                          {log.action.toLowerCase()}d a {log.entity.toLowerCase()}
-                        </span>
-                      </p>
-                      {log.details && (
-                        <p className="mt-1 text-sm text-muted-foreground">{log.details}</p>
-                      )}
-                    </div>
-
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       {visibleSections.has('decisionQueue') && (
         <Card className="surface-card">
@@ -846,6 +838,8 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+        </div>
       )}
         </section>
       )}
