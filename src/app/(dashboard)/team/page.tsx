@@ -5,22 +5,28 @@ import { useRouter } from 'next/navigation'
 import {
   ArrowUpRight,
   BriefcaseBusiness,
+  Check,
+  Copy,
   ExternalLink,
   Mail,
   MapPin,
   MessageCircle,
   Search,
   ShieldCheck,
+  XCircle,
   UserRound,
   Users,
 } from 'lucide-react'
 import { AddMemberDialog } from '@/components/team/add-member-dialog'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useQuery } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
+import { Id } from '@convex/_generated/dataModel'
+import { toast } from 'sonner'
 import { cn, formatEnum } from '@/lib/utils'
 
 type TeamMember = {
@@ -31,6 +37,11 @@ type TeamMember = {
   whatsapp?: string | null
   email?: string | null
   roleTitle?: string | null
+  roleCategories?: string[] | null
+  roleSkills?: Array<{ category: string; skills: string[] }> | null
+  otherSkill?: string | null
+  availability?: string | null
+  expectedRate?: string | null
   portfolioUrl?: string | null
   behanceUrl?: string | null
   linkedinUrl?: string | null
@@ -43,6 +54,26 @@ type TeamMember = {
   compensationRate?: number | null
   skills: string[]
   projects: unknown[]
+}
+
+type FreelancerApplication = {
+  id: string
+  fullName: string
+  photoUrl?: string | null
+  email?: string | null
+  whatsapp?: string | null
+  phone?: string | null
+  location?: string | null
+  portfolioUrl?: string | null
+  behanceUrl?: string | null
+  linkedinUrl?: string | null
+  roleCategories: string[]
+  roleSkills: Array<{ category: string; skills: string[] }>
+  otherSkill?: string | null
+  experienceNotes?: string | null
+  availability?: string | null
+  expectedRate?: string | null
+  submittedAt: number
 }
 
 const typeOptions = ['INTERN', 'FREELANCER', 'PART_TIME', 'FULL_TIME'] as const
@@ -94,6 +125,13 @@ function whatsappHref(value?: string | null) {
   return digits ? `https://wa.me/${digits}` : undefined
 }
 
+function formatShortDate(value: number) {
+  return new Date(value).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+  })
+}
+
 function TeamSkeleton() {
   return (
     <div className="space-y-6">
@@ -118,9 +156,14 @@ export default function TeamPage() {
   const [typeFilter, setTypeFilter] = useState('ALL')
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [search, setSearch] = useState('')
+  const [reviewingId, setReviewingId] = useState<string | null>(null)
 
   const membersQuery = useQuery(api.team.list)
+  const applicationsQuery = useQuery(api.freelancerApplications.listPending)
+  const approveApplication = useMutation(api.freelancerApplications.approve)
+  const rejectApplication = useMutation(api.freelancerApplications.reject)
   const members = useMemo(() => (membersQuery ?? []) as TeamMember[], [membersQuery])
+  const applications = useMemo(() => (applicationsQuery ?? []) as FreelancerApplication[], [applicationsQuery])
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -139,6 +182,11 @@ export default function TeamPage() {
         member.portfolioUrl,
         member.behanceUrl,
         member.linkedinUrl,
+        ...(member.roleCategories ?? []),
+        ...((member.roleSkills ?? []).flatMap((group) => [group.category, ...group.skills])),
+        member.otherSkill,
+        member.availability,
+        member.expectedRate,
         ...member.skills,
       ].filter(Boolean).join(' ').toLowerCase()
 
@@ -153,6 +201,36 @@ export default function TeamPage() {
   const linkedProfiles = members.filter((member) => member.portfolioUrl || member.behanceUrl || member.linkedinUrl)
   const departments = new Set(members.map((member) => member.department).filter(Boolean))
   const projectAssignments = members.reduce((sum, member) => sum + member.projects.length, 0)
+
+  function copyFreelancerLink() {
+    const url = `${window.location.origin}/freelancer`
+    navigator.clipboard.writeText(url)
+    toast.success('Freelancer application link copied')
+  }
+
+  async function handleApprove(id: string) {
+    setReviewingId(id)
+    try {
+      await approveApplication({ id: id as Id<'freelancerApplications'> })
+      toast.success('Freelancer approved')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to approve application')
+    } finally {
+      setReviewingId(null)
+    }
+  }
+
+  async function handleReject(id: string) {
+    setReviewingId(id)
+    try {
+      await rejectApplication({ id: id as Id<'freelancerApplications'> })
+      toast.success('Application rejected')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to reject application')
+    } finally {
+      setReviewingId(null)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -172,7 +250,11 @@ export default function TeamPage() {
             </div>
           </div>
 
-          <div className="flex justify-start xl:justify-end [&_[data-slot=button]]:rounded-lg [&_[data-slot=button]]:border-white/15 [&_[data-slot=button]]:bg-white/10 [&_[data-slot=button]]:text-white [&_[data-slot=button]]:shadow-none [&_[data-slot=button]:hover]:bg-white/20">
+          <div className="flex flex-wrap justify-start gap-2 xl:justify-end [&_[data-slot=button]]:rounded-lg [&_[data-slot=button]]:border-white/15 [&_[data-slot=button]]:bg-white/10 [&_[data-slot=button]]:text-white [&_[data-slot=button]]:shadow-none [&_[data-slot=button]:hover]:bg-white/20">
+            <Button type="button" size="sm" variant="outline" onClick={copyFreelancerLink}>
+              <Copy className="mr-1 h-4 w-4" />
+              Freelancer Link
+            </Button>
             <AddMemberDialog />
           </div>
 
@@ -184,6 +266,31 @@ export default function TeamPage() {
           </div>
         </div>
       </section>
+
+      {applications.length > 0 && (
+        <section className="rounded-lg border border-neutral-950/10 bg-white p-5 shadow-[0_24px_80px_-62px_rgba(0,0,0,0.72)]">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Freelancer applications
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-foreground">Pending review</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">{applications.length} waiting for approval</p>
+          </div>
+          <div className="mt-4 grid gap-3 xl:grid-cols-2">
+            {applications.map((application) => (
+              <FreelancerApplicationCard
+                key={application.id}
+                application={application}
+                reviewing={reviewingId === application.id}
+                onApprove={() => handleApprove(application.id)}
+                onReject={() => handleReject(application.id)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="Total people" value={members.length} detail={`${filtered.length} in current view`} icon={Users} />
@@ -252,6 +359,115 @@ function HeroMetric({ label, value, detail }: { label: string; value: string | n
       <p className="mt-3 truncate text-3xl font-semibold tracking-normal text-white">{value}</p>
       <p className="mt-2 truncate text-xs text-white/50">{detail}</p>
     </div>
+  )
+}
+
+function FreelancerApplicationCard({
+  application,
+  reviewing,
+  onApprove,
+  onReject,
+}: {
+  application: FreelancerApplication
+  reviewing: boolean
+  onApprove: () => void
+  onReject: () => void
+}) {
+  const whatsApp = whatsappHref(application.whatsapp)
+  const visibleLinks = [
+    application.portfolioUrl ? { label: 'Portfolio', href: application.portfolioUrl, icon: ExternalLink } : null,
+    application.behanceUrl ? { label: 'Behance', href: application.behanceUrl, icon: ExternalLink } : null,
+    application.linkedinUrl ? { label: 'LinkedIn', href: application.linkedinUrl, icon: ExternalLink } : null,
+  ].filter((link): link is { label: string; href: string; icon: typeof ExternalLink } => Boolean(link))
+  const populatedSkillGroups = application.roleSkills.filter((group) => group.skills.length > 0)
+
+  return (
+    <article className="rounded-lg border border-border/80 bg-white p-4 shadow-[0_18px_60px_-52px_rgba(0,0,0,0.65)]">
+      <div className="flex items-start gap-4">
+        <ProfilePhoto member={application} size="lg" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-800">
+              Pending
+            </span>
+            <span className="text-xs text-muted-foreground">Submitted {formatShortDate(application.submittedAt)}</span>
+          </div>
+          <h3 className="mt-2 truncate text-base font-semibold text-foreground">{application.fullName}</h3>
+          <p className="mt-1 truncate text-sm text-muted-foreground">
+            {application.roleCategories.join(', ')}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {application.email && <ContactLink href={`mailto:${application.email}`} label="Email" icon={Mail} />}
+        {whatsApp && <ContactLink href={whatsApp} label="WhatsApp" icon={MessageCircle} />}
+        {application.location && (
+          <span className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/70 px-2.5 text-xs text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5" />
+            {application.location}
+          </span>
+        )}
+      </div>
+
+      {visibleLinks.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {visibleLinks.map((link) => (
+            <ContactLink key={link.label} href={link.href} label={link.label} icon={link.icon} />
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        {application.roleCategories.map((category) => (
+          <Badge key={category} variant="outline" className="rounded-md text-[10px]">
+            {category}
+          </Badge>
+        ))}
+      </div>
+
+      {populatedSkillGroups.length > 0 && (
+        <div className="mt-4 grid gap-2">
+          {populatedSkillGroups.map((group) => (
+            <div key={group.category} className="rounded-lg border border-border/70 bg-muted/30 p-3">
+              <p className="text-xs font-semibold text-foreground">{group.category}</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {group.skills.map((skill) => (
+                  <span key={`${group.category}-${skill}`} className="rounded-md bg-white px-2 py-1 text-[10px] text-muted-foreground">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(application.otherSkill || application.availability || application.expectedRate) && (
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <MiniStat label="Other skill" value={application.otherSkill ?? '-'} />
+          <MiniStat label="Availability" value={application.availability ?? '-'} />
+          <MiniStat label="Expected rate" value={application.expectedRate ?? '-'} />
+        </div>
+      )}
+
+      {application.experienceNotes && (
+        <p className="mt-4 line-clamp-3 rounded-lg border border-border/70 bg-muted/25 p-3 text-xs leading-5 text-muted-foreground">
+          {application.experienceNotes}
+        </p>
+      )}
+
+      <div className="mt-4 flex flex-col gap-2 border-t border-border/70 pt-4 sm:flex-row sm:justify-end">
+        <Button type="button" variant="outline" size="sm" className="rounded-lg" onClick={onReject} disabled={reviewing}>
+          <XCircle className="mr-1 h-4 w-4" />
+          Reject
+        </Button>
+        <Button type="button" size="sm" className="rounded-lg" onClick={onApprove} disabled={reviewing}>
+          <Check className="mr-1 h-4 w-4" />
+          {reviewing ? 'Reviewing...' : 'Approve'}
+        </Button>
+      </div>
+    </article>
   )
 }
 
@@ -366,7 +582,7 @@ function MemberCard({ member, onOpen }: { member: TeamMember; onOpen: () => void
   )
 }
 
-function ProfilePhoto({ member, size = 'md' }: { member: Pick<TeamMember, 'fullName' | 'photoUrl'>; size?: 'md' | 'lg' }) {
+function ProfilePhoto({ member, size = 'md' }: { member: { fullName: string; photoUrl?: string | null }; size?: 'md' | 'lg' }) {
   const sizeClass = size === 'lg' ? 'h-14 w-14 text-base' : 'h-11 w-11 text-sm'
 
   return (

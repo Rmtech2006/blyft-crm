@@ -1,6 +1,6 @@
 import type { NextAuthConfig } from 'next-auth'
 
-// Lightweight auth config for Edge middleware — no PrismaAdapter, no DB calls
+// Lightweight auth config for Edge middleware - no PrismaAdapter, no DB calls
 export const authConfig: NextAuthConfig = {
   pages: {
     signIn: '/login',
@@ -12,6 +12,7 @@ export const authConfig: NextAuthConfig = {
       const isPublic =
         nextUrl.pathname === '/login' ||
         nextUrl.pathname === '/capture' ||
+        nextUrl.pathname === '/freelancer' ||
         nextUrl.pathname.startsWith('/api/auth') ||
         nextUrl.pathname.startsWith('/api/convex')
 

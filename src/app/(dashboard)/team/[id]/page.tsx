@@ -32,6 +32,11 @@ type MemberDetail = {
   whatsapp?: string | null
   email?: string | null
   roleTitle?: string | null
+  roleCategories?: string[] | null
+  roleSkills?: Array<{ category: string; skills: string[] }> | null
+  otherSkill?: string | null
+  availability?: string | null
+  expectedRate?: string | null
   portfolioUrl?: string | null
   behanceUrl?: string | null
   linkedinUrl?: string | null
@@ -220,8 +225,10 @@ export default function TeamMemberDetailPage({ params }: { params: Promise<{ id:
                   ['Type', formatEnum(member.type)],
                   ['Status', status.label],
                   ['Role', member.roleTitle],
+                  ['Categories', member.roleCategories?.join(', ')],
                   ['Department', member.department],
                   ['Reporting to', member.reportingTo],
+                  ['Availability', member.availability],
                   ['Start date', formatDate(member.startDate)],
                   ['Contract', member.contractStatus],
                 ]}
@@ -239,11 +246,30 @@ export default function TeamMemberDetailPage({ params }: { params: Promise<{ id:
             <Card className="mt-4 rounded-lg border-border/80 bg-white shadow-[0_20px_70px_-58px_rgba(0,0,0,0.72)]">
               <CardHeader><CardTitle className="text-sm">Skills</CardTitle></CardHeader>
               <CardContent>
-                {member.skills.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {member.skills.map((skill) => (
-                      <span key={skill} className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">{skill}</span>
+                {member.skills.length > 0 || member.roleSkills?.length || member.otherSkill ? (
+                  <div className="space-y-3">
+                    {member.roleSkills?.map((group) => (
+                      <div key={group.category} className="rounded-lg border border-border/70 bg-muted/25 p-3">
+                        <p className="text-xs font-semibold text-foreground">{group.category}</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {group.skills.length > 0 ? (
+                            group.skills.map((skill) => (
+                              <span key={`${group.category}-${skill}`} className="rounded-md bg-white px-2 py-1 text-xs text-muted-foreground">{skill}</span>
+                            ))
+                          ) : (
+                            <span className="text-xs text-muted-foreground">No sub-skills selected</span>
+                          )}
+                        </div>
+                      </div>
                     ))}
+                    <div className="flex flex-wrap gap-2">
+                      {member.skills.map((skill) => (
+                        <span key={skill} className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">{skill}</span>
+                      ))}
+                      {member.otherSkill && (
+                        <span className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">Other: {member.otherSkill}</span>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">No skills added</p>
@@ -275,6 +301,7 @@ export default function TeamMemberDetailPage({ params }: { params: Promise<{ id:
               rows={[
                 ['Mode', member.compensationMode ? formatEnum(member.compensationMode) : '-'],
                 ['Rate', member.compensationRate ? formatINR(member.compensationRate) : '-'],
+                ['Expected rate', member.expectedRate],
                 ['Payment mode', member.paymentMode],
                 ['UPI ID', member.upiId],
                 ['Bank details', member.bankDetails],

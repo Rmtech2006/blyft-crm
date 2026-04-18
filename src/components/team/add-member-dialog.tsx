@@ -16,7 +16,6 @@ import { Camera, Plus, X } from 'lucide-react'
 
 const schema = z.object({
   fullName: z.string().min(1, 'Full name is required'),
-  photoUrl: z.string().optional(),
   phone: z.string().optional(),
   whatsapp: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
@@ -100,7 +99,6 @@ export function AddMemberDialog() {
       await createMember({
         fullName: data.fullName.trim(),
         photoStorageId,
-        photoUrl: normalizeUrl(data.photoUrl),
         phone: cleanText(data.phone),
         whatsapp: cleanText(data.whatsapp),
         email: cleanText(data.email),
@@ -162,10 +160,6 @@ export function AddMemberDialog() {
                       <X className="mr-1 h-4 w-4" /> Remove
                     </Button>
                   )}
-                </div>
-                <div className="space-y-1">
-                  <Label>Photo URL</Label>
-                  <Input placeholder="https://..." {...register('photoUrl')} />
                 </div>
               </div>
             </div>

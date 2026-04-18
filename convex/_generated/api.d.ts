@@ -13,6 +13,7 @@ import type * as clients from "../clients.js";
 import type * as dashboard from "../dashboard.js";
 import type * as files from "../files.js";
 import type * as finance from "../finance.js";
+import type * as freelancerApplications from "../freelancerApplications.js";
 import type * as importFinanceSnapshot from "../importFinanceSnapshot.js";
 import type * as leads from "../leads.js";
 import type * as migrate from "../migrate.js";
@@ -39,6 +40,7 @@ declare const fullApi: ApiFromModules<{
   dashboard: typeof dashboard;
   files: typeof files;
   finance: typeof finance;
+  freelancerApplications: typeof freelancerApplications;
   importFinanceSnapshot: typeof importFinanceSnapshot;
   leads: typeof leads;
   migrate: typeof migrate;

@@ -17,7 +17,6 @@ import { Camera, Pencil, X } from 'lucide-react'
 
 const schema = z.object({
   fullName: z.string().min(1, 'Full name is required'),
-  photoUrl: z.string().optional(),
   phone: z.string().optional(),
   whatsapp: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
@@ -89,7 +88,6 @@ export function EditMemberDialog({ member }: { member: TeamMemberProfile }) {
     resolver: zodResolver(schema),
     defaultValues: {
       fullName: member.fullName,
-      photoUrl: member.photoUrl ?? '',
       phone: member.phone ?? '',
       whatsapp: member.whatsapp ?? '',
       email: member.email ?? '',
@@ -113,7 +111,6 @@ export function EditMemberDialog({ member }: { member: TeamMemberProfile }) {
     if (!open) return
     reset({
       fullName: member.fullName,
-      photoUrl: member.photoUrl ?? '',
       phone: member.phone ?? '',
       whatsapp: member.whatsapp ?? '',
       email: member.email ?? '',
@@ -166,7 +163,6 @@ export function EditMemberDialog({ member }: { member: TeamMemberProfile }) {
         id: member.id as Id<'teamMembers'>,
         fullName: data.fullName.trim(),
         photoStorageId,
-        photoUrl: normalizeUrl(data.photoUrl),
         phone: cleanText(data.phone),
         whatsapp: cleanText(data.whatsapp),
         email: cleanText(data.email),
@@ -228,10 +224,6 @@ export function EditMemberDialog({ member }: { member: TeamMemberProfile }) {
                       <X className="mr-1 h-4 w-4" /> Remove
                     </Button>
                   )}
-                </div>
-                <div className="space-y-1">
-                  <Label>Photo URL</Label>
-                  <Input placeholder="https://..." {...register('photoUrl')} />
                 </div>
               </div>
             </div>
