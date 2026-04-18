@@ -165,7 +165,13 @@ function isDueSoon(task: TaskItem) {
   return task.status !== 'DONE' && days !== null && days >= 0 && days <= 7
 }
 
+function needsAttention(task: TaskItem) {
+  if (task.status === 'DONE') return false
+  return task.status === 'BLOCKED' || task.priority === 'CRITICAL' || isOverdue(task) || isDueSoon(task)
+}
+
 function getDueLabel(task: TaskItem) {
+  if (task.status === 'DONE') return 'Completed'
   const days = daysUntil(task.dueDate)
   if (days === null) return 'No due date'
   if (days < 0) return `${Math.abs(days)}d overdue`
@@ -237,7 +243,7 @@ export default function TasksPage() {
   const critical = taskRecords.filter((task) => task.priority === 'CRITICAL' && task.status !== 'DONE')
   const unassigned = taskRecords.filter((task) => !task.assignee && task.status !== 'DONE')
   const attentionQueue = [...filtered]
-    .filter((task) => task.status === 'BLOCKED' || task.priority === 'CRITICAL' || isOverdue(task) || isDueSoon(task))
+    .filter(needsAttention)
     .sort((a, b) => {
       const aScore =
         (isOverdue(a) ? 0 : 10) +
