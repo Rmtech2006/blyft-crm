@@ -157,8 +157,15 @@ export default defineSchema({
 
   teamMembers: defineTable({
     fullName: v.string(),
+    photoStorageId: v.optional(v.string()),
+    photoUrl: v.optional(v.string()),
     phone: v.optional(v.string()),
+    whatsapp: v.optional(v.string()),
     email: v.optional(v.string()),
+    roleTitle: v.optional(v.string()),
+    portfolioUrl: v.optional(v.string()),
+    behanceUrl: v.optional(v.string()),
+    linkedinUrl: v.optional(v.string()),
     college: v.optional(v.string()),
     location: v.optional(v.string()),
     emergencyContact: v.optional(v.string()),

@@ -1,46 +1,112 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useQuery } from 'convex/react'
-import { api } from '@convex/_generated/api'
-import { Card, CardContent } from '@/components/ui/card'
+import {
+  ArrowUpRight,
+  BriefcaseBusiness,
+  ExternalLink,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Search,
+  ShieldCheck,
+  UserRound,
+  Users,
+} from 'lucide-react'
+import { AddMemberDialog } from '@/components/team/add-member-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { AddMemberDialog } from '@/components/team/add-member-dialog'
-import { Users, Search } from 'lucide-react'
-import { formatEnum } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useQuery } from 'convex/react'
+import { api } from '@convex/_generated/api'
+import { cn, formatEnum } from '@/lib/utils'
 
-const typeColors: Record<string, string> = {
-  INTERN: 'bg-primary/15 text-primary',
-  FREELANCER: 'bg-violet-500/15 text-violet-500',
-  PART_TIME: 'bg-amber-500/15 text-amber-500',
-  FULL_TIME: 'bg-emerald-500/15 text-emerald-500',
+type TeamMember = {
+  id: string
+  fullName: string
+  photoUrl?: string | null
+  phone?: string | null
+  whatsapp?: string | null
+  email?: string | null
+  roleTitle?: string | null
+  portfolioUrl?: string | null
+  behanceUrl?: string | null
+  linkedinUrl?: string | null
+  college?: string | null
+  location?: string | null
+  type: 'INTERN' | 'FREELANCER' | 'PART_TIME' | 'FULL_TIME'
+  status: 'ACTIVE' | 'ON_LEAVE' | 'OFFBOARDED'
+  department?: string | null
+  compensationMode?: 'HOURLY' | 'MONTHLY' | 'PROJECT_BASED' | null
+  compensationRate?: number | null
+  skills: string[]
+  projects: unknown[]
 }
 
-const statusColors: Record<string, string> = {
-  ACTIVE: 'bg-emerald-500/15 text-emerald-500',
-  ON_LEAVE: 'bg-amber-500/15 text-amber-500',
-  OFFBOARDED: 'bg-muted text-muted-foreground',
+const typeOptions = ['INTERN', 'FREELANCER', 'PART_TIME', 'FULL_TIME'] as const
+const statusOptions = ['ACTIVE', 'ON_LEAVE', 'OFFBOARDED'] as const
+
+const typeMeta: Record<TeamMember['type'], string> = {
+  INTERN: 'border-cyan-200 bg-cyan-50 text-cyan-800',
+  FREELANCER: 'border-violet-200 bg-violet-50 text-violet-800',
+  PART_TIME: 'border-amber-200 bg-amber-50 text-amber-800',
+  FULL_TIME: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+}
+
+const statusMeta: Record<TeamMember['status'], {
+  label: string
+  badge: string
+  dot: string
+}> = {
+  ACTIVE: {
+    label: 'Active',
+    badge: 'border-emerald-300/70 bg-emerald-50 text-emerald-800',
+    dot: 'bg-emerald-500',
+  },
+  ON_LEAVE: {
+    label: 'On leave',
+    badge: 'border-amber-300/70 bg-amber-50 text-amber-800',
+    dot: 'bg-amber-500',
+  },
+  OFFBOARDED: {
+    label: 'Offboarded',
+    badge: 'border-neutral-200 bg-neutral-100 text-neutral-700',
+    dot: 'bg-neutral-500',
+  },
 }
 
 function getInitials(name: string) {
-  return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+  return name.split(' ').map((part) => part[0]).join('').toUpperCase().slice(0, 2)
+}
+
+function formatINR(amount: number) {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+function whatsappHref(value?: string | null) {
+  const digits = value?.replace(/\D/g, '')
+  return digits ? `https://wa.me/${digits}` : undefined
 }
 
 function TeamSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}><CardContent className="p-4 flex items-center gap-3"><Skeleton className="h-6 w-6 rounded" /><div><Skeleton className="h-3 w-16 mb-1" /><Skeleton className="h-6 w-8" /></div></CardContent></Card>
+      <Skeleton className="h-[292px] rounded-lg" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} className="h-[132px] rounded-lg" />
         ))}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Card key={i}><CardContent className="p-5 flex items-start gap-3"><Skeleton className="h-10 w-10 rounded-full shrink-0" /><div className="flex-1"><Skeleton className="h-4 w-32 mb-1" /><Skeleton className="h-3 w-20" /></div></CardContent></Card>
+      <Skeleton className="h-[68px] rounded-lg" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <Skeleton key={index} className="h-[260px] rounded-lg" />
         ))}
       </div>
     </div>
@@ -53,148 +119,317 @@ export default function TeamPage() {
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [search, setSearch] = useState('')
 
-  const members = useQuery(api.team.list)
+  const membersQuery = useQuery(api.team.list)
+  const members = useMemo(() => (membersQuery ?? []) as TeamMember[], [membersQuery])
 
-  if (members === undefined) return <TeamSkeleton />
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase()
 
-  const filtered = members.filter((m) => {
-    const matchType = typeFilter === 'ALL' || m.type === typeFilter
-    const matchStatus = statusFilter === 'ALL' || m.status === statusFilter
-    const matchSearch = !search ||
-      m.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      (m.department ?? '').toLowerCase().includes(search.toLowerCase())
-    return matchType && matchStatus && matchSearch
-  })
+    return members.filter((member) => {
+      const matchType = typeFilter === 'ALL' || member.type === typeFilter
+      const matchStatus = statusFilter === 'ALL' || member.status === statusFilter
+      const haystack = [
+        member.fullName,
+        member.roleTitle,
+        member.department,
+        member.email,
+        member.whatsapp,
+        member.phone,
+        member.location,
+        member.portfolioUrl,
+        member.behanceUrl,
+        member.linkedinUrl,
+        ...member.skills,
+      ].filter(Boolean).join(' ').toLowerCase()
 
-  const active = members.filter((m) => m.status === 'ACTIVE').length
-  const onLeave = members.filter((m) => m.status === 'ON_LEAVE').length
+      return matchType && matchStatus && (!query || haystack.includes(query))
+    })
+  }, [members, search, statusFilter, typeFilter])
+
+  if (membersQuery === undefined) return <TeamSkeleton />
+
+  const active = members.filter((member) => member.status === 'ACTIVE')
+  const onLeave = members.filter((member) => member.status === 'ON_LEAVE')
+  const linkedProfiles = members.filter((member) => member.portfolioUrl || member.behanceUrl || member.linkedinUrl)
+  const departments = new Set(members.map((member) => member.department).filter(Boolean))
+  const projectAssignments = members.reduce((sum, member) => sum + member.projects.length, 0)
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Team</h1>
-        <AddMemberDialog />
-      </div>
+      <section className="overflow-hidden rounded-lg border border-neutral-950/15 bg-neutral-950 text-white shadow-[0_30px_90px_-64px_rgba(0,0,0,0.92)]">
+        <div className="grid gap-6 p-5 sm:p-6 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
+          <div className="max-w-3xl">
+            <div className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/60">
+              People directory
+            </div>
+            <div className="mt-5 space-y-3">
+              <h1 className="text-3xl font-semibold tracking-normal text-white sm:text-4xl">
+                Team Profile OS
+              </h1>
+              <p className="max-w-2xl text-sm leading-6 text-white/70 sm:text-base">
+                Keep roles, ownership, contact paths, links, and payment context ready for internal operations.
+              </p>
+            </div>
+          </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Total', value: members.length },
-          { label: 'Active', value: active },
-          { label: 'On Leave', value: onLeave },
-          { label: 'Offboarded', value: members.filter(m => m.status === 'OFFBOARDED').length },
-        ].map(({ label, value }) => (
-          <Card key={label}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <Users className="h-6 w-6 text-primary" />
-              <div>
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="text-xl font-bold">{value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+          <div className="flex justify-start xl:justify-end [&_[data-slot=button]]:rounded-lg [&_[data-slot=button]]:border-white/15 [&_[data-slot=button]]:bg-white/10 [&_[data-slot=button]]:text-white [&_[data-slot=button]]:shadow-none [&_[data-slot=button]:hover]:bg-white/20">
+            <AddMemberDialog />
+          </div>
 
-      <div className="flex gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Search members or department…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8"
-          />
+          <div className="grid gap-3 sm:grid-cols-2 xl:col-span-2 xl:grid-cols-4">
+            <HeroMetric label="Active team" value={active.length} detail={`${members.length} total profiles`} />
+            <HeroMetric label="On leave" value={onLeave.length} detail="Availability watch" />
+            <HeroMetric label="Departments" value={departments.size} detail="Operating groups" />
+            <HeroMetric label="Linked profiles" value={linkedProfiles.length} detail="Portfolio or social ready" />
+          </div>
         </div>
-        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v ?? 'ALL')}>
-          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All Types</SelectItem>
-            {['INTERN', 'FREELANCER', 'PART_TIME', 'FULL_TIME'].map((t) => (
-              <SelectItem key={t} value={t}>{formatEnum(t)}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? 'ALL')}>
-          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All Status</SelectItem>
-            {['ACTIVE', 'ON_LEAVE', 'OFFBOARDED'].map((s) => (
-              <SelectItem key={s} value={s}>{formatEnum(s)}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard label="Total people" value={members.length} detail={`${filtered.length} in current view`} icon={Users} />
+        <SummaryCard label="Project seats" value={projectAssignments} detail="Assignments across delivery" icon={BriefcaseBusiness} />
+        <SummaryCard label="Contact-ready" value={members.filter((member) => member.email || member.whatsapp).length} detail="Email or WhatsApp saved" icon={Mail} />
+        <SummaryCard label="Active coverage" value={`${members.length ? Math.round((active.length / members.length) * 100) : 0}%`} detail="Available team ratio" icon={ShieldCheck} />
+      </section>
+
+      <section className="rounded-lg border border-border/80 bg-white/90 p-3 shadow-[0_22px_70px_-58px_rgba(0,0,0,0.72)] backdrop-blur">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search member, role, skill, email, link..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="h-11 rounded-lg border-border/90 bg-white pl-9 text-sm shadow-none"
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[180px_180px] xl:flex xl:items-center">
+            <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value ?? 'ALL')}>
+              <SelectTrigger className="h-11 w-full rounded-lg border-border/90 bg-white shadow-none sm:w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All types</SelectItem>
+                {typeOptions.map((type) => (
+                  <SelectItem key={type} value={type}>{formatEnum(type)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? 'ALL')}>
+              <SelectTrigger className="h-11 w-full rounded-lg border-border/90 bg-white shadow-none sm:w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All status</SelectItem>
+                {statusOptions.map((status) => (
+                  <SelectItem key={status} value={status}>{statusMeta[status].label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </section>
 
       {members.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-xl">
-          <Users className="h-10 w-10 text-muted-foreground/40 mb-3" />
-          <p className="text-sm font-medium text-muted-foreground">No team members yet</p>
-          <p className="text-xs text-muted-foreground/60 mb-4">Add your first team member to get started</p>
-          <AddMemberDialog />
-        </div>
+        <EmptyTeamState />
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed rounded-xl">
-          <Users className="h-8 w-8 text-muted-foreground/40 mb-3" />
-          <p className="text-sm text-muted-foreground">No members match your filters</p>
-        </div>
+        <FilteredEmptyState />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((member) => (
-            <Card
-              key={member.id}
-              className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
-              onClick={() => router.push(`/team/${member.id}`)}
-            >
-              <CardContent className="p-5">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold shrink-0">
-                    {getInitials(member.fullName)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">{member.fullName}</p>
-                    {member.department && <p className="text-xs text-muted-foreground">{member.department}</p>}
-                  </div>
-                  <Badge className={`text-xs border-0 shrink-0 ${statusColors[member.status]}`}>
-                    {formatEnum(member.status)}
-                  </Badge>
-                </div>
+            <MemberCard key={member.id} member={member} onOpen={() => router.push(`/team/${member.id}`)} />
+          ))}
+        </section>
+      )}
+    </div>
+  )
+}
 
-                <div className="mb-2">
-                  <Badge className={`text-xs border-0 ${typeColors[member.type]}`}>
-                    {formatEnum(member.type)}
-                  </Badge>
-                </div>
+function HeroMetric({ label, value, detail }: { label: string; value: string | number; detail: string }) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/10 p-4 backdrop-blur">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">{label}</p>
+      <p className="mt-3 truncate text-3xl font-semibold tracking-normal text-white">{value}</p>
+      <p className="mt-2 truncate text-xs text-white/50">{detail}</p>
+    </div>
+  )
+}
 
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  {member.compensationRate && (
-                    <div className="flex justify-between">
-                      <span>Compensation</span>
-                      <span className="font-medium text-foreground">
-                        ₹{member.compensationRate.toLocaleString('en-IN')} / {member.compensationMode ? formatEnum(member.compensationMode).toLowerCase() : ''}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span>Projects</span>
-                    <span>{member.projects.length}</span>
-                  </div>
-                </div>
+function SummaryCard({
+  label,
+  value,
+  detail,
+  icon: Icon,
+}: {
+  label: string
+  value: string | number
+  detail: string
+  icon: typeof Users
+}) {
+  return (
+    <div className="rounded-lg border border-border/80 bg-white/90 p-4 shadow-[0_20px_60px_-48px_rgba(0,0,0,0.65)] backdrop-blur">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">{label}</p>
+          <p className="mt-2 text-3xl font-semibold tracking-normal text-foreground">{value}</p>
+        </div>
+        <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/70 bg-white text-foreground">
+          <Icon className="h-5 w-5" />
+        </span>
+      </div>
+      <p className="mt-4 text-xs text-muted-foreground">{detail}</p>
+    </div>
+  )
+}
 
-                {member.skills.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1">
-                    {member.skills.slice(0, 3).map((skill) => (
-                      <span key={skill} className="px-1.5 py-0.5 bg-muted rounded text-[10px] text-muted-foreground">{skill}</span>
-                    ))}
-                    {member.skills.length > 3 && (
-                      <span className="px-1.5 py-0.5 bg-muted rounded text-[10px] text-muted-foreground">+{member.skills.length - 3}</span>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+function MemberCard({ member, onOpen }: { member: TeamMember; onOpen: () => void }) {
+  const whatsApp = whatsappHref(member.whatsapp)
+  const status = statusMeta[member.status]
+  const visibleLinks = [
+    member.portfolioUrl ? { label: 'Portfolio', href: member.portfolioUrl, icon: ExternalLink } : null,
+    member.behanceUrl ? { label: 'Behance', href: member.behanceUrl, icon: ExternalLink } : null,
+    member.linkedinUrl ? { label: 'LinkedIn', href: member.linkedinUrl, icon: ExternalLink } : null,
+  ].filter((link): link is { label: string; href: string; icon: typeof ExternalLink } => Boolean(link))
+
+  return (
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onOpen()
+        }
+      }}
+      className="group cursor-pointer rounded-lg border border-border/80 bg-white p-5 shadow-[0_26px_80px_-64px_rgba(0,0,0,0.72)] transition-all hover:-translate-y-0.5 hover:border-neutral-950/25 hover:shadow-[0_30px_90px_-58px_rgba(0,0,0,0.78)] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/25"
+    >
+      <div className="flex items-start gap-4">
+        <ProfilePhoto member={member} size="lg" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', status.dot)} />
+            <p className="truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              {member.department ?? 'Unassigned department'}
+            </p>
+          </div>
+          <h2 className="mt-2 truncate text-base font-semibold text-foreground">{member.fullName}</h2>
+          <p className="mt-1 truncate text-sm text-muted-foreground">{member.roleTitle ?? member.type.replace('_', ' ')}</p>
+        </div>
+        <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Badge className={cn('rounded-md border text-[10px]', status.badge)}>{status.label}</Badge>
+        <Badge className={cn('rounded-md border text-[10px]', typeMeta[member.type])}>{formatEnum(member.type)}</Badge>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <MiniStat label="Projects" value={member.projects.length} />
+        <MiniStat
+          label="Compensation"
+          value={member.compensationRate ? formatINR(member.compensationRate) : '-'}
+        />
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {member.email && <ContactLink href={`mailto:${member.email}`} label="Email" icon={Mail} />}
+        {whatsApp && <ContactLink href={whatsApp} label="WhatsApp" icon={MessageCircle} />}
+        {member.location && (
+          <span className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/70 px-2.5 text-xs text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5" />
+            {member.location}
+          </span>
+        )}
+      </div>
+
+      {visibleLinks.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-border/70 pt-4">
+          {visibleLinks.map((link) => (
+            <ContactLink key={link.label} href={link.href} label={link.label} icon={link.icon} />
           ))}
         </div>
       )}
+
+      {member.skills.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {member.skills.slice(0, 4).map((skill) => (
+            <span key={skill} className="rounded-md bg-muted px-2 py-1 text-[10px] text-muted-foreground">{skill}</span>
+          ))}
+          {member.skills.length > 4 && (
+            <span className="rounded-md bg-muted px-2 py-1 text-[10px] text-muted-foreground">+{member.skills.length - 4}</span>
+          )}
+        </div>
+      )}
+    </article>
+  )
+}
+
+function ProfilePhoto({ member, size = 'md' }: { member: Pick<TeamMember, 'fullName' | 'photoUrl'>; size?: 'md' | 'lg' }) {
+  const sizeClass = size === 'lg' ? 'h-14 w-14 text-base' : 'h-11 w-11 text-sm'
+
+  return (
+    <div className={cn('flex shrink-0 items-center justify-center overflow-hidden rounded-lg bg-neutral-950 font-semibold text-white', sizeClass)}>
+      {member.photoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={member.photoUrl} alt={member.fullName} className="h-full w-full object-cover" />
+      ) : (
+        getInitials(member.fullName)
+      )}
+    </div>
+  )
+}
+
+function MiniStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-lg border border-border/80 bg-muted/35 p-3">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="mt-1 truncate text-sm font-semibold text-foreground">{value}</p>
+    </div>
+  )
+}
+
+function ContactLink({ href, label, icon: Icon }: { href: string; label: string; icon: typeof Mail }) {
+  return (
+    <a
+      href={href}
+      target={href.startsWith('http') ? '_blank' : undefined}
+      rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
+      onClick={(event) => event.stopPropagation()}
+      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/70 bg-white px-2.5 text-xs font-medium text-foreground transition-colors hover:border-neutral-950/25"
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </a>
+  )
+}
+
+function EmptyTeamState() {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/90 bg-white/75 px-6 py-20 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-neutral-950 text-white">
+        <Users className="h-6 w-6" />
+      </div>
+      <p className="mt-4 text-sm font-semibold text-foreground">No team members yet</p>
+      <p className="mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
+        Add the first profile with contact details, links, skills, and payment context.
+      </p>
+      <div className="mt-5 [&_[data-slot=button]]:rounded-lg">
+        <AddMemberDialog />
+      </div>
+    </div>
+  )
+}
+
+function FilteredEmptyState() {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/90 bg-white/75 px-6 py-16 text-center">
+      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+        <UserRound className="h-5 w-5" />
+      </div>
+      <p className="mt-4 text-sm font-semibold text-foreground">No profiles match this view</p>
+      <p className="mt-1 text-xs text-muted-foreground">Try a different search term, type, or status filter.</p>
     </div>
   )
 }

@@ -7,12 +7,13 @@ import { z } from 'zod'
 import { toast } from 'sonner'
 import { useMutation } from 'convex/react'
 import { api } from '@convex/_generated/api'
+import { Id } from '@convex/_generated/dataModel'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Camera, Plus, X } from 'lucide-react'
+import { Camera, Pencil, X } from 'lucide-react'
 
 const schema = z.object({
   fullName: z.string().min(1, 'Full name is required'),
@@ -37,6 +38,28 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
+type TeamMemberProfile = {
+  id: string
+  fullName: string
+  photoUrl?: string | null
+  phone?: string | null
+  whatsapp?: string | null
+  email?: string | null
+  roleTitle?: string | null
+  portfolioUrl?: string | null
+  behanceUrl?: string | null
+  linkedinUrl?: string | null
+  college?: string | null
+  location?: string | null
+  type: 'INTERN' | 'FREELANCER' | 'PART_TIME' | 'FULL_TIME'
+  status: 'ACTIVE' | 'ON_LEAVE' | 'OFFBOARDED'
+  department?: string | null
+  startDate?: number | null
+  compensationMode?: 'HOURLY' | 'MONTHLY' | 'PROJECT_BASED' | null
+  compensationRate?: number | null
+  skills: string[]
+}
+
 function normalizeUrl(value?: string) {
   const trimmed = value?.trim()
   if (!trimmed) return undefined
@@ -48,38 +71,80 @@ function cleanText(value?: string) {
   return trimmed || undefined
 }
 
-export function AddMemberDialog() {
+function formatDateInput(value?: number | null) {
+  if (!value) return ''
+  return new Date(value).toISOString().split('T')[0]
+}
+
+export function EditMemberDialog({ member }: { member: TeamMemberProfile }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [photoFile, setPhotoFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(member.photoUrl ?? null)
   const fileRef = useRef<HTMLInputElement>(null)
-  const createMember = useMutation(api.team.create)
+  const updateMember = useMutation(api.team.update)
   const generateUploadUrl = useMutation(api.files.generateUploadUrl)
 
   const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { type: 'INTERN', status: 'ACTIVE', compensationMode: 'NONE' },
+    defaultValues: {
+      fullName: member.fullName,
+      photoUrl: member.photoUrl ?? '',
+      phone: member.phone ?? '',
+      whatsapp: member.whatsapp ?? '',
+      email: member.email ?? '',
+      roleTitle: member.roleTitle ?? '',
+      portfolioUrl: member.portfolioUrl ?? '',
+      behanceUrl: member.behanceUrl ?? '',
+      linkedinUrl: member.linkedinUrl ?? '',
+      college: member.college ?? '',
+      location: member.location ?? '',
+      type: member.type,
+      status: member.status,
+      department: member.department ?? '',
+      startDate: formatDateInput(member.startDate),
+      compensationMode: member.compensationMode ?? 'NONE',
+      compensationRate: member.compensationRate ? String(member.compensationRate) : '',
+      skills: member.skills.join(', '),
+    },
   })
 
   useEffect(() => {
+    if (!open) return
+    reset({
+      fullName: member.fullName,
+      photoUrl: member.photoUrl ?? '',
+      phone: member.phone ?? '',
+      whatsapp: member.whatsapp ?? '',
+      email: member.email ?? '',
+      roleTitle: member.roleTitle ?? '',
+      portfolioUrl: member.portfolioUrl ?? '',
+      behanceUrl: member.behanceUrl ?? '',
+      linkedinUrl: member.linkedinUrl ?? '',
+      college: member.college ?? '',
+      location: member.location ?? '',
+      type: member.type,
+      status: member.status,
+      department: member.department ?? '',
+      startDate: formatDateInput(member.startDate),
+      compensationMode: member.compensationMode ?? 'NONE',
+      compensationRate: member.compensationRate ? String(member.compensationRate) : '',
+      skills: member.skills.join(', '),
+    })
+    setPhotoFile(null)
+    setPreviewUrl(member.photoUrl ?? null)
+  }, [member, open, reset])
+
+  useEffect(() => {
     if (!photoFile) {
-      setPreviewUrl(null)
+      if (open) setPreviewUrl(member.photoUrl ?? null)
       return
     }
 
     const url = URL.createObjectURL(photoFile)
     setPreviewUrl(url)
     return () => URL.revokeObjectURL(url)
-  }, [photoFile])
-
-  function handleClose(value: boolean) {
-    setOpen(value)
-    if (!value) {
-      reset()
-      setPhotoFile(null)
-    }
-  }
+  }, [member.photoUrl, open, photoFile])
 
   async function onSubmit(data: FormData) {
     setLoading(true)
@@ -97,7 +162,8 @@ export function AddMemberDialog() {
         photoStorageId = result.storageId
       }
 
-      await createMember({
+      await updateMember({
+        id: member.id as Id<'teamMembers'>,
         fullName: data.fullName.trim(),
         photoStorageId,
         photoUrl: normalizeUrl(data.photoUrl),
@@ -118,29 +184,29 @@ export function AddMemberDialog() {
         compensationRate: data.compensationRate ? parseFloat(data.compensationRate) : undefined,
         skills: data.skills ? data.skills.split(',').map((skill) => skill.trim()).filter(Boolean) : [],
       })
-      toast.success('Team member added')
-      handleClose(false)
+      toast.success('Team member updated')
+      setOpen(false)
     } catch {
-      toast.error('Failed to add member')
+      toast.error('Failed to update member')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogTrigger render={<Button size="sm" />}>
-        <Plus className="mr-1 h-4 w-4" /> Add Member
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button size="sm" variant="outline" />}>
+        <Pencil className="mr-1 h-4 w-4" /> Edit profile
       </DialogTrigger>
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
-        <DialogHeader><DialogTitle>Add Team Member</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Edit Team Member</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div className="rounded-lg border border-border/80 bg-muted/25 p-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-white">
                 {previewUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={previewUrl} alt="Profile preview" className="h-full w-full object-cover" />
+                  <img src={previewUrl} alt={member.fullName} className="h-full w-full object-cover" />
                 ) : (
                   <Camera className="h-7 w-7 text-muted-foreground" />
                 )}
@@ -155,7 +221,7 @@ export function AddMemberDialog() {
                     onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)}
                   />
                   <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-                    Upload photo
+                    Upload new photo
                   </Button>
                   {photoFile && (
                     <Button type="button" variant="ghost" size="sm" onClick={() => setPhotoFile(null)}>
@@ -185,8 +251,8 @@ export function AddMemberDialog() {
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1">
-              <Label>Type *</Label>
-              <Select defaultValue="INTERN" onValueChange={(value) => setValue('type', value as FormData['type'])}>
+              <Label>Type</Label>
+              <Select defaultValue={member.type} onValueChange={(value) => setValue('type', value as FormData['type'])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {['INTERN', 'FREELANCER', 'PART_TIME', 'FULL_TIME'].map((type) => (
@@ -197,7 +263,7 @@ export function AddMemberDialog() {
             </div>
             <div className="space-y-1">
               <Label>Status</Label>
-              <Select defaultValue="ACTIVE" onValueChange={(value) => setValue('status', value as FormData['status'])}>
+              <Select defaultValue={member.status} onValueChange={(value) => setValue('status', value as FormData['status'])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {['ACTIVE', 'ON_LEAVE', 'OFFBOARDED'].map((status) => (
@@ -260,7 +326,7 @@ export function AddMemberDialog() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">
               <Label>Compensation Mode</Label>
-              <Select defaultValue="NONE" onValueChange={(value) => setValue('compensationMode', value as FormData['compensationMode'])}>
+              <Select defaultValue={member.compensationMode ?? 'NONE'} onValueChange={(value) => setValue('compensationMode', value as FormData['compensationMode'])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NONE">None</SelectItem>
@@ -282,8 +348,8 @@ export function AddMemberDialog() {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => handleClose(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? 'Adding...' : 'Add Member'}</Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save changes'}</Button>
           </div>
         </form>
       </DialogContent>

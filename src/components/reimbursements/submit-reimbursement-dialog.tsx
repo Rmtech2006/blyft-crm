@@ -156,7 +156,7 @@ export function SubmitReimbursementDialog() {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? 'Submitting…' : 'Submit'}</Button>
+            <Button type="submit" disabled={loading}>{loading ? 'Submitting...' : 'Submit'}</Button>
           </div>
         </form>
       </DialogContent>
