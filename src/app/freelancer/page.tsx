@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation } from 'convex/react'
 import { api } from '@convex/_generated/api'
-import { Camera, CheckCircle2, FileText, Link2, ShieldCheck, Upload, X } from 'lucide-react'
+import { Camera, CheckCircle2, FileText, Link2, Plus, ShieldCheck, Trash2, Upload, X } from 'lucide-react'
 import { BlyftLogo } from '@/components/brand/blyft-logo'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { normalizeWorkLinkRows } from '@/lib/freelancer-links.mjs'
 import { FREELANCER_SKILL_GROUPS } from '@/lib/freelancer-skills'
 
 const schema = z.object({
@@ -22,13 +23,11 @@ const schema = z.object({
   whatsapp: z.string().optional(),
   phone: z.string().optional(),
   location: z.string().optional(),
-  portfolioUrl: z.string().optional(),
-  behanceUrl: z.string().optional(),
-  linkedinUrl: z.string().optional(),
   otherSkill: z.string().optional(),
   experienceNotes: z.string().optional(),
   availability: z.string().optional(),
   expectedRate: z.string().optional(),
+  bestFitWorkType: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (!data.email && !data.whatsapp) {
     ctx.addIssue({
@@ -44,18 +43,18 @@ type FormData = z.infer<typeof schema>
 const intakeNotes = [
   {
     icon: FileText,
-    title: 'Profile review',
-    description: 'Your submission goes into the BLYFT CRM queue before a team profile is created.',
+    title: 'Client opportunities',
+    description: 'Share the kind of work you do so we can match your profile with the right client needs.',
   },
   {
     icon: Link2,
-    title: 'Work links',
-    description: 'Portfolio, Behance, and LinkedIn links help the team review your work faster.',
+    title: 'Proof of work',
+    description: 'Add portfolios, live projects, GitHub, demos, Behance, LinkedIn, or any link that shows your best work.',
   },
   {
     icon: ShieldCheck,
-    title: 'Internal use',
-    description: 'Details are used only for team screening, assignment planning, and contact records.',
+    title: 'Reviewed by the team',
+    description: 'Every profile is reviewed first. Approved collaborators are contacted for fitting work.',
   },
 ]
 
@@ -64,20 +63,24 @@ function cleanText(value?: string) {
   return trimmed || undefined
 }
 
-function normalizeUrl(value?: string) {
-  const trimmed = value?.trim()
-  if (!trimmed) return undefined
-  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
-}
-
 function toggleValue(list: string[], value: string) {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value]
+}
+
+type WorkLinkRow = {
+  label: string
+  url: string
 }
 
 export default function FreelancerPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedSkills, setSelectedSkills] = useState<Record<string, string[]>>({})
   const [skillError, setSkillError] = useState<string | null>(null)
+  const [workLinks, setWorkLinks] = useState<WorkLinkRow[]>([
+    { label: 'Portfolio', url: '' },
+    { label: 'LinkedIn', url: '' },
+  ])
+  const [linkError, setLinkError] = useState<string | null>(null)
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
@@ -125,15 +128,41 @@ export default function FreelancerPage() {
     }))
   }
 
+  function updateWorkLink(index: number, field: keyof WorkLinkRow, value: string) {
+    setLinkError(null)
+    setWorkLinks((current) => current.map((link, linkIndex) => (
+      linkIndex === index ? { ...link, [field]: value } : link
+    )))
+  }
+
+  function addWorkLink() {
+    setLinkError(null)
+    setWorkLinks((current) => [...current, { label: 'Work link', url: '' }])
+  }
+
+  function removeWorkLink(index: number) {
+    setLinkError(null)
+    setWorkLinks((current) => current.filter((_, linkIndex) => linkIndex !== index))
+  }
+
   async function onSubmit(data: FormData) {
     if (selectedCategories.length === 0) {
       setSkillError('Select at least one role category')
       return
     }
 
+    let normalizedLinks: WorkLinkRow[]
+    try {
+      normalizedLinks = normalizeWorkLinkRows(workLinks) as WorkLinkRow[]
+    } catch (error) {
+      setLinkError(error instanceof Error ? error.message : 'Check your work links')
+      return
+    }
+
     setLoading(true)
     setSubmitError(null)
     setSkillError(null)
+    setLinkError(null)
 
     try {
       let photoStorageId: string | undefined
@@ -151,6 +180,8 @@ export default function FreelancerPage() {
         photoStorageId = result.storageId
       }
 
+      const findLink = (label: string) => normalizedLinks.find((link) => link.label.toLowerCase() === label)?.url
+
       await createApplication({
         fullName: data.fullName.trim(),
         photoStorageId,
@@ -158,9 +189,10 @@ export default function FreelancerPage() {
         whatsapp: cleanText(data.whatsapp),
         phone: cleanText(data.phone),
         location: cleanText(data.location),
-        portfolioUrl: normalizeUrl(data.portfolioUrl),
-        behanceUrl: normalizeUrl(data.behanceUrl),
-        linkedinUrl: normalizeUrl(data.linkedinUrl),
+        portfolioUrl: findLink('portfolio'),
+        behanceUrl: findLink('behance'),
+        linkedinUrl: findLink('linkedin'),
+        workLinks: normalizedLinks,
         roleCategories: selectedCategories,
         roleSkills: selectedCategories.map((category) => ({
           category,
@@ -170,6 +202,7 @@ export default function FreelancerPage() {
         experienceNotes: cleanText(data.experienceNotes),
         availability: cleanText(data.availability),
         expectedRate: cleanText(data.expectedRate),
+        bestFitWorkType: cleanText(data.bestFitWorkType),
       })
 
       setSubmitted(true)
@@ -191,7 +224,7 @@ export default function FreelancerPage() {
               Your profile is queued for review.
             </h1>
             <p className="max-w-lg text-sm leading-7 text-white/72">
-              The BLYFT team will review your details inside the CRM before adding you to the active team directory.
+              The BLYFT team will review your details before reaching out for fitting client opportunities.
             </p>
           </div>
         </section>
@@ -218,18 +251,15 @@ export default function FreelancerPage() {
           <div className="space-y-6">
             <div className="flex items-center gap-3">
               <BlyftLogo variant="white" size="md" priority className="opacity-95" />
-              <div>
-                <p className="premium-eyebrow text-[10px]">Freelancer intake</p>
-                <p className="font-heading text-xl font-semibold">BLYFT CRM</p>
-              </div>
+              <p className="premium-eyebrow text-[10px]">Freelancer network</p>
             </div>
 
             <div className="space-y-3">
               <h1 className="font-heading text-4xl font-semibold leading-tight">
-                Share your work profile for team review.
+                Work with BLYFT clients. Earn, learn, and grow with us.
               </h1>
               <p className="max-w-lg text-sm leading-7 text-white/72">
-                Add your contact details, work links, roles, and skills. Approved profiles are added to the internal Team page.
+                Share your skills, links, and availability for client projects, ongoing collaborations, and high-trust delivery work.
               </p>
             </div>
           </div>
@@ -261,7 +291,7 @@ export default function FreelancerPage() {
           <p className="section-eyebrow">Application details</p>
           <CardTitle className="mt-2 text-3xl">Freelancer profile</CardTitle>
           <p className="text-sm leading-7 text-muted-foreground">
-            Fill the details used for internal review, contact, and assignment planning.
+            Tell us what you build, create, automate, or manage. The team reviews every profile before contacting collaborators.
           </p>
         </CardHeader>
 
@@ -334,19 +364,44 @@ export default function FreelancerPage() {
               </div>
             </div>
 
-            <div className="grid gap-5 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label>Portfolio</Label>
-                <Input placeholder="portfolio.com/name" {...register('portfolioUrl')} />
+            <div className="space-y-3">
+              <div>
+                <Label>Work and profile links</Label>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Add portfolios, GitHub, live websites, app links, SaaS demos, Behance, LinkedIn, or case studies.
+                </p>
               </div>
-              <div className="space-y-2">
-                <Label>Behance</Label>
-                <Input placeholder="behance.net/name" {...register('behanceUrl')} />
+              {linkError && <p className="text-xs text-destructive">{linkError}</p>}
+              <div className="grid gap-3">
+                {workLinks.map((link, index) => (
+                  <div key={index} className="grid gap-2 rounded-lg border border-border/80 bg-muted/20 p-3 sm:grid-cols-[160px_minmax(0,1fr)_auto] sm:items-center">
+                    <Input
+                      placeholder="Label"
+                      value={link.label}
+                      onChange={(event) => updateWorkLink(index, 'label', event.target.value)}
+                    />
+                    <Input
+                      placeholder="github.com/name, portfolio.com, app link..."
+                      value={link.url}
+                      onChange={(event) => updateWorkLink(index, 'url', event.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="justify-self-start rounded-lg text-muted-foreground sm:justify-self-end"
+                      onClick={() => removeWorkLink(index)}
+                    >
+                      <Trash2 className="mr-1 h-4 w-4" />
+                      Remove
+                    </Button>
+                  </div>
+                ))}
               </div>
-              <div className="space-y-2">
-                <Label>LinkedIn</Label>
-                <Input placeholder="linkedin.com/in/name" {...register('linkedinUrl')} />
-              </div>
+              <Button type="button" variant="outline" size="sm" className="rounded-lg" onClick={addWorkLink}>
+                <Plus className="mr-1 h-4 w-4" />
+                Add link
+              </Button>
             </div>
 
             <div className="space-y-3">
@@ -404,6 +459,11 @@ export default function FreelancerPage() {
             </div>
 
             <div className="space-y-2">
+              <Label>Best-fit work type</Label>
+              <Input placeholder="Project-based, retainer, urgent tasks, ongoing support..." {...register('bestFitWorkType')} />
+            </div>
+
+            <div className="space-y-2">
               <Label>Experience notes</Label>
               <Textarea
                 rows={4}
@@ -423,7 +483,7 @@ export default function FreelancerPage() {
             </Button>
 
             <p className="text-center text-xs leading-6 text-muted-foreground">
-              Applications are reviewed before profiles are added to the BLYFT team directory.
+              Profiles are reviewed before anyone is added to the BLYFT collaborator directory.
             </p>
           </form>
         </CardContent>

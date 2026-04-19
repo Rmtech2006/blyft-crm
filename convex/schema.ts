@@ -174,6 +174,10 @@ export default defineSchema({
     portfolioUrl: v.optional(v.string()),
     behanceUrl: v.optional(v.string()),
     linkedinUrl: v.optional(v.string()),
+    workLinks: v.optional(v.array(v.object({
+      label: v.string(),
+      url: v.string(),
+    }))),
     college: v.optional(v.string()),
     location: v.optional(v.string()),
     emergencyContact: v.optional(v.string()),
@@ -200,6 +204,7 @@ export default defineSchema({
     contractExpiry: v.optional(v.number()),
     skills: v.array(v.string()),
     performanceNotes: v.optional(v.string()),
+    bestFitWorkType: v.optional(v.string()),
   }).index("by_status", ["status"]),
 
   freelancerApplications: defineTable({
@@ -212,6 +217,10 @@ export default defineSchema({
     portfolioUrl: v.optional(v.string()),
     behanceUrl: v.optional(v.string()),
     linkedinUrl: v.optional(v.string()),
+    workLinks: v.optional(v.array(v.object({
+      label: v.string(),
+      url: v.string(),
+    }))),
     roleCategories: v.array(v.string()),
     roleSkills: v.array(v.object({
       category: v.string(),
@@ -221,6 +230,7 @@ export default defineSchema({
     experienceNotes: v.optional(v.string()),
     availability: v.optional(v.string()),
     expectedRate: v.optional(v.string()),
+    bestFitWorkType: v.optional(v.string()),
     status: v.union(
       v.literal("PENDING"), v.literal("APPROVED"), v.literal("REJECTED")
     ),

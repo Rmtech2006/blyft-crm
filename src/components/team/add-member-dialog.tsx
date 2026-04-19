@@ -47,6 +47,19 @@ function cleanText(value?: string) {
   return trimmed || undefined
 }
 
+function buildWorkLinks(data: Pick<FormData, 'portfolioUrl' | 'behanceUrl' | 'linkedinUrl'>) {
+  const link = (label: string, value?: string) => {
+    const url = normalizeUrl(value)
+    return url ? { label, url } : null
+  }
+
+  return [
+    link('Portfolio', data.portfolioUrl),
+    link('Behance', data.behanceUrl),
+    link('LinkedIn', data.linkedinUrl),
+  ].filter((link): link is { label: string; url: string } => Boolean(link))
+}
+
 export function AddMemberDialog() {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -106,6 +119,7 @@ export function AddMemberDialog() {
         portfolioUrl: normalizeUrl(data.portfolioUrl),
         behanceUrl: normalizeUrl(data.behanceUrl),
         linkedinUrl: normalizeUrl(data.linkedinUrl),
+        workLinks: buildWorkLinks(data),
         college: cleanText(data.college),
         location: cleanText(data.location),
         type: data.type,

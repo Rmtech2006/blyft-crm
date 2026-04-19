@@ -1,6 +1,11 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
+const workLinkValidator = v.object({
+  label: v.string(),
+  url: v.string(),
+});
+
 export const list = query({
   args: {},
   handler: async (ctx) => {
@@ -77,6 +82,7 @@ export const create = mutation({
     portfolioUrl: v.optional(v.string()),
     behanceUrl: v.optional(v.string()),
     linkedinUrl: v.optional(v.string()),
+    workLinks: v.optional(v.array(workLinkValidator)),
     college: v.optional(v.string()),
     location: v.optional(v.string()),
     type: v.union(
@@ -91,6 +97,7 @@ export const create = mutation({
       v.literal("HOURLY"), v.literal("MONTHLY"), v.literal("PROJECT_BASED")
     )),
     compensationRate: v.optional(v.number()),
+    bestFitWorkType: v.optional(v.string()),
     skills: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
@@ -105,6 +112,7 @@ export const create = mutation({
       portfolioUrl: args.portfolioUrl,
       behanceUrl: args.behanceUrl,
       linkedinUrl: args.linkedinUrl,
+      workLinks: args.workLinks,
       college: args.college,
       location: args.location,
       type: args.type,
@@ -113,6 +121,7 @@ export const create = mutation({
       startDate: args.startDate,
       compensationMode: args.compensationMode,
       compensationRate: args.compensationRate,
+      bestFitWorkType: args.bestFitWorkType,
       skills: args.skills ?? [],
     });
   },
@@ -131,6 +140,7 @@ export const update = mutation({
     portfolioUrl: v.optional(v.string()),
     behanceUrl: v.optional(v.string()),
     linkedinUrl: v.optional(v.string()),
+    workLinks: v.optional(v.array(workLinkValidator)),
     college: v.optional(v.string()),
     location: v.optional(v.string()),
     emergencyContact: v.optional(v.string()),
@@ -155,6 +165,7 @@ export const update = mutation({
     contractFile: v.optional(v.string()),
     ndaStatus: v.optional(v.string()),
     contractExpiry: v.optional(v.number()),
+    bestFitWorkType: v.optional(v.string()),
     skills: v.optional(v.array(v.string())),
     performanceNotes: v.optional(v.string()),
   },
@@ -168,7 +179,17 @@ export const remove = mutation({
   args: { id: v.id("teamMembers") },
   handler: async (ctx, args) => {
     const ptms = await ctx.db.query("projectTeamMembers").withIndex("by_teamMemberId", (q) => q.eq("teamMemberId", args.id)).collect();
-    for (const ptm of ptms) await ctx.db.delete(ptm._id);
+    const reimbursements = await ctx.db
+      .query("reimbursements")
+      .withIndex("by_teamMemberId", (q) => q.eq("teamMemberId", args.id))
+      .collect();
+
+    if (ptms.length > 0 || reimbursements.length > 0) {
+      await ctx.db.patch(args.id, { status: "OFFBOARDED" });
+      return { mode: "offboarded" as const };
+    }
+
     await ctx.db.delete(args.id);
+    return { mode: "deleted" as const };
   },
 });

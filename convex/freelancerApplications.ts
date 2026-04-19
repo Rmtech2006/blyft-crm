@@ -6,8 +6,17 @@ const roleSkillValidator = v.object({
   skills: v.array(v.string()),
 });
 
+const workLinkValidator = v.object({
+  label: v.string(),
+  url: v.string(),
+});
+
 function cleanArray(values: string[]) {
   return values.map((value) => value.trim()).filter(Boolean);
+}
+
+function normalizeUrl(value: string) {
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
 }
 
 function cleanRoleSkills(groups: Array<{ category: string; skills: string[] }>) {
@@ -17,6 +26,16 @@ function cleanRoleSkills(groups: Array<{ category: string; skills: string[] }>) 
       skills: cleanArray(group.skills),
     }))
     .filter((group) => group.category);
+}
+
+function cleanWorkLinks(links?: Array<{ label: string; url: string }>) {
+  return (links ?? [])
+    .map((link) => ({
+      label: link.label.trim() || "Work link",
+      url: link.url.trim(),
+    }))
+    .filter((link) => link.url)
+    .map((link) => ({ ...link, url: normalizeUrl(link.url) }));
 }
 
 function buildSkillList(
@@ -64,17 +83,20 @@ export const create = mutation({
     portfolioUrl: v.optional(v.string()),
     behanceUrl: v.optional(v.string()),
     linkedinUrl: v.optional(v.string()),
+    workLinks: v.optional(v.array(workLinkValidator)),
     roleCategories: v.array(v.string()),
     roleSkills: v.array(roleSkillValidator),
     otherSkill: v.optional(v.string()),
     experienceNotes: v.optional(v.string()),
     availability: v.optional(v.string()),
     expectedRate: v.optional(v.string()),
+    bestFitWorkType: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const fullName = args.fullName.trim();
     const roleCategories = cleanArray(args.roleCategories);
     const roleSkills = cleanRoleSkills(args.roleSkills);
+    const workLinks = cleanWorkLinks(args.workLinks);
 
     if (!fullName) throw new Error("Full name is required");
     if (!args.email?.trim() && !args.whatsapp?.trim()) {
@@ -94,12 +116,14 @@ export const create = mutation({
       portfolioUrl: args.portfolioUrl?.trim() || undefined,
       behanceUrl: args.behanceUrl?.trim() || undefined,
       linkedinUrl: args.linkedinUrl?.trim() || undefined,
+      workLinks,
       roleCategories,
       roleSkills,
       otherSkill: args.otherSkill?.trim() || undefined,
       experienceNotes: args.experienceNotes?.trim() || undefined,
       availability: args.availability?.trim() || undefined,
       expectedRate: args.expectedRate?.trim() || undefined,
+      bestFitWorkType: args.bestFitWorkType?.trim() || undefined,
       status: "PENDING",
       submittedAt: Date.now(),
     });
@@ -130,6 +154,7 @@ export const approve = mutation({
       portfolioUrl: application.portfolioUrl,
       behanceUrl: application.behanceUrl,
       linkedinUrl: application.linkedinUrl,
+      workLinks: application.workLinks,
       location: application.location,
       type: "FREELANCER",
       status: "ACTIVE",
@@ -137,6 +162,7 @@ export const approve = mutation({
       startDate: now,
       availability: application.availability,
       expectedRate: application.expectedRate,
+      bestFitWorkType: application.bestFitWorkType,
       compensationMode: "PROJECT_BASED",
       skills,
       performanceNotes: application.experienceNotes,

@@ -45,6 +45,7 @@ type TeamMember = {
   portfolioUrl?: string | null
   behanceUrl?: string | null
   linkedinUrl?: string | null
+  workLinks?: WorkLink[] | null
   college?: string | null
   location?: string | null
   type: 'INTERN' | 'FREELANCER' | 'PART_TIME' | 'FULL_TIME'
@@ -52,8 +53,14 @@ type TeamMember = {
   department?: string | null
   compensationMode?: 'HOURLY' | 'MONTHLY' | 'PROJECT_BASED' | null
   compensationRate?: number | null
+  bestFitWorkType?: string | null
   skills: string[]
   projects: unknown[]
+}
+
+type WorkLink = {
+  label: string
+  url: string
 }
 
 type FreelancerApplication = {
@@ -67,12 +74,14 @@ type FreelancerApplication = {
   portfolioUrl?: string | null
   behanceUrl?: string | null
   linkedinUrl?: string | null
+  workLinks?: WorkLink[] | null
   roleCategories: string[]
   roleSkills: Array<{ category: string; skills: string[] }>
   otherSkill?: string | null
   experienceNotes?: string | null
   availability?: string | null
   expectedRate?: string | null
+  bestFitWorkType?: string | null
   submittedAt: number
 }
 
@@ -132,6 +141,29 @@ function formatShortDate(value: number) {
   })
 }
 
+function visibleProfileLinks(profile: {
+  workLinks?: WorkLink[] | null
+  portfolioUrl?: string | null
+  behanceUrl?: string | null
+  linkedinUrl?: string | null
+}) {
+  const links: Array<{ label: string; href: string; icon: typeof ExternalLink }> = []
+  const seen = new Set<string>()
+
+  function add(label: string, href?: string | null) {
+    if (!href || seen.has(href)) return
+    seen.add(href)
+    links.push({ label, href, icon: ExternalLink })
+  }
+
+  profile.workLinks?.forEach((link) => add(link.label || 'Work link', link.url))
+  add('Portfolio', profile.portfolioUrl)
+  add('Behance', profile.behanceUrl)
+  add('LinkedIn', profile.linkedinUrl)
+
+  return links
+}
+
 function TeamSkeleton() {
   return (
     <div className="space-y-6">
@@ -182,11 +214,13 @@ export default function TeamPage() {
         member.portfolioUrl,
         member.behanceUrl,
         member.linkedinUrl,
+        ...((member.workLinks ?? []).flatMap((link) => [link.label, link.url])),
         ...(member.roleCategories ?? []),
         ...((member.roleSkills ?? []).flatMap((group) => [group.category, ...group.skills])),
         member.otherSkill,
         member.availability,
         member.expectedRate,
+        member.bestFitWorkType,
         ...member.skills,
       ].filter(Boolean).join(' ').toLowerCase()
 
@@ -198,7 +232,7 @@ export default function TeamPage() {
 
   const active = members.filter((member) => member.status === 'ACTIVE')
   const onLeave = members.filter((member) => member.status === 'ON_LEAVE')
-  const linkedProfiles = members.filter((member) => member.portfolioUrl || member.behanceUrl || member.linkedinUrl)
+  const linkedProfiles = members.filter((member) => member.portfolioUrl || member.behanceUrl || member.linkedinUrl || member.workLinks?.length)
   const departments = new Set(members.map((member) => member.department).filter(Boolean))
   const projectAssignments = members.reduce((sum, member) => sum + member.projects.length, 0)
 
@@ -374,11 +408,7 @@ function FreelancerApplicationCard({
   onReject: () => void
 }) {
   const whatsApp = whatsappHref(application.whatsapp)
-  const visibleLinks = [
-    application.portfolioUrl ? { label: 'Portfolio', href: application.portfolioUrl, icon: ExternalLink } : null,
-    application.behanceUrl ? { label: 'Behance', href: application.behanceUrl, icon: ExternalLink } : null,
-    application.linkedinUrl ? { label: 'LinkedIn', href: application.linkedinUrl, icon: ExternalLink } : null,
-  ].filter((link): link is { label: string; href: string; icon: typeof ExternalLink } => Boolean(link))
+  const visibleLinks = visibleProfileLinks(application)
   const populatedSkillGroups = application.roleSkills.filter((group) => group.skills.length > 0)
 
   return (
@@ -443,11 +473,12 @@ function FreelancerApplicationCard({
         </div>
       )}
 
-      {(application.otherSkill || application.availability || application.expectedRate) && (
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+      {(application.otherSkill || application.availability || application.expectedRate || application.bestFitWorkType) && (
+        <div className="mt-4 grid gap-2 sm:grid-cols-4">
           <MiniStat label="Other skill" value={application.otherSkill ?? '-'} />
           <MiniStat label="Availability" value={application.availability ?? '-'} />
           <MiniStat label="Expected rate" value={application.expectedRate ?? '-'} />
+          <MiniStat label="Best fit" value={application.bestFitWorkType ?? '-'} />
         </div>
       )}
 
@@ -501,11 +532,7 @@ function SummaryCard({
 function MemberCard({ member, onOpen }: { member: TeamMember; onOpen: () => void }) {
   const whatsApp = whatsappHref(member.whatsapp)
   const status = statusMeta[member.status]
-  const visibleLinks = [
-    member.portfolioUrl ? { label: 'Portfolio', href: member.portfolioUrl, icon: ExternalLink } : null,
-    member.behanceUrl ? { label: 'Behance', href: member.behanceUrl, icon: ExternalLink } : null,
-    member.linkedinUrl ? { label: 'LinkedIn', href: member.linkedinUrl, icon: ExternalLink } : null,
-  ].filter((link): link is { label: string; href: string; icon: typeof ExternalLink } => Boolean(link))
+  const visibleLinks = visibleProfileLinks(member)
 
   return (
     <article

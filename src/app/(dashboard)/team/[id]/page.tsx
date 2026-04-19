@@ -1,8 +1,8 @@
 'use client'
 
-import { use } from 'react'
+import { use, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useQuery } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import { Id } from '@convex/_generated/dataModel'
 import {
@@ -15,7 +15,9 @@ import {
   MessageCircle,
   Phone,
   Receipt,
+  Trash2,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { EditMemberDialog } from '@/components/team/edit-member-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -40,6 +42,7 @@ type MemberDetail = {
   portfolioUrl?: string | null
   behanceUrl?: string | null
   linkedinUrl?: string | null
+  workLinks?: WorkLink[] | null
   college?: string | null
   location?: string | null
   emergencyContact?: string | null
@@ -50,6 +53,7 @@ type MemberDetail = {
   startDate?: number | null
   compensationMode?: 'HOURLY' | 'MONTHLY' | 'PROJECT_BASED' | null
   compensationRate?: number | null
+  bestFitWorkType?: string | null
   paymentMode?: string | null
   bankDetails?: string | null
   upiId?: string | null
@@ -71,6 +75,11 @@ type MemberDetail = {
     date: number
     status: string
   }>
+}
+
+type WorkLink = {
+  label: string
+  url: string
 }
 
 const statusMeta: Record<MemberDetail['status'], {
@@ -116,6 +125,24 @@ function whatsappHref(value?: string | null) {
   return digits ? `https://wa.me/${digits}` : undefined
 }
 
+function visibleProfileLinks(member: MemberDetail) {
+  const links: Array<{ label: string; href: string }> = []
+  const seen = new Set<string>()
+
+  function add(label: string, href?: string | null) {
+    if (!href || seen.has(href)) return
+    seen.add(href)
+    links.push({ label, href })
+  }
+
+  member.workLinks?.forEach((link) => add(link.label || 'Work link', link.url))
+  add('Portfolio', member.portfolioUrl)
+  add('Behance', member.behanceUrl)
+  add('LinkedIn', member.linkedinUrl)
+
+  return links
+}
+
 function TeamDetailSkeleton() {
   return (
     <div className="space-y-6">
@@ -131,7 +158,9 @@ function TeamDetailSkeleton() {
 export default function TeamMemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
+  const [deleting, setDeleting] = useState(false)
   const member = useQuery(api.team.get, { id: id as Id<'teamMembers'> }) as MemberDetail | null | undefined
+  const removeMember = useMutation(api.team.remove)
 
   if (member === undefined) return <TeamDetailSkeleton />
   if (!member) return <div className="p-8 text-center text-muted-foreground">Team member not found</div>
@@ -142,6 +171,33 @@ export default function TeamMemberDetailPage({ params }: { params: Promise<{ id:
   const pendingReimbursements = reimbursements.filter((item) => item.status === 'PENDING')
   const paidReimbursements = reimbursements.filter((item) => item.status === 'PAID')
   const whatsApp = whatsappHref(member.whatsapp)
+  const profileLinks = visibleProfileLinks(member)
+
+  async function handleDeleteProfile() {
+    const hasHistory = projects.length > 0 || reimbursements.length > 0
+    const confirmed = window.confirm(
+      hasHistory
+        ? 'This profile has linked history, so it will be offboarded instead of permanently deleted. Continue?'
+        : 'This will permanently delete the profile. Continue?'
+    )
+    if (!confirmed) return
+
+    setDeleting(true)
+    try {
+      const result = await removeMember({ id: id as Id<'teamMembers'> }) as { mode: 'deleted' | 'offboarded' }
+      if (result.mode === 'deleted') {
+        toast.success('Profile deleted')
+        router.push('/team')
+        return
+      }
+
+      toast.success('Profile offboarded to preserve history')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete profile')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -157,7 +213,11 @@ export default function TeamMemberDetailPage({ params }: { params: Promise<{ id:
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <div className="[&_[data-slot=button]]:rounded-lg [&_[data-slot=button]]:border-white/15 [&_[data-slot=button]]:bg-white/10 [&_[data-slot=button]]:text-white [&_[data-slot=button]]:shadow-none [&_[data-slot=button]:hover]:bg-white/20">
+            <div className="flex flex-wrap justify-end gap-2 [&_[data-slot=button]]:rounded-lg [&_[data-slot=button]]:border-white/15 [&_[data-slot=button]]:bg-white/10 [&_[data-slot=button]]:text-white [&_[data-slot=button]]:shadow-none [&_[data-slot=button]:hover]:bg-white/20">
+              <Button type="button" size="sm" variant="outline" onClick={handleDeleteProfile} disabled={deleting}>
+                <Trash2 className="mr-1 h-4 w-4" />
+                {deleting ? 'Deleting...' : 'Delete profile'}
+              </Button>
               <EditMemberDialog member={member} />
             </div>
           </div>
@@ -202,9 +262,13 @@ export default function TeamMemberDetailPage({ params }: { params: Promise<{ id:
           <Card className="rounded-lg border-border/80 bg-white shadow-[0_20px_70px_-58px_rgba(0,0,0,0.72)]">
             <CardHeader><CardTitle className="text-sm">Profile Links</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <ContactRow icon={ExternalLink} label="Portfolio" value={member.portfolioUrl ? 'Open portfolio' : undefined} href={member.portfolioUrl ?? undefined} />
-              <ContactRow icon={ExternalLink} label="Behance" value={member.behanceUrl ? 'Open Behance' : undefined} href={member.behanceUrl ?? undefined} />
-              <ContactRow icon={ExternalLink} label="LinkedIn" value={member.linkedinUrl ? 'Open LinkedIn' : undefined} href={member.linkedinUrl ?? undefined} />
+              {profileLinks.length > 0 ? (
+                profileLinks.map((link) => (
+                  <ContactRow key={`${link.label}-${link.href}`} icon={ExternalLink} label={link.label} value="Open link" href={link.href} />
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No profile links added</p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -229,6 +293,7 @@ export default function TeamMemberDetailPage({ params }: { params: Promise<{ id:
                   ['Department', member.department],
                   ['Reporting to', member.reportingTo],
                   ['Availability', member.availability],
+                  ['Best fit', member.bestFitWorkType],
                   ['Start date', formatDate(member.startDate)],
                   ['Contract', member.contractStatus],
                 ]}

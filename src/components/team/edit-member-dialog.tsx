@@ -48,6 +48,7 @@ type TeamMemberProfile = {
   portfolioUrl?: string | null
   behanceUrl?: string | null
   linkedinUrl?: string | null
+  workLinks?: Array<{ label: string; url: string }> | null
   college?: string | null
   location?: string | null
   type: 'INTERN' | 'FREELANCER' | 'PART_TIME' | 'FULL_TIME'
@@ -68,6 +69,19 @@ function normalizeUrl(value?: string) {
 function cleanText(value?: string) {
   const trimmed = value?.trim()
   return trimmed || undefined
+}
+
+function buildWorkLinks(data: Pick<FormData, 'portfolioUrl' | 'behanceUrl' | 'linkedinUrl'>) {
+  const link = (label: string, value?: string) => {
+    const url = normalizeUrl(value)
+    return url ? { label, url } : null
+  }
+
+  return [
+    link('Portfolio', data.portfolioUrl),
+    link('Behance', data.behanceUrl),
+    link('LinkedIn', data.linkedinUrl),
+  ].filter((link): link is { label: string; url: string } => Boolean(link))
 }
 
 function formatDateInput(value?: number | null) {
@@ -170,6 +184,7 @@ export function EditMemberDialog({ member }: { member: TeamMemberProfile }) {
         portfolioUrl: normalizeUrl(data.portfolioUrl),
         behanceUrl: normalizeUrl(data.behanceUrl),
         linkedinUrl: normalizeUrl(data.linkedinUrl),
+        workLinks: buildWorkLinks(data),
         college: cleanText(data.college),
         location: cleanText(data.location),
         type: data.type,
