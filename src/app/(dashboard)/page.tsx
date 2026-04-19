@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useMemo } from 'react'
 import { useSession } from 'next-auth/react'
-import { useQuery } from 'convex/react'
+import { useConvexAuth, useQuery } from 'convex/react'
 import { formatDistanceToNow } from 'date-fns'
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import {
@@ -40,6 +40,7 @@ import {
 import { normalizeDashboardStats } from '@/lib/dashboard-stats'
 import { exportCsv, printReport } from '@/lib/export'
 import { cn } from '@/lib/utils'
+import { protectedQueryArgs } from '@/lib/convex-query-args.mjs'
 
 const quickActionIcons: Record<DashboardQuickActionId, typeof UserPlus> = {
   'add-lead': UserPlus,
@@ -139,7 +140,8 @@ function DashboardSkeleton() {
 
 export default function DashboardPage() {
   const { data: session } = useSession()
-  const savedSettings = useQuery(api.settings.get, session?.user ? {} : 'skip')
+  const { isAuthenticated } = useConvexAuth()
+  const savedSettings = useQuery(api.settings.get, protectedQueryArgs(Boolean(session?.user) && isAuthenticated, {}))
   const rawStats = useQuery(api.dashboard.getStats)
   const { data: stats, isPartial } = useMemo(() => normalizeDashboardStats(rawStats), [rawStats])
   const visibleSections = useMemo(

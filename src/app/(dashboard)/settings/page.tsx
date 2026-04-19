@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { useMutation, useQuery } from 'convex/react'
+import { useConvexAuth, useMutation, useQuery } from 'convex/react'
 import {
   Bell,
   Building2,
@@ -40,6 +40,7 @@ import {
   normalizeDashboardQuickActionIds,
   normalizeDashboardSectionIds,
 } from '@/lib/dashboard-preferences'
+import { protectedQueryArgs } from '@/lib/convex-query-args.mjs'
 
 function getInitials(name: string | null | undefined) {
   if (!name) return 'U'
@@ -117,10 +118,11 @@ type SalesTargetRecord = {
 
 export default function SettingsPage() {
   const { data: session } = useSession()
+  const { isAuthenticated } = useConvexAuth()
   const user = session?.user
   const userId = (user as { id?: string })?.id ?? user?.email ?? ''
 
-  const savedSettings = useQuery(api.settings.get, userId ? {} : 'skip')
+  const savedSettings = useQuery(api.settings.get, protectedQueryArgs(Boolean(userId) && isAuthenticated, {}))
   const teamMembersQuery = useQuery(api.team.list)
   const teamMembers = useMemo(() => teamMembersQuery ?? [], [teamMembersQuery])
   const [activeTab, setActiveTab] = useState('profile')

@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSession } from 'next-auth/react'
-import { useQuery, useMutation } from 'convex/react'
+import { useQuery, useMutation, useConvexAuth } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import { Id } from '@convex/_generated/dataModel'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -12,6 +11,7 @@ import { Bell, CheckCheck, Trash2, ExternalLink, Info, AlertCircle, CheckCircle,
 import { formatDistanceToNow } from 'date-fns'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { protectedQueryArgs } from '@/lib/convex-query-args.mjs'
 
 const typeConfig: Record<string, { icon: React.ElementType; color: string }> = {
   info: { icon: Info, color: 'text-primary' },
@@ -22,8 +22,11 @@ const typeConfig: Record<string, { icon: React.ElementType; color: string }> = {
 }
 
 export function NotificationPanel({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  useSession()
-  const notifications = useQuery(api.notifications.list, {})
+  const { isAuthenticated } = useConvexAuth()
+  const notifications = useQuery(
+    api.notifications.list,
+    open ? protectedQueryArgs(isAuthenticated, {}) : 'skip'
+  )
   const markRead = useMutation(api.notifications.markRead)
   const markAllRead = useMutation(api.notifications.markAllRead)
   const remove = useMutation(api.notifications.remove)
@@ -130,8 +133,8 @@ export function NotificationPanel({ open, onOpenChange }: { open: boolean; onOpe
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false)
-  useSession()
-  const unread = useQuery(api.notifications.unreadCount, {}) ?? 0
+  const { isAuthenticated } = useConvexAuth()
+  const unread = useQuery(api.notifications.unreadCount, protectedQueryArgs(isAuthenticated, {})) ?? 0
 
   return (
     <>
