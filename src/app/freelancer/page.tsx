@@ -58,6 +58,33 @@ const intakeNotes = [
   },
 ]
 
+const opportunityTypes = [
+  'Websites',
+  'Apps',
+  'AI workflows',
+  'SaaS builds',
+  'Design systems',
+  'Campaign support',
+]
+
+const reviewPath = [
+  {
+    step: '01',
+    title: 'Share your strongest work',
+    description: 'Links, skills, availability, and notes help us understand where you fit best.',
+  },
+  {
+    step: '02',
+    title: 'Get matched with the right need',
+    description: 'Profiles are reviewed against live client work, urgent tasks, retainers, and launches.',
+  },
+  {
+    step: '03',
+    title: 'Collaborate when there is a fit',
+    description: 'Approved collaborators are contacted when the work, timing, and budget line up.',
+  },
+]
+
 function cleanText(value?: string) {
   const trimmed = value?.trim()
   return trimmed || undefined
@@ -261,6 +288,36 @@ export default function FreelancerPage() {
               <p className="max-w-lg text-sm leading-7 text-white/72">
                 Share your skills, links, and availability for client projects, ongoing collaborations, and high-trust delivery work.
               </p>
+            </div>
+          </div>
+
+          <div className="hidden space-y-6 lg:block">
+            <div className="space-y-3">
+              <p className="premium-eyebrow text-[10px] text-white/45">Good fits</p>
+              <div className="flex flex-wrap gap-2">
+                {opportunityTypes.map((type) => (
+                  <span
+                    key={type}
+                    className="rounded-md border border-white/12 bg-white/[0.06] px-3 py-2 text-xs font-medium text-white/76"
+                  >
+                    {type}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4 border-y border-white/10 py-5">
+              {reviewPath.map((item) => (
+                <div key={item.step} className="grid grid-cols-[38px_minmax(0,1fr)] gap-3">
+                  <span className="pt-0.5 text-xs font-semibold tracking-[0.18em] text-white/38">
+                    {item.step}
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-white/90">{item.title}</p>
+                    <p className="mt-1 text-sm leading-6 text-white/60">{item.description}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
