@@ -236,7 +236,7 @@ export default function FreelancerPage() {
             </div>
             <h2 className="mt-6 text-2xl font-semibold tracking-normal text-foreground">Application submitted</h2>
             <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
-              Your work details are saved for admin approval. You will be contacted through the email or WhatsApp details you provided.
+              Your work details are saved for team review. You will be contacted through the email or WhatsApp details you provided.
             </p>
           </CardContent>
         </Card>
@@ -310,7 +310,7 @@ export default function FreelancerPage() {
                 <div className="min-w-0 flex-1 space-y-3">
                   <div>
                     <p className="text-sm font-medium text-foreground">Profile photo</p>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Upload a clear image for admin review.</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Upload a clear image for team review.</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <input
