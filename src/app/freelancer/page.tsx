@@ -272,9 +272,9 @@ export default function FreelancerPage() {
   }
 
   return (
-    <div className="grid w-full gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-      <section className="premium-panel px-8 py-10">
-        <div className="flex h-full flex-col justify-between gap-10">
+    <div className="grid w-full gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+      <section className="premium-panel px-8 py-10 lg:sticky lg:top-6">
+        <div className="flex flex-col gap-8">
           <div className="space-y-6">
             <div className="flex items-center gap-3">
               <BlyftLogo variant="white" size="md" priority className="opacity-95" />
@@ -291,7 +291,7 @@ export default function FreelancerPage() {
             </div>
           </div>
 
-          <div className="hidden space-y-6 lg:block">
+          <div className="hidden space-y-5 lg:block">
             <div className="space-y-3">
               <p className="premium-eyebrow text-[10px] text-white/45">Good fits</p>
               <div className="flex flex-wrap gap-2">
@@ -306,15 +306,15 @@ export default function FreelancerPage() {
               </div>
             </div>
 
-            <div className="space-y-4 border-y border-white/10 py-5">
+            <div className="grid gap-3 border-y border-white/10 py-5">
               {reviewPath.map((item) => (
-                <div key={item.step} className="grid grid-cols-[38px_minmax(0,1fr)] gap-3">
-                  <span className="pt-0.5 text-xs font-semibold tracking-[0.18em] text-white/38">
+                <div key={item.step} className="grid grid-cols-[34px_minmax(0,1fr)] gap-3">
+                  <span className="pt-0.5 text-xs font-semibold tracking-[0.16em] text-white/38">
                     {item.step}
                   </span>
                   <div>
                     <p className="text-sm font-medium text-white/90">{item.title}</p>
-                    <p className="mt-1 text-sm leading-6 text-white/60">{item.description}</p>
+                    <p className="mt-1 text-xs leading-5 text-white/58">{item.description}</p>
                   </div>
                 </div>
               ))}
