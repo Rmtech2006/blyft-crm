@@ -18,16 +18,17 @@ import { normalizeWorkLinkRows } from '@/lib/freelancer-links.mjs'
 import { FREELANCER_SKILL_GROUPS } from '@/lib/freelancer-skills'
 
 const schema = z.object({
-  fullName: z.string().min(1, 'Full name is required'),
-  email: z.string().email('Enter a valid email').optional().or(z.literal('')),
-  whatsapp: z.string().optional(),
-  phone: z.string().optional(),
-  location: z.string().optional(),
-  otherSkill: z.string().optional(),
-  experienceNotes: z.string().optional(),
-  availability: z.string().optional(),
-  expectedRate: z.string().optional(),
-  bestFitWorkType: z.string().optional(),
+  fullName: z.string().trim().min(1, 'Full name is required').max(120, 'Full name is too long'),
+  companyWebsite: z.string().optional(),
+  email: z.string().trim().max(180, 'Email is too long').email('Enter a valid email').optional().or(z.literal('')),
+  whatsapp: z.string().trim().max(180, 'WhatsApp is too long').optional(),
+  phone: z.string().trim().max(180, 'Phone is too long').optional(),
+  location: z.string().trim().max(120, 'Location is too long').optional(),
+  otherSkill: z.string().trim().max(120, 'Other skill is too long').optional(),
+  experienceNotes: z.string().trim().max(1200, 'Experience notes are too long').optional(),
+  availability: z.string().trim().max(160, 'Availability is too long').optional(),
+  expectedRate: z.string().trim().max(120, 'Expected rate is too long').optional(),
+  bestFitWorkType: z.string().trim().max(180, 'Best-fit work type is too long').optional(),
 }).superRefine((data, ctx) => {
   if (!data.email && !data.whatsapp) {
     ctx.addIssue({
@@ -39,6 +40,9 @@ const schema = z.object({
 })
 
 type FormData = z.infer<typeof schema>
+
+const FREELANCER_PHOTO_MAX_BYTES = 2 * 1024 * 1024
+const FREELANCER_PHOTO_CONTENT_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
 const intakeNotes = [
   {
@@ -110,13 +114,14 @@ export default function FreelancerPage() {
   const [linkError, setLinkError] = useState<string | null>(null)
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const createApplication = useMutation(api.freelancerApplications.create)
-  const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+  const generateFreelancerPhotoUploadUrl = useMutation(api.files.generateFreelancerPhotoUploadUrl)
 
   const {
     register,
@@ -172,7 +177,35 @@ export default function FreelancerPage() {
     setWorkLinks((current) => current.filter((_, linkIndex) => linkIndex !== index))
   }
 
+  function updatePhoto(file: File | null) {
+    setPhotoError(null)
+
+    if (!file) {
+      setPhotoFile(null)
+      return
+    }
+
+    if (!FREELANCER_PHOTO_CONTENT_TYPES.has(file.type)) {
+      setPhotoError('Upload a JPG, PNG, or WebP image')
+      setPhotoFile(null)
+      return
+    }
+
+    if (file.size > FREELANCER_PHOTO_MAX_BYTES) {
+      setPhotoError('Photo must be smaller than 2 MB')
+      setPhotoFile(null)
+      return
+    }
+
+    setPhotoFile(file)
+  }
+
   async function onSubmit(data: FormData) {
+    if (data.companyWebsite?.trim()) {
+      setSubmitted(true)
+      return
+    }
+
     if (selectedCategories.length === 0) {
       setSkillError('Select at least one role category')
       return
@@ -195,7 +228,11 @@ export default function FreelancerPage() {
       let photoStorageId: string | undefined
 
       if (photoFile) {
-        const uploadUrl = await generateUploadUrl()
+        const uploadUrl = await generateFreelancerPhotoUploadUrl({
+          contentType: photoFile.type,
+          sizeBytes: photoFile.size,
+          companyWebsite: data.companyWebsite,
+        })
         const response = await fetch(uploadUrl, {
           method: 'POST',
           headers: { 'Content-Type': photoFile.type },
@@ -212,6 +249,7 @@ export default function FreelancerPage() {
       await createApplication({
         fullName: data.fullName.trim(),
         photoStorageId,
+        companyWebsite: data.companyWebsite,
         email: cleanText(data.email),
         whatsapp: cleanText(data.whatsapp),
         phone: cleanText(data.phone),
@@ -354,6 +392,15 @@ export default function FreelancerPage() {
 
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <input
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              className="hidden"
+              {...register('companyWebsite')}
+            />
+
             <div className="rounded-lg border border-border/80 bg-muted/25 p-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-white">
@@ -367,22 +414,25 @@ export default function FreelancerPage() {
                 <div className="min-w-0 flex-1 space-y-3">
                   <div>
                     <p className="text-sm font-medium text-foreground">Profile photo</p>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Upload a clear image for team review.</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      Upload a clear JPG, PNG, or WebP image under 2 MB.
+                    </p>
+                    {photoError && <p className="mt-1 text-xs text-destructive">{photoError}</p>}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <input
                       ref={fileRef}
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp"
                       className="hidden"
-                      onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)}
+                      onChange={(event) => updatePhoto(event.target.files?.[0] ?? null)}
                     />
                     <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
                       <Upload className="mr-1 h-4 w-4" />
                       Upload photo
                     </Button>
                     {photoFile && (
-                      <Button type="button" variant="ghost" size="sm" onClick={() => setPhotoFile(null)}>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => updatePhoto(null)}>
                         <X className="mr-1 h-4 w-4" />
                         Remove
                       </Button>
