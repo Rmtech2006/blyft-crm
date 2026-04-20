@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
-import { ArrowLeft, ExternalLink, Calendar } from 'lucide-react'
+import { EditProjectDialog } from '@/components/projects/edit-project-dialog'
+import { ArrowLeft, ExternalLink, Calendar, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 
 function formatINR(amount: number) {
@@ -42,6 +43,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const toggleMilestone = useMutation(api.projects.toggleMilestone)
   const [milestoneForm, setMilestoneForm] = useState({ title: '', dueDate: '' })
   const [addingMilestone, setAddingMilestone] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   if (!project) return <div className="p-8 text-center text-muted-foreground">Loading…</div>
 
@@ -75,11 +77,16 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
           <p className="text-sm text-muted-foreground">{project.client?.companyName}</p>
         </div>
-        {project.driveFolder && (
-          <a href={project.driveFolder} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="sm"><ExternalLink className="h-3 w-3 mr-1" /> Drive</Button>
-          </a>
-        )}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-3 w-3 mr-1" /> Edit
+          </Button>
+          {project.driveFolder && (
+            <a href={project.driveFolder} target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" size="sm"><ExternalLink className="h-3 w-3 mr-1" /> Drive</Button>
+            </a>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="overview">
@@ -185,6 +192,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </TabsContent>
       </Tabs>
+
+      <EditProjectDialog project={project} open={editOpen} onClose={() => setEditOpen(false)} />
     </div>
   )
 }

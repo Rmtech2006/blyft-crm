@@ -95,6 +95,7 @@ export const update = mutation({
   args: {
     id: v.id("projects"),
     name: v.optional(v.string()),
+    clientId: v.optional(v.id("clients")),
     type: v.optional(v.union(
       v.literal("SOCIAL_MEDIA"), v.literal("SEO"), v.literal("WEB_DESIGN"),
       v.literal("BRANDING"), v.literal("CONTENT"), v.literal("ADS"), v.literal("OTHER")

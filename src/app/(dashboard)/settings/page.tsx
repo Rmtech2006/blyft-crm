@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useConvexAuth, useMutation, useQuery } from 'convex/react'
 import {
   Bell,
+  BookOpen,
   Building2,
   LayoutDashboard,
   PencilLine,
@@ -19,6 +20,7 @@ import { toast } from 'sonner'
 import { api } from '@convex/_generated/api'
 import { Id } from '@convex/_generated/dataModel'
 import { SettingsPageHeader } from '@/components/settings/page-header'
+import { CrmGuide } from '@/components/settings/crm-guide'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -359,6 +361,9 @@ export default function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="sales-targets" className="gap-1.5">
             <Target className="h-3.5 w-3.5" /> Sales Targets
+          </TabsTrigger>
+          <TabsTrigger value="crm-guide" className="gap-1.5">
+            <BookOpen className="h-3.5 w-3.5" /> CRM Guide
           </TabsTrigger>
           <TabsTrigger value="security" className="gap-1.5">
             <Shield className="h-3.5 w-3.5" /> Security
@@ -819,6 +824,10 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="crm-guide" className="space-y-4">
+          <CrmGuide />
         </TabsContent>
 
         <TabsContent value="security">
