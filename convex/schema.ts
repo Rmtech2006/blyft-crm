@@ -100,7 +100,9 @@ export default defineSchema({
     assigneeId: v.optional(v.string()),
     createdById: v.optional(v.string()),
   }).index("by_projectId", ["projectId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_dueDate", ["dueDate"])
+    .index("by_status_and_dueDate", ["status", "dueDate"]),
 
   leads: defineTable({
     name: v.string(),
@@ -130,11 +132,14 @@ export default defineSchema({
     contactName: v.optional(v.string()),
     whatsapp: v.optional(v.string()),
     email: v.optional(v.string()),
+    emailKey: v.optional(v.string()),
+    whatsappKey: v.optional(v.string()),
     estimatedValue: v.optional(v.number()),
     serviceType: v.optional(v.string()),
     followUpDate: v.optional(v.number()),
     lostReason: v.optional(v.string()),
     convertedClientId: v.optional(v.id("clients")),
+    duplicateOfLeadId: v.optional(v.id("leads")),
     ownerId: v.optional(v.string()),
     // Qualification form fields (Stage 2 in PDF)
     goals: v.optional(v.string()),
@@ -142,7 +147,11 @@ export default defineSchema({
     servicesRequired: v.optional(v.string()),
     timeline: v.optional(v.string()),
     qualificationSubmittedAt: v.optional(v.number()),
-  }).index("by_stage", ["stage"]),
+  }).index("by_stage", ["stage"])
+    .index("by_followUpDate", ["followUpDate"])
+    .index("by_stage_and_followUpDate", ["stage", "followUpDate"])
+    .index("by_emailKey", ["emailKey"])
+    .index("by_whatsappKey", ["whatsappKey"]),
 
   leadNotes: defineTable({
     leadId: v.id("leads"),
@@ -325,8 +334,11 @@ export default defineSchema({
     type: v.string(),
     read: v.boolean(),
     link: v.optional(v.string()),
+    dedupeKey: v.optional(v.string()),
+    createdForDay: v.optional(v.string()),
   }).index("by_userId", ["userId"])
-    .index("by_userId_and_read", ["userId", "read"]),
+    .index("by_userId_and_read", ["userId", "read"])
+    .index("by_userId_and_dedupeKey", ["userId", "dedupeKey"]),
 
   subtasks: defineTable({
     taskId: v.id("tasks"),

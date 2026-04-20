@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { EditLeadDialog } from '@/components/leads/edit-lead-dialog'
+import { WhatsappMessagePanel } from '@/components/leads/whatsapp-message-panel'
 import { ArrowLeft, Mail, Pencil, UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { LEAD_STAGES, STAGE_COLORS, STAGE_TEMPLATE, type LeadStage } from '@/lib/leads'
@@ -186,6 +187,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               </Card>
             ) : null
           })()}
+          <WhatsappMessagePanel lead={lead} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader><CardTitle className="text-sm">Lead Info</CardTitle></CardHeader>

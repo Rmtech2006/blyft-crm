@@ -9,7 +9,9 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as automation from "../automation.js";
 import type * as clients from "../clients.js";
+import type * as crons from "../crons.js";
 import type * as dashboard from "../dashboard.js";
 import type * as files from "../files.js";
 import type * as finance from "../finance.js";
@@ -36,7 +38,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  automation: typeof automation;
   clients: typeof clients;
+  crons: typeof crons;
   dashboard: typeof dashboard;
   files: typeof files;
   finance: typeof finance;

@@ -27,6 +27,7 @@ import { DashboardPageHeader } from '@/components/dashboard/page-header'
 import { DashboardPartialModeAlert } from '@/components/dashboard/partial-mode-alert'
 import { StatsCard } from '@/components/dashboard/stats-card'
 import { EmptyDashboardState } from '@/components/dashboard/empty-dashboard-state'
+import { TodaysFocus } from '@/components/dashboard/todays-focus'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -268,6 +269,8 @@ export default function DashboardPage() {
       {isPartial && <DashboardPartialModeAlert />}
 
       {visibleSections.size === 0 && <EmptyDashboardState />}
+
+      <TodaysFocus />
 
       {visibleSections.has('heroOverview') && (
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
