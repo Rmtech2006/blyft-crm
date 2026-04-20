@@ -64,6 +64,39 @@ const guideSections = [
   },
 ]
 
+const operatingRoutines = [
+  {
+    title: 'Daily Start',
+    description: "Open Dashboard, clear Today's Focus, then check overdue tasks and lead follow-ups before new work.",
+    steps: ['Open Dashboard first.', 'Handle overdue tasks.', 'Message due lead follow-ups.', 'Create missing tasks for verbal commitments.'],
+  },
+  {
+    title: 'Daily Close',
+    description: "Before ending the day, update statuses so tomorrow's focus queue is accurate.",
+    steps: ['Move completed tasks to Done.', 'Update project status.', 'Set next lead follow-up dates.', 'Record money movement in Finance.'],
+  },
+  {
+    title: 'Weekly Cleanup',
+    description: 'A short Friday pass keeps the CRM usable and prevents hidden pending work.',
+    steps: ['Archive finished projects.', 'Delete test or duplicate records.', 'Review pending reimbursements.', 'Export reports if needed.'],
+  },
+  {
+    title: 'Project Hygiene',
+    description: 'Projects stay useful when scope, dates, budget, Drive, and tasks are kept current.',
+    steps: ['Use Edit Project for scope changes.', 'Add deadlines to every active project.', 'Archive delivered work.', 'Delete only accidental projects.'],
+  },
+  {
+    title: 'Finance Hygiene',
+    description: 'Keep finance entries linked so dashboard numbers and reports stay meaningful.',
+    steps: ['Link income to client or project.', 'Record expenses on the transaction date.', 'Mark reimbursements paid after settlement.', 'Review outstanding payments weekly.'],
+  },
+  {
+    title: 'Automation Readiness',
+    description: 'Free automations work best when CRM dates and statuses are reliable.',
+    steps: ['Keep follow-up dates accurate.', 'Keep task due dates accurate.', 'Avoid stale statuses.', 'Use archive instead of deleting real delivery history.'],
+  },
+]
+
 export function CrmGuide() {
   const [search, setSearch] = useState('')
 
@@ -108,6 +141,30 @@ export function CrmGuide() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {operatingRoutines.map((routine) => (
+          <Card key={routine.title}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                {routine.title}
+              </CardTitle>
+              <CardDescription className="text-xs leading-5">{routine.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {routine.steps.map((step) => (
+                  <div key={step} className="flex gap-2 text-sm leading-6">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600" />
+                    <span>{step}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         {filteredSections.map((section) => (

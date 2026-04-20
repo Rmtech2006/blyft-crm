@@ -2,9 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useQuery } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
+import { Id } from '@convex/_generated/dataModel'
 import {
+  Archive,
+  ArchiveRestore,
   ArrowUpRight,
   BarChart3,
   Calendar,
@@ -16,30 +19,50 @@ import {
   KanbanSquare,
   ListFilter,
   PauseCircle,
+  Pencil,
   Search,
+  Trash2,
 } from 'lucide-react'
 import { AddProjectDialog } from '@/components/projects/add-project-dialog'
+import { EditProjectDialog } from '@/components/projects/edit-project-dialog'
 import { ExportMenu } from '@/components/shared/export-menu'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { exportCsv, printReport } from '@/lib/export'
 import { cn, formatEnum } from '@/lib/utils'
+import { toast } from 'sonner'
 
 type ProjectStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'ON_HOLD'
 type ProjectType = 'SOCIAL_MEDIA' | 'SEO' | 'WEB_DESIGN' | 'BRANDING' | 'CONTENT' | 'ADS' | 'OTHER'
 
 type ProjectItem = {
   id: string
+  clientId: string
   name: string
   status: ProjectStatus
   type: ProjectType
   client: { companyName: string }
   deadline?: number | null
+  startDate?: number | null
+  description?: string | null
   budgetAgreed?: number | null
+  driveFolder?: string | null
+  archivedAt?: number | null
   taskCount: number
 }
 
@@ -137,6 +160,13 @@ function isOverdue(project: ProjectItem) {
   return deadline.getTime() < today.getTime()
 }
 
+function matchesDeadlineFilter(project: ProjectItem, filter: string) {
+  if (filter === 'OVERDUE') return isOverdue(project)
+  if (filter === 'DUE_SOON') return isDeadlineSoon(project.deadline) && project.status !== 'COMPLETED'
+  if (filter === 'NO_DEADLINE') return !project.deadline
+  return true
+}
+
 function ProjectsSkeleton() {
   return (
     <div className="space-y-6">
@@ -160,40 +190,81 @@ export default function ProjectsPage() {
   const router = useRouter()
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [typeFilter, setTypeFilter] = useState('ALL')
+  const [lifecycleFilter, setLifecycleFilter] = useState('ACTIVE')
+  const [deadlineFilter, setDeadlineFilter] = useState('ALL')
   const [search, setSearch] = useState('')
+  const [projectToEdit, setProjectToEdit] = useState<ProjectItem | null>(null)
+  const [projectToDelete, setProjectToDelete] = useState<ProjectItem | null>(null)
 
   const projects = useQuery(api.projects.list)
   const projectRecords = useMemo(() => (projects ?? []) as ProjectItem[], [projects])
+  const archiveProject = useMutation(api.projects.archive)
+  const restoreProject = useMutation(api.projects.restore)
+  const removeProject = useMutation(api.projects.remove)
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
 
     return projectRecords.filter((project) => {
+      const matchLifecycle =
+        lifecycleFilter === 'ALL' ||
+        (lifecycleFilter === 'ARCHIVED' ? Boolean(project.archivedAt) : !project.archivedAt)
       const matchStatus = statusFilter === 'ALL' || project.status === statusFilter
       const matchType = typeFilter === 'ALL' || project.type === typeFilter
+      const matchDeadline = matchesDeadlineFilter(project, deadlineFilter)
       const matchSearch =
         !query ||
         project.name.toLowerCase().includes(query) ||
         project.client.companyName.toLowerCase().includes(query)
 
-      return matchStatus && matchType && matchSearch
+      return matchLifecycle && matchStatus && matchType && matchDeadline && matchSearch
     })
-  }, [projectRecords, search, statusFilter, typeFilter])
+  }, [deadlineFilter, lifecycleFilter, projectRecords, search, statusFilter, typeFilter])
 
   if (projects === undefined) return <ProjectsSkeleton />
 
-  const activeProjects = projectRecords.filter((project) =>
+  const activeBook = projectRecords.filter((project) => !project.archivedAt)
+  const archivedProjects = projectRecords.filter((project) => project.archivedAt)
+  const activeProjects = activeBook.filter((project) =>
     ['IN_PROGRESS', 'IN_REVIEW'].includes(project.status)
   )
-  const completed = projectRecords.filter((project) => project.status === 'COMPLETED')
-  const onHold = projectRecords.filter((project) => project.status === 'ON_HOLD')
-  const overdue = projectRecords.filter(isOverdue)
-  const dueSoon = projectRecords.filter((project) => isDeadlineSoon(project.deadline) && project.status !== 'COMPLETED')
-  const budgetTotal = projectRecords.reduce((sum, project) => sum + (project.budgetAgreed ?? 0), 0)
-  const taskTotal = projectRecords.reduce((sum, project) => sum + project.taskCount, 0)
-  const nextDeadline = [...projectRecords]
+  const completed = activeBook.filter((project) => project.status === 'COMPLETED')
+  const onHold = activeBook.filter((project) => project.status === 'ON_HOLD')
+  const overdue = activeBook.filter(isOverdue)
+  const dueSoon = activeBook.filter((project) => isDeadlineSoon(project.deadline) && project.status !== 'COMPLETED')
+  const missingDeadline = activeBook.filter((project) => !project.deadline && project.status !== 'COMPLETED')
+  const budgetTotal = activeBook.reduce((sum, project) => sum + (project.budgetAgreed ?? 0), 0)
+  const taskTotal = activeBook.reduce((sum, project) => sum + project.taskCount, 0)
+  const nextDeadline = [...activeBook]
     .filter((project) => project.deadline && project.status !== 'COMPLETED')
     .sort((a, b) => (a.deadline ?? 0) - (b.deadline ?? 0))[0]
+
+  async function handleArchiveToggle(project: ProjectItem) {
+    try {
+      if (project.archivedAt) {
+        await restoreProject({ id: project.id as Id<'projects'> })
+        toast.success('Project restored')
+      } else {
+        await archiveProject({ id: project.id as Id<'projects'> })
+        toast.success('Project archived')
+      }
+    } catch {
+      toast.error(project.archivedAt ? 'Failed to restore project' : 'Failed to archive project')
+    }
+  }
+
+  async function confirmDeleteProject() {
+    if (!projectToDelete) return
+
+    try {
+      await removeProject({ id: projectToDelete.id as Id<'projects'> })
+      toast.success('Project deleted')
+    } catch {
+      toast.error('Failed to delete project')
+    } finally {
+      setProjectToDelete(null)
+    }
+  }
 
   function handleCsvExport() {
     exportCsv('projects-export.csv', filtered, [
@@ -280,10 +351,17 @@ export default function ProjectsPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard label="Project book" value={projectRecords.length} detail={`${filtered.length} in current view`} icon={FolderOpen} />
+        <SummaryCard label="Project book" value={activeBook.length} detail={`${filtered.length} in current view`} icon={FolderOpen} />
         <SummaryCard label="In motion" value={activeProjects.length} detail="In progress or review" icon={Clock3} />
         <SummaryCard label="Completed" value={completed.length} detail="Delivered work" icon={CheckCircle2} tone="success" />
         <SummaryCard label="Needs attention" value={overdue.length + onHold.length} detail={`${overdue.length} overdue, ${onHold.length} on hold`} icon={PauseCircle} tone="danger" />
+      </section>
+
+      <section className="grid gap-3 md:grid-cols-4">
+        <HealthPill label="Overdue" value={overdue.length} detail="Past deadline" tone="danger" />
+        <HealthPill label="Due soon" value={dueSoon.length} detail="Next 7 days" tone="warning" />
+        <HealthPill label="Missing deadline" value={missingDeadline.length} detail="Needs a date" tone="neutral" />
+        <HealthPill label="Archived" value={archivedProjects.length} detail="Hidden from active view" tone="neutral" />
       </section>
 
       <section className="rounded-lg border border-border/80 bg-white/90 p-3 shadow-[0_22px_70px_-58px_rgba(0,0,0,0.72)] backdrop-blur">
@@ -298,7 +376,18 @@ export default function ProjectsPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[180px_180px_auto] xl:flex xl:items-center">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:flex xl:items-center">
+            <Select value={lifecycleFilter} onValueChange={(value) => setLifecycleFilter(value ?? 'ACTIVE')}>
+              <SelectTrigger className="h-11 w-full rounded-lg border-border/90 bg-white shadow-none sm:w-[170px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ACTIVE">Active projects</SelectItem>
+                <SelectItem value="ARCHIVED">Archived</SelectItem>
+                <SelectItem value="ALL">All lifecycle</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? 'ALL')}>
               <SelectTrigger className="h-11 w-full rounded-lg border-border/90 bg-white shadow-none sm:w-[180px]">
                 <SelectValue />
@@ -324,6 +413,18 @@ export default function ProjectsPage() {
                     {formatEnum(type)}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={deadlineFilter} onValueChange={(value) => setDeadlineFilter(value ?? 'ALL')}>
+              <SelectTrigger className="h-11 w-full rounded-lg border-border/90 bg-white shadow-none sm:w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All deadlines</SelectItem>
+                <SelectItem value="OVERDUE">Overdue</SelectItem>
+                <SelectItem value="DUE_SOON">Due soon</SelectItem>
+                <SelectItem value="NO_DEADLINE">Missing deadline</SelectItem>
               </SelectContent>
             </Select>
 
@@ -364,7 +465,10 @@ export default function ProjectsPage() {
                   <ProjectCard
                     key={project.id}
                     project={project}
-                    onClick={() => router.push(`/projects/${project.id}`)}
+                    onOpen={() => router.push(`/projects/${project.id}`)}
+                    onEdit={() => setProjectToEdit(project)}
+                    onArchiveToggle={() => handleArchiveToggle(project)}
+                    onDelete={() => setProjectToDelete(project)}
                   />
                 ))}
               </section>
@@ -399,7 +503,10 @@ export default function ProjectsPage() {
                         <BoardProjectCard
                           key={project.id}
                           project={project}
-                          onClick={() => router.push(`/projects/${project.id}`)}
+                          onOpen={() => router.push(`/projects/${project.id}`)}
+                          onEdit={() => setProjectToEdit(project)}
+                          onArchiveToggle={() => handleArchiveToggle(project)}
+                          onDelete={() => setProjectToDelete(project)}
                         />
                       ))}
 
@@ -416,6 +523,29 @@ export default function ProjectsPage() {
           </TabsContent>
         </Tabs>
       )}
+
+      {projectToEdit && (
+        <EditProjectDialog
+          project={projectToEdit}
+          open={Boolean(projectToEdit)}
+          onClose={() => setProjectToEdit(null)}
+        />
+      )}
+
+      <AlertDialog open={Boolean(projectToDelete)} onOpenChange={(open) => !open && setProjectToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete project?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes {projectToDelete?.name ?? 'this project'} plus linked tasks, milestones, and team assignments.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteProject}>Delete project</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -465,6 +595,34 @@ function SummaryCard({
   )
 }
 
+function HealthPill({
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  label: string
+  value: number
+  detail: string
+  tone: 'danger' | 'warning' | 'neutral'
+}) {
+  const toneClass = {
+    danger: 'border-rose-200 bg-rose-50 text-rose-800',
+    warning: 'border-amber-200 bg-amber-50 text-amber-800',
+    neutral: 'border-border/80 bg-white text-foreground',
+  }[tone]
+
+  return (
+    <div className={cn('rounded-lg border px-4 py-3 shadow-[0_18px_55px_-48px_rgba(0,0,0,0.62)]', toneClass)}>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em]">{label}</p>
+        <span className="text-xl font-semibold tracking-normal">{value}</span>
+      </div>
+      <p className="mt-1 text-xs opacity-70">{detail}</p>
+    </div>
+  )
+}
+
 function EmptyProjectsState() {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/90 bg-white/75 px-6 py-20 text-center">
@@ -494,11 +652,24 @@ function FilteredEmptyState() {
   )
 }
 
-function ProjectCard({ project, onClick }: { project: ProjectItem; onClick: () => void }) {
+function ProjectCard({
+  project,
+  onOpen,
+  onEdit,
+  onArchiveToggle,
+  onDelete,
+}: {
+  project: ProjectItem
+  onOpen: () => void
+  onEdit: () => void
+  onArchiveToggle: () => void
+  onDelete: () => void
+}) {
   const status = statusMeta[project.status]
   const StatusIcon = status.icon
   const overdue = isOverdue(project)
   const dueSoon = isDeadlineSoon(project.deadline) && project.status !== 'COMPLETED'
+  const archived = Boolean(project.archivedAt)
 
   return (
     <article
@@ -507,14 +678,15 @@ function ProjectCard({ project, onClick }: { project: ProjectItem; onClick: () =
       aria-label={`Open ${project.name}`}
       className={cn(
         'group cursor-pointer rounded-lg border bg-white p-5 shadow-[0_26px_80px_-64px_rgba(0,0,0,0.72)] transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-950/25 hover:shadow-[0_30px_90px_-58px_rgba(0,0,0,0.78)] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/25',
-        status.panel
+        status.panel,
+        archived && 'opacity-75'
       )}
-      onClick={onClick}
+      onClick={onOpen}
       onKeyDown={(event) => {
         if (event.target !== event.currentTarget) return
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
-          onClick()
+          onOpen()
         }
       }}
     >
@@ -553,6 +725,11 @@ function ProjectCard({ project, onClick }: { project: ProjectItem; onClick: () =
             Due soon
           </Badge>
         )}
+        {archived && (
+          <Badge className="rounded-md border border-neutral-300 bg-neutral-100 text-[10px] text-neutral-700">
+            Archived
+          </Badge>
+        )}
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3">
@@ -576,20 +753,78 @@ function ProjectCard({ project, onClick }: { project: ProjectItem; onClick: () =
 
       <div className="mt-5 flex items-center justify-between gap-3 border-t border-border/70 pt-4 text-xs text-muted-foreground">
         <span>{project.budgetAgreed ? formatINR(project.budgetAgreed) : 'Budget not set'}</span>
-        <span className="inline-flex items-center gap-1 font-medium text-foreground">
-          Open
-          <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-        </span>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label={`Edit ${project.name}`}
+            onClick={(event) => {
+              event.stopPropagation()
+              onEdit()
+            }}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label={archived ? `Restore ${project.name}` : `Archive ${project.name}`}
+            onClick={(event) => {
+              event.stopPropagation()
+              onArchiveToggle()
+            }}
+          >
+            {archived ? <ArchiveRestore className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-rose-600"
+            aria-label={`Delete ${project.name}`}
+            onClick={(event) => {
+              event.stopPropagation()
+              onDelete()
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+          <span className="inline-flex items-center gap-1 pl-1 font-medium text-foreground">
+            Open
+            <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </span>
+        </div>
       </div>
     </article>
   )
 }
 
-function BoardProjectCard({ project, onClick }: { project: ProjectItem; onClick: () => void }) {
+function BoardProjectCard({
+  project,
+  onOpen,
+  onEdit,
+  onArchiveToggle,
+  onDelete,
+}: {
+  project: ProjectItem
+  onOpen: () => void
+  onEdit: () => void
+  onArchiveToggle: () => void
+  onDelete: () => void
+}) {
+  const archived = Boolean(project.archivedAt)
+
   return (
     <Card
-      className="cursor-pointer rounded-lg border-border/80 bg-white shadow-none transition-all hover:-translate-y-0.5 hover:border-neutral-950/20 hover:shadow-[0_18px_50px_-42px_rgba(0,0,0,0.7)]"
-      onClick={onClick}
+      className={cn(
+        'cursor-pointer rounded-lg border-border/80 bg-white shadow-none transition-all hover:-translate-y-0.5 hover:border-neutral-950/20 hover:shadow-[0_18px_50px_-42px_rgba(0,0,0,0.7)]',
+        archived && 'opacity-75'
+      )}
+      onClick={onOpen}
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
@@ -604,6 +839,11 @@ function BoardProjectCard({ project, onClick }: { project: ProjectItem; onClick:
           <Badge className={cn('rounded-md border text-[10px]', typeMeta[project.type])}>
             {formatEnum(project.type)}
           </Badge>
+          {archived && (
+            <Badge className="rounded-md border border-neutral-300 bg-neutral-100 text-[10px] text-neutral-700">
+              Archived
+            </Badge>
+          )}
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
@@ -617,6 +857,47 @@ function BoardProjectCard({ project, onClick }: { project: ProjectItem; onClick:
               {formatDate(project.deadline, { day: '2-digit', month: 'short' })}
             </span>
           </div>
+        </div>
+        <div className="mt-3 flex items-center justify-end gap-1 border-t border-border/70 pt-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label={`Edit ${project.name}`}
+            onClick={(event) => {
+              event.stopPropagation()
+              onEdit()
+            }}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label={archived ? `Restore ${project.name}` : `Archive ${project.name}`}
+            onClick={(event) => {
+              event.stopPropagation()
+              onArchiveToggle()
+            }}
+          >
+            {archived ? <ArchiveRestore className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-rose-600"
+            aria-label={`Delete ${project.name}`}
+            onClick={(event) => {
+              event.stopPropagation()
+              onDelete()
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
         </div>
       </CardContent>
     </Card>

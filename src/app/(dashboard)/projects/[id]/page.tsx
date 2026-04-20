@@ -12,11 +12,28 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { EditProjectDialog } from '@/components/projects/edit-project-dialog'
-import { ArrowLeft, ExternalLink, Calendar, Pencil } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Archive, ArchiveRestore, ArrowLeft, ExternalLink, Calendar, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
+}
+
+function formatTimelineDate(value: number) {
+  return new Date(value).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+  })
 }
 
 const statusColors: Record<string, string> = {
@@ -41,11 +58,39 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const project = useQuery(api.projects.get, { id: id as Id<'projects'> })
   const addMilestone = useMutation(api.projects.addMilestone)
   const toggleMilestone = useMutation(api.projects.toggleMilestone)
+  const archiveProject = useMutation(api.projects.archive)
+  const restoreProject = useMutation(api.projects.restore)
+  const removeProject = useMutation(api.projects.remove)
   const [milestoneForm, setMilestoneForm] = useState({ title: '', dueDate: '' })
   const [addingMilestone, setAddingMilestone] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
-  if (!project) return <div className="p-8 text-center text-muted-foreground">Loading…</div>
+  if (!project) return <div className="p-8 text-center text-muted-foreground">Loading...</div>
+
+  async function handleArchiveToggle() {
+    try {
+      if (project.archivedAt) {
+        await restoreProject({ id: id as Id<'projects'> })
+        toast.success('Project restored')
+      } else {
+        await archiveProject({ id: id as Id<'projects'> })
+        toast.success('Project archived')
+      }
+    } catch {
+      toast.error(project.archivedAt ? 'Failed to restore project' : 'Failed to archive project')
+    }
+  }
+
+  async function confirmDeleteProject() {
+    try {
+      await removeProject({ id: id as Id<'projects'> })
+      toast.success('Project deleted')
+      router.push('/projects')
+    } catch {
+      toast.error('Failed to delete project')
+    }
+  }
 
   async function handleAddMilestone() {
     if (!milestoneForm.title || !milestoneForm.dueDate) return
@@ -65,6 +110,27 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   }
 
+  const projectTimelineItems = [
+    ...(project.milestones ?? []).map((milestone) => ({
+      id: `milestone-${milestone.id}`,
+      type: 'Milestone' as const,
+      title: milestone.title,
+      date: milestone.dueDate,
+      state: milestone.completed ? 'Done' : 'Pending',
+    })),
+    ...(project.tasks ?? [])
+      .filter((task) => task.dueDate)
+      .map((task) => ({
+        id: `task-${task.id}`,
+        type: 'Task' as const,
+        title: task.title,
+        date: task.dueDate!,
+        state: task.status.replace('_', ' '),
+      })),
+  ]
+    .sort((a, b) => a.date - b.date)
+    .slice(0, 8)
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -74,12 +140,24 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
             <Badge className={`border-0 ${statusColors[project.status] ?? ''}`}>{project.status.replace('_', ' ')}</Badge>
             <Badge variant="outline" className="text-xs">{project.type.replace('_', ' ')}</Badge>
+            {project.archivedAt && <Badge variant="secondary" className="text-xs">Archived</Badge>}
           </div>
           <p className="text-sm text-muted-foreground">{project.client?.companyName}</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="h-3 w-3 mr-1" /> Edit
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleArchiveToggle}>
+            {project.archivedAt ? (
+              <ArchiveRestore className="h-3 w-3 mr-1" />
+            ) : (
+              <Archive className="h-3 w-3 mr-1" />
+            )}
+            {project.archivedAt ? 'Restore' : 'Archive'}
+          </Button>
+          <Button variant="outline" size="sm" className="text-rose-700 hover:text-rose-700" onClick={() => setDeleteOpen(true)}>
+            <Trash2 className="h-3 w-3 mr-1" /> Delete
           </Button>
           {project.driveFolder && (
             <a href={project.driveFolder} target="_blank" rel="noopener noreferrer">
@@ -124,6 +202,34 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               </CardContent>
             </Card>
           </div>
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-sm">Project Timeline</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {projectTimelineItems.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No dated tasks or milestones yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {projectTimelineItems.map((item) => (
+                    <div key={item.id} className="flex items-start gap-3 rounded-lg border border-border/80 bg-muted/30 p-3">
+                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-background">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="outline" className="text-[10px]">{item.type}</Badge>
+                          <span className="text-xs text-muted-foreground">{formatTimelineDate(item.date)}</span>
+                        </div>
+                        <p className="mt-1 truncate text-sm font-medium">{item.title}</p>
+                      </div>
+                      <Badge variant="secondary" className="shrink-0 text-[10px]">{item.state}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="tasks">
@@ -194,6 +300,20 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       </Tabs>
 
       <EditProjectDialog project={project} open={editOpen} onClose={() => setEditOpen(false)} />
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete project?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes {project.name} plus linked tasks, milestones, and team assignments.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteProject}>Delete project</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

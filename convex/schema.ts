@@ -64,6 +64,7 @@ export default defineSchema({
     budgetAgreed: v.optional(v.number()),
     costIncurred: v.optional(v.number()),
     driveFolder: v.optional(v.string()),
+    archivedAt: v.optional(v.number()),
     clientId: v.id("clients"),
   }).index("by_clientId", ["clientId"])
     .index("by_status", ["status"]),

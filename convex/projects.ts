@@ -129,6 +129,20 @@ export const remove = mutation({
   },
 });
 
+export const archive = mutation({
+  args: { id: v.id("projects") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, { archivedAt: Date.now() });
+  },
+});
+
+export const restore = mutation({
+  args: { id: v.id("projects") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, { archivedAt: undefined });
+  },
+});
+
 export const addMilestone = mutation({
   args: {
     projectId: v.id("projects"),
