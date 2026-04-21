@@ -6,6 +6,7 @@ import {
   buildLeadWhatsappMessages,
   getDefaultLeadFollowUpDate,
   getDueLeadFollowUps,
+  getDueProjectDeadlines,
   getOverdueTasks,
   getStaleProposalLeads,
   toWhatsappLink,
@@ -52,6 +53,19 @@ test("finds overdue tasks and ignores completed work", () => {
   ];
 
   assert.deepEqual(getOverdueTasks(tasks, NOW).map((task) => task.id), ["blocked", "old"]);
+});
+
+test("finds due-soon project deadlines and ignores archived or completed projects", () => {
+  const projects = [
+    { id: "future", name: "Future", status: "IN_PROGRESS", deadline: NOW + 10 * DAY },
+    { id: "none", name: "None", status: "IN_PROGRESS", deadline: null },
+    { id: "completed", name: "Completed", status: "COMPLETED", deadline: NOW + DAY },
+    { id: "archived", name: "Archived", status: "IN_PROGRESS", deadline: NOW + DAY, archivedAt: NOW - DAY },
+    { id: "soon", name: "Soon", status: "IN_PROGRESS", deadline: NOW + 2 * DAY },
+    { id: "review", name: "Review", status: "IN_REVIEW", deadline: NOW + DAY },
+  ];
+
+  assert.deepEqual(getDueProjectDeadlines(projects, NOW, 7).map((project) => project.id), ["review", "soon"]);
 });
 
 test("builds normalized duplicate keys from email and WhatsApp", () => {

@@ -19,6 +19,7 @@ import {
 import { toast } from 'sonner'
 import { api } from '@convex/_generated/api'
 import { Id } from '@convex/_generated/dataModel'
+import { AutomationCenter } from '@/components/settings/automation-center'
 import { SettingsPageHeader } from '@/components/settings/page-header'
 import { CrmGuide } from '@/components/settings/crm-guide'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -364,6 +365,9 @@ export default function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="crm-guide" className="gap-1.5">
             <BookOpen className="h-3.5 w-3.5" /> CRM Guide
+          </TabsTrigger>
+          <TabsTrigger value="automation-center" className="gap-1.5">
+            <Bell className="h-3.5 w-3.5" /> Automation Center
           </TabsTrigger>
           <TabsTrigger value="security" className="gap-1.5">
             <Shield className="h-3.5 w-3.5" /> Security
@@ -828,6 +832,10 @@ export default function SettingsPage() {
 
         <TabsContent value="crm-guide" className="space-y-4">
           <CrmGuide />
+        </TabsContent>
+
+        <TabsContent value="automation-center" className="space-y-4">
+          <AutomationCenter />
         </TabsContent>
 
         <TabsContent value="security">

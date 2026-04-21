@@ -100,3 +100,15 @@ test("crm guide includes operating routines beyond module descriptions", () => {
     assert.match(guide, new RegExp(section));
   }
 });
+
+test("settings exposes a dedicated automation center", () => {
+  const settings = read("src/app/(dashboard)/settings/page.tsx");
+  const automationCenter = read("src/components/settings/automation-center.tsx");
+
+  assert.match(settings, /value="automation-center"/);
+  assert.match(settings, /Automation Center/);
+  assert.match(settings, /<AutomationCenter/);
+  assert.match(automationCenter, /Zero-cost stack/);
+  assert.match(automationCenter, /n8n/);
+  assert.match(automationCenter, /Project deadline sweep/);
+});

@@ -15,9 +15,12 @@ test("Convex automation backend has crons and focus query", () => {
   assert.match(automation, /export const runMorningDigest/);
   assert.match(automation, /export const runFollowUpSweep/);
   assert.match(automation, /export const runEveningSummary/);
+  assert.match(automation, /runProjectDeadlineSweep/);
+  assert.match(automation, /dueProjectDeadlines/);
   assert.match(crons, /morning focus digest/);
   assert.match(crons, /follow-up sweep/);
   assert.match(crons, /evening operations summary/);
+  assert.match(crons, /project deadline sweep/);
 });
 
 test("lead creation applies free automation rules", () => {
@@ -33,9 +36,13 @@ test("dashboard and lead detail expose phase 1-3 helpers", () => {
   const leadDetail = read("src/app/(dashboard)/leads/[id]/page.tsx");
   const focusComponent = read("src/components/dashboard/todays-focus.tsx");
   const whatsappPanel = read("src/components/leads/whatsapp-message-panel.tsx");
+  const notifications = read("src/components/layout/notification-panel.tsx");
 
   assert.match(dashboard, /TodaysFocus/);
   assert.match(focusComponent, /api\.automation\.getTodaysFocus/);
+  assert.match(focusComponent, /Project deadlines/);
   assert.match(leadDetail, /WhatsappMessagePanel/);
   assert.match(whatsappPanel, /buildLeadWhatsappMessages/);
+  assert.match(notifications, /AUTOMATION_MORNING_DIGEST/);
+  assert.match(notifications, /PROJECT_DEADLINE_DUE/);
 });

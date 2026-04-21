@@ -18,6 +18,13 @@ crons.cron(
 );
 
 crons.cron(
+  "project deadline sweep",
+  "0 5 * * *",
+  internal.automation.runProjectDeadlineSweep,
+  {}
+);
+
+crons.cron(
   "evening operations summary",
   "30 13 * * *",
   internal.automation.runEveningSummary,

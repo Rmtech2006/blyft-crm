@@ -4,6 +4,7 @@ import type { Doc } from "./_generated/dataModel";
 import {
   buildLeadDuplicateKeys,
   getDueLeadFollowUps,
+  getDueProjectDeadlines,
   getOverdueTasks,
   getStaleProposalLeads,
 } from "../src/lib/crm-automation-rules.mjs";
@@ -34,6 +35,10 @@ function taskLink(taskId: string): string {
   return `/tasks/${taskId}`;
 }
 
+function projectLink(projectId: string): string {
+  return `/projects/${projectId}`;
+}
+
 function ownerForLead(lead: Doc<"leads">): string {
   return lead.ownerId ?? "ritish";
 }
@@ -51,6 +56,20 @@ function formatTask(task: Doc<"tasks">) {
     ...task,
     id: task._id,
     link: taskLink(task._id),
+  };
+}
+
+function formatProject(
+  project: Doc<"projects">,
+  client?: Pick<Doc<"clients">, "_id" | "companyName"> | null
+) {
+  return {
+    ...project,
+    id: project._id,
+    link: projectLink(project._id),
+    client: client
+      ? { id: client._id, companyName: client.companyName }
+      : null,
   };
 }
 
@@ -107,13 +126,32 @@ async function loadHighValueLeads(ctx: ReadCtx) {
     .slice(0, 10);
 }
 
+async function loadDueProjectDeadlines(ctx: ReadCtx, now: number) {
+  const projects = await ctx.db.query("projects").collect();
+  const dueProjects = getDueProjectDeadlines(projects, now, 7).slice(0, 20);
+
+  return await Promise.all(
+    dueProjects.map(async (project) => {
+      const client = await ctx.db.get(project.clientId);
+      return formatProject(project, client);
+    })
+  );
+}
+
 async function loadFocus(ctx: ReadCtx, now: number) {
-  const [dueLeadFollowUps, staleProposals, overdueTasks, highValueLeads] =
+  const [
+    dueLeadFollowUps,
+    staleProposals,
+    overdueTasks,
+    highValueLeads,
+    dueProjectDeadlines,
+  ] =
     await Promise.all([
       loadDueLeadFollowUps(ctx, now),
       loadStaleProposalLeads(ctx, now),
       loadOverdueTasks(ctx, now),
       loadHighValueLeads(ctx),
+      loadDueProjectDeadlines(ctx, now),
     ]);
 
   return {
@@ -122,6 +160,7 @@ async function loadFocus(ctx: ReadCtx, now: number) {
     staleProposals,
     overdueTasks,
     highValueLeads,
+    dueProjectDeadlines,
   };
 }
 
@@ -178,11 +217,13 @@ export const getTodaysFocus = query({
         dueLeadFollowUps: focus.dueLeadFollowUps.length,
         staleProposals: focus.staleProposals.length,
         highValueLeads: focus.highValueLeads.length,
+        dueProjectDeadlines: focus.dueProjectDeadlines.length,
       },
       overdueTasks: focus.overdueTasks.slice(0, 8).map(formatTask),
       dueLeadFollowUps: focus.dueLeadFollowUps.slice(0, 8).map(formatLead),
       staleProposals: focus.staleProposals.slice(0, 6).map(formatLead),
       highValueLeads: focus.highValueLeads.slice(0, 6).map(formatLead),
+      dueProjectDeadlines: focus.dueProjectDeadlines.slice(0, 6),
     };
   },
 });
@@ -227,6 +268,7 @@ export const runMorningDigest = internalMutation({
       `${focus.dueLeadFollowUps.length} lead follow-up${focus.dueLeadFollowUps.length === 1 ? "" : "s"} due`,
       `${focus.staleProposals.length} stale proposal${focus.staleProposals.length === 1 ? "" : "s"}`,
       `${focus.highValueLeads.length} high-value lead${focus.highValueLeads.length === 1 ? "" : "s"}`,
+      `${focus.dueProjectDeadlines.length} project deadline${focus.dueProjectDeadlines.length === 1 ? "" : "s"} this week`,
     ].join(", ");
 
     for (const userId of DIGEST_USER_IDS) {
@@ -279,6 +321,30 @@ export const runFollowUpSweep = internalMutation({
   },
 });
 
+export const runProjectDeadlineSweep = internalMutation({
+  args: { now: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const now = args.now ?? Date.now();
+    const day = istDayKey(now);
+    const dueProjectDeadlines = await loadDueProjectDeadlines(ctx, now);
+
+    for (const project of dueProjectDeadlines.slice(0, 25)) {
+      await upsertNotification(ctx, {
+        userId: "ritish",
+        title: "Project deadline due soon",
+        message: `${project.name}${project.client ? ` for ${project.client.companyName}` : ""} is due by ${new Date(project.deadline ?? now).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+        })}.`,
+        type: "PROJECT_DEADLINE_DUE",
+        link: project.link,
+        dedupeKey: `project-deadline:${day}:${project.id}`,
+        createdForDay: day,
+      });
+    }
+  },
+});
+
 export const runEveningSummary = internalMutation({
   args: { now: v.optional(v.number()) },
   handler: async (ctx, args) => {
@@ -289,6 +355,7 @@ export const runEveningSummary = internalMutation({
       `Still pending: ${focus.overdueTasks.length} overdue task${focus.overdueTasks.length === 1 ? "" : "s"}`,
       `${focus.dueLeadFollowUps.length} lead follow-up${focus.dueLeadFollowUps.length === 1 ? "" : "s"}`,
       `${focus.staleProposals.length} proposal nudge${focus.staleProposals.length === 1 ? "" : "s"}`,
+      `${focus.dueProjectDeadlines.length} project deadline${focus.dueProjectDeadlines.length === 1 ? "" : "s"} in the next 7 days`,
     ].join(", ");
 
     for (const userId of DIGEST_USER_IDS) {

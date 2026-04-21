@@ -76,6 +76,23 @@ export function getOverdueTasks(tasks, nowMs = Date.now()) {
     });
 }
 
+export function getDueProjectDeadlines(projects, nowMs = Date.now(), dueWithinDays = 7) {
+  const dueBefore = nowMs + dueWithinDays * DAY_MS;
+
+  return projects
+    .filter((project) => {
+      const deadline = numericDate(project.deadline);
+      return (
+        deadline !== null &&
+        deadline >= nowMs &&
+        deadline <= dueBefore &&
+        !project.archivedAt &&
+        String(project.status ?? "") !== "COMPLETED"
+      );
+    })
+    .sort((a, b) => numericDate(a.deadline) - numericDate(b.deadline));
+}
+
 export function normalizeEmailKey(email) {
   const value = String(email ?? "").trim().toLowerCase();
   return value.includes("@") ? value : null;

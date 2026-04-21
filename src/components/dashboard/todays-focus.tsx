@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
-import { AlertCircle, ArrowRight, Clock, Flame, MessageSquareText } from 'lucide-react'
+import { AlertCircle, ArrowRight, CalendarClock, Clock, Flame, MessageSquareText } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,8 +24,8 @@ function FocusSkeleton() {
       <CardHeader>
         <Skeleton className="h-5 w-32" />
       </CardHeader>
-      <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
+      <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, index) => (
           <Skeleton key={index} className="h-24 rounded-lg" />
         ))}
       </CardContent>
@@ -89,6 +89,19 @@ export function TodaysFocus() {
         title: lead.name,
         meta: lead.estimatedValue ? `Rs ${lead.estimatedValue.toLocaleString('en-IN')}` : formatEnum(lead.stage),
         link: lead.link,
+        })),
+      },
+    {
+      title: 'Project deadlines',
+      count: focus.counts.dueProjectDeadlines,
+      icon: CalendarClock,
+      tone: 'text-sky-600',
+      empty: 'No project deadlines due soon',
+      items: focus.dueProjectDeadlines.map((project) => ({
+        id: project.id,
+        title: project.name,
+        meta: `${project.client?.companyName ?? 'No client'} · ${formatDate(project.deadline)}`,
+        link: project.link,
       })),
     },
   ]
@@ -106,7 +119,7 @@ export function TodaysFocus() {
         </div>
         <Badge variant={total > 0 ? 'destructive' : 'secondary'}>{total} active</Badge>
       </CardHeader>
-      <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         {lanes.map((lane) => {
           const Icon = lane.icon
 
@@ -142,7 +155,13 @@ export function TodaysFocus() {
 
               {lane.items.length > 3 && (
                 <Link
-                  href={lane.title === 'Overdue tasks' ? '/tasks' : '/leads'}
+                  href={
+                    lane.title === 'Overdue tasks'
+                      ? '/tasks'
+                      : lane.title === 'Project deadlines'
+                        ? '/projects'
+                        : '/leads'
+                  }
                   className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'mt-2 h-8 w-full' })}
                 >
                   View all

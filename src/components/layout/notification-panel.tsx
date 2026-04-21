@@ -19,6 +19,11 @@ const typeConfig: Record<string, { icon: React.ElementType; color: string }> = {
   success: { icon: CheckCircle, color: 'text-emerald-500' },
   payment: { icon: DollarSign, color: 'text-amber-500' },
   task: { icon: CheckCheck, color: 'text-violet-500' },
+  AUTOMATION_MORNING_DIGEST: { icon: Bell, color: 'text-primary' },
+  AUTOMATION_EVENING_SUMMARY: { icon: Bell, color: 'text-sky-600' },
+  LEAD_FOLLOWUP_DUE: { icon: AlertCircle, color: 'text-amber-500' },
+  LEAD_PROPOSAL_STALE: { icon: Info, color: 'text-primary' },
+  PROJECT_DEADLINE_DUE: { icon: AlertCircle, color: 'text-rose-500' },
 }
 
 export function NotificationPanel({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
