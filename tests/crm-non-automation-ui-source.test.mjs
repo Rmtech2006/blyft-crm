@@ -177,3 +177,15 @@ test("finance transaction form links entries to clients and projects", () => {
   assert.match(dialog, /Link to client/);
   assert.match(dialog, /Link to project/);
 });
+
+test("finance transaction edit form renders selected account client and project names", () => {
+  const dialog = read("src/components/finance/add-transaction-dialog.tsx");
+
+  assert.match(dialog, /selectedBankAccountLabel/);
+  assert.match(dialog, /selectedClientLabel/);
+  assert.match(dialog, /selectedProjectLabel/);
+  assert.match(dialog, /bankAccounts\.find\(\(a\) => a\.id === bankAccountId\)/);
+  assert.match(dialog, /selectedBankAccount\.name/);
+  assert.match(dialog, /clients\.find\(\(client\) => client\.id === clientId\)\?\.companyName/);
+  assert.match(dialog, /projects\.find\(\(project\) => project\.id === projectId\)\?\.name/);
+});

@@ -114,6 +114,13 @@ export function AddTransactionDialog({
   const bankAccountId = watch('bankAccountId')
   const clientId = watch('clientId')
   const projectId = watch('projectId')
+  const selectedBankAccount = bankAccounts.find((a) => a.id === bankAccountId)
+  const selectedBankAccountLabel = selectedBankAccount
+    ? `${selectedBankAccount.name} - ${selectedBankAccount.bankName}`
+    : 'No account'
+  const selectedDefaultBankAccountLabel = bankAccounts.find((a) => a.id === defaultBankAccountId)?.name ?? 'Selected account'
+  const selectedClientLabel = clients.find((client) => client.id === clientId)?.companyName ?? 'No client'
+  const selectedProjectLabel = projects.find((project) => project.id === projectId)?.name ?? 'No project'
 
   async function onSubmit(data: FormData) {
     setLoading(true)
@@ -238,26 +245,34 @@ export function AddTransactionDialog({
             <Label>Bank Account (optional)</Label>
             {defaultBankAccountId ? (
               <p className="text-sm text-muted-foreground">
-                {bankAccounts.find((a) => a.id === defaultBankAccountId)?.name ?? 'Selected account'}
+                {selectedDefaultBankAccountLabel}
               </p>
             ) : (
               <Select value={bankAccountId || 'none'} onValueChange={(v) => setValue('bankAccountId', v == null ? '' : v === 'none' ? '' : v)}>
-                <SelectTrigger><SelectValue placeholder="No account" /></SelectTrigger>
+                <SelectTrigger className="w-full min-w-0">
+                  <SelectValue placeholder="No account">
+                    <span className="block truncate">{selectedBankAccountLabel}</span>
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No account</SelectItem>
                   {bankAccounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>{a.name} — {a.bankName}</SelectItem>
+                    <SelectItem key={a.id} value={a.id}>{a.name} - {a.bankName}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1">
               <Label>Link to client</Label>
               <Select value={clientId || 'none'} onValueChange={(v) => setValue('clientId', v == null ? '' : v === 'none' ? '' : v)}>
-                <SelectTrigger><SelectValue placeholder="No client" /></SelectTrigger>
+                <SelectTrigger className="w-full min-w-0">
+                  <SelectValue placeholder="No client">
+                    <span className="block truncate">{selectedClientLabel}</span>
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No client</SelectItem>
                   {clients.map((client) => (
@@ -269,7 +284,11 @@ export function AddTransactionDialog({
             <div className="space-y-1">
               <Label>Link to project</Label>
               <Select value={projectId || 'none'} onValueChange={(v) => setValue('projectId', v == null ? '' : v === 'none' ? '' : v)}>
-                <SelectTrigger><SelectValue placeholder="No project" /></SelectTrigger>
+                <SelectTrigger className="w-full min-w-0">
+                  <SelectValue placeholder="No project">
+                    <span className="block truncate">{selectedProjectLabel}</span>
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No project</SelectItem>
                   {projects.map((project) => (
