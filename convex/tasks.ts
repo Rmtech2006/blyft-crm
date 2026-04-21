@@ -1,11 +1,20 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, type QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { getCurrentUserId, requireIdentity } from "./auth";
 
-const USERS: Record<string, { id: string; name: string; email: string }> = {
-  ritish: { id: "ritish", name: "Ritish", email: "ritish@blyftit.com" },
-  eshaan: { id: "eshaan", name: "Eshaan", email: "eshaan@blyftit.com" },
-};
+async function getAssignee(ctx: QueryCtx, assigneeId?: string) {
+  if (!assigneeId) return null;
+
+  const member = await ctx.db.get(assigneeId as Id<"teamMembers">);
+  if (!member) return null;
+
+  return {
+    id: member._id,
+    name: member.fullName,
+    email: member.email ?? undefined,
+  };
+}
 
 export const list = query({
   args: {},
@@ -14,7 +23,7 @@ export const list = query({
     return await Promise.all(
       tasks.map(async (task) => {
         const project = task.projectId ? await ctx.db.get(task.projectId) : null;
-        const assignee = task.assigneeId ? (USERS[task.assigneeId] ?? null) : null;
+        const assignee = await getAssignee(ctx, task.assigneeId);
         return {
           ...task,
           id: task._id,
@@ -41,11 +50,12 @@ export const get = query({
       .withIndex("by_taskId", (q) => q.eq("taskId", args.id))
       .order("asc")
       .collect();
+    const assignee = await getAssignee(ctx, task.assigneeId);
     return {
       ...task,
       id: task._id,
       project: project ? { id: project._id, name: project.name } : null,
-      assignee: task.assigneeId ? (USERS[task.assigneeId] ?? null) : null,
+      assignee,
       subtasks: subtasks.map((s) => ({ ...s, id: s._id })).sort((a, b) => a.order - b.order),
       comments: comments.map((c) => ({ ...c, id: c._id, createdAt: c._creationTime })),
     };
@@ -121,13 +131,6 @@ export const remove = mutation({
   args: { id: v.id("tasks") },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
-  },
-});
-
-export const listUsers = query({
-  args: {},
-  handler: async () => {
-    return Object.values(USERS);
   },
 });
 

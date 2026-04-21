@@ -14,10 +14,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { EditLeadDialog } from '@/components/leads/edit-lead-dialog'
 import { WhatsappMessagePanel } from '@/components/leads/whatsapp-message-panel'
-import { ArrowLeft, Mail, Pencil, UserCheck } from 'lucide-react'
+import { ArrowLeft, Mail, MessageCircle, Pencil, UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { LEAD_STAGES, STAGE_COLORS, STAGE_TEMPLATE, type LeadStage } from '@/lib/leads'
 import { formatEnum } from '@/lib/utils'
+import { toWhatsappLink } from '@/lib/crm-automation-rules.mjs'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
@@ -101,6 +102,10 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const alreadyConverted = !!lead.convertedClientId
+  const primaryWhatsappLink = toWhatsappLink(
+    lead.whatsapp,
+    `Hi ${lead.contactName || lead.name}, following up from BLYFT regarding ${formatEnum(lead.stage).toLowerCase()}.`
+  )
 
   return (
     <div className="space-y-6">
@@ -120,6 +125,22 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
             <Pencil className="h-4 w-4 mr-1.5" /> Edit
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!primaryWhatsappLink}
+            onClick={() => {
+              if (!primaryWhatsappLink) {
+                toast.error('Add a WhatsApp number to use this action')
+                return
+              }
+
+              window.open(primaryWhatsappLink, '_blank', 'noopener,noreferrer')
+            }}
+          >
+            <MessageCircle className="h-4 w-4 mr-1.5" /> Open WhatsApp
           </Button>
 
           {!alreadyConverted && lead.stage !== 'LOST' && (

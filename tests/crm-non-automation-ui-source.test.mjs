@@ -86,6 +86,19 @@ test("project detail includes a timeline from tasks and milestones", () => {
   assert.match(page, /Task/);
 });
 
+test("project detail supports managing team assignments directly", () => {
+  const page = read("src/app/(dashboard)/projects/[id]/page.tsx");
+  const dialog = read("src/components/projects/manage-project-team-dialog.tsx");
+  const projects = read("convex/projects.ts");
+
+  assert.match(page, /ManageProjectTeamDialog/);
+  assert.match(page, /Assign team/);
+  assert.match(dialog, /api\.projects\.setTeamMembers/);
+  assert.match(dialog, /api\.team\.list/);
+  assert.match(dialog, /Save team/);
+  assert.match(projects, /export const setTeamMembers/);
+});
+
 test("crm guide includes operating routines beyond module descriptions", () => {
   const guide = read("src/components/settings/crm-guide.tsx");
 
@@ -111,4 +124,29 @@ test("settings exposes a dedicated automation center", () => {
   assert.match(automationCenter, /Zero-cost stack/);
   assert.match(automationCenter, /n8n/);
   assert.match(automationCenter, /Project deadline sweep/);
+});
+
+test("lead detail makes WhatsApp actions easy to find", () => {
+  const page = read("src/app/(dashboard)/leads/[id]/page.tsx");
+  const leadsPage = read("src/app/(dashboard)/leads/page.tsx");
+  const panel = read("src/components/leads/whatsapp-message-panel.tsx");
+
+  assert.match(page, /Open WhatsApp/);
+  assert.match(page, /toWhatsappLink/);
+  assert.match(leadsPage, /openLeadWhatsapp/);
+  assert.match(leadsPage, /WhatsApp/);
+  assert.match(leadsPage, /stopPropagation/);
+  assert.match(panel, /WhatsApp follow-up/);
+  assert.match(panel, /Open chat/);
+});
+
+test("task assignment uses the real team directory", () => {
+  const tasks = read("convex/tasks.ts");
+  const addTaskDialog = read("src/components/tasks/add-task-dialog.tsx");
+
+  assert.doesNotMatch(tasks, /const USERS:/);
+  assert.doesNotMatch(tasks, /export const listUsers/);
+  assert.match(tasks, /teamMembers/);
+  assert.match(addTaskDialog, /api\.team\.list/);
+  assert.doesNotMatch(addTaskDialog, /api\.tasks\.listUsers/);
 });

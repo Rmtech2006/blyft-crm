@@ -165,3 +165,35 @@ export const toggleMilestone = mutation({
     await ctx.db.patch(args.id, { completed: args.completed });
   },
 });
+
+export const setTeamMembers = mutation({
+  args: {
+    projectId: v.id("projects"),
+    teamMemberIds: v.array(v.id("teamMembers")),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("projectTeamMembers")
+      .withIndex("by_projectId", (q) => q.eq("projectId", args.projectId))
+      .collect();
+
+    const nextIds = new Set(args.teamMemberIds);
+
+    for (const relation of existing) {
+      if (!nextIds.has(relation.teamMemberId)) {
+        await ctx.db.delete(relation._id);
+      }
+    }
+
+    const currentIds = new Set(existing.map((relation) => relation.teamMemberId));
+
+    for (const teamMemberId of args.teamMemberIds) {
+      if (!currentIds.has(teamMemberId)) {
+        await ctx.db.insert("projectTeamMembers", {
+          projectId: args.projectId,
+          teamMemberId,
+        });
+      }
+    }
+  },
+});

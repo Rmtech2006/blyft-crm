@@ -2,6 +2,7 @@ import type { NextAuthConfig } from 'next-auth'
 
 // Lightweight auth config for Edge middleware - no PrismaAdapter, no DB calls
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   pages: {
     signIn: '/login',
   },

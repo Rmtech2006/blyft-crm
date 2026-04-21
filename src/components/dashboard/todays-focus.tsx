@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { normalizeTodaysFocus } from '@/lib/todays-focus.mjs'
 import { formatEnum } from '@/lib/utils'
 
 function formatDate(value?: number) {
@@ -34,9 +35,11 @@ function FocusSkeleton() {
 }
 
 export function TodaysFocus() {
-  const focus = useQuery(api.automation.getTodaysFocus, {})
+  const rawFocus = useQuery(api.automation.getTodaysFocus, {})
 
-  if (focus === undefined) return <FocusSkeleton />
+  if (rawFocus === undefined) return <FocusSkeleton />
+
+  const focus = normalizeTodaysFocus(rawFocus)
 
   const lanes = [
     {

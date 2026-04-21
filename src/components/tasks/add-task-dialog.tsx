@@ -34,7 +34,7 @@ export function AddTaskDialog() {
   const [loading, setLoading] = useState(false)
 
   const projects = useQuery(api.projects.list) ?? []
-  const users = useQuery(api.tasks.listUsers) ?? []
+  const users = useQuery(api.team.list) ?? []
   const createTask = useMutation(api.tasks.create)
 
   const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<FormData>({
@@ -144,7 +144,9 @@ export function AddTaskDialog() {
                 <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Unassigned</SelectItem>
-                  {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                  {users
+                    .filter((u) => u.status !== 'OFFBOARDED')
+                    .map((u) => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

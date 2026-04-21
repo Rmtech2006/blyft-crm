@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { EditProjectDialog } from '@/components/projects/edit-project-dialog'
+import { ManageProjectTeamDialog } from '@/components/projects/manage-project-team-dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Archive, ArchiveRestore, ArrowLeft, ExternalLink, Calendar, Pencil, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, ArrowLeft, ExternalLink, Calendar, Pencil, Trash2, Users } from 'lucide-react'
 import { toast } from 'sonner'
 
 function formatINR(amount: number) {
@@ -64,6 +65,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [milestoneForm, setMilestoneForm] = useState({ title: '', dueDate: '' })
   const [addingMilestone, setAddingMilestone] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [teamDialogOpen, setTeamDialogOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   if (!project) return <div className="p-8 text-center text-muted-foreground">Loading...</div>
@@ -282,6 +284,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         </TabsContent>
 
         <TabsContent value="team">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Assigned team</p>
+              <p className="text-xs text-muted-foreground">
+                Add or remove people working on this project from here.
+              </p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setTeamDialogOpen(true)}>
+              <Users className="mr-1.5 h-4 w-4" /> Assign team
+            </Button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {(project.teamMembers ?? []).length === 0 && <p className="text-center py-8 text-muted-foreground col-span-2">No team members assigned</p>}
             {(project.teamMembers ?? []).map((ptm) => ptm && (
@@ -300,6 +313,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       </Tabs>
 
       <EditProjectDialog project={project} open={editOpen} onClose={() => setEditOpen(false)} />
+      <ManageProjectTeamDialog
+        projectId={project.id}
+        projectName={project.name}
+        assignedTeamMembers={project.teamMembers ?? []}
+        open={teamDialogOpen}
+        onClose={() => setTeamDialogOpen(false)}
+      />
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

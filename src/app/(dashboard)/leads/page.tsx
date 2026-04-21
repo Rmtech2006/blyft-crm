@@ -13,11 +13,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AddLeadDialog } from '@/components/leads/add-lead-dialog'
-import { Calendar, AlertCircle, Link2, Search, TrendingUp } from 'lucide-react'
+import { Calendar, AlertCircle, Link2, MessageCircle, Search, TrendingUp } from 'lucide-react'
 import { toast } from 'sonner'
 import { exportCsv, printReport } from '@/lib/export'
 import { formatEnum } from '@/lib/utils'
 import { LEAD_STAGES, STAGE_COLORS, TERMINAL_STAGES } from '@/lib/leads'
+import { toWhatsappLink } from '@/lib/crm-automation-rules.mjs'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
@@ -127,6 +128,25 @@ export default function LeadsPage() {
     })
   }
 
+  function openLeadWhatsapp(
+    event: React.MouseEvent,
+    lead: (typeof leadRecords)[number]
+  ) {
+    event.stopPropagation()
+
+    const url = toWhatsappLink(
+      lead.whatsapp,
+      `Hi ${lead.contactName || lead.name}, following up from BLYFT regarding ${formatEnum(lead.stage).toLowerCase()}.`
+    )
+
+    if (!url) {
+      toast.error('Add a WhatsApp number for this lead first')
+      return
+    }
+
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -232,6 +252,15 @@ export default function LeadsPage() {
                                 </span>
                               </div>
                             )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="mt-3 h-8 w-full"
+                              onClick={(event) => openLeadWhatsapp(event, lead)}
+                            >
+                              <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
+                              WhatsApp
+                            </Button>
                           </CardContent>
                         </Card>
                       ))}
@@ -272,6 +301,7 @@ export default function LeadsPage() {
                     <TableHead>Source</TableHead>
                     <TableHead>Est. Value</TableHead>
                     <TableHead>Follow-up</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -288,6 +318,17 @@ export default function LeadsPage() {
                       <TableCell className="text-sm">{lead.estimatedValue ? formatINR(lead.estimatedValue) : '—'}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {lead.followUpDate ? new Date(lead.followUpDate).toLocaleDateString('en-IN') : '—'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8"
+                          onClick={(event) => openLeadWhatsapp(event, lead)}
+                        >
+                          <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
+                          WhatsApp
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
