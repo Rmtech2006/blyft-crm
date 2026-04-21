@@ -26,6 +26,8 @@ const schema = z.object({
   date: z.string().min(1, 'Date is required'),
   paymentMode: z.enum(['CASH', 'UPI', 'BANK_TRANSFER', 'CHEQUE', 'CARD', 'OTHER']),
   bankAccountId: z.string().optional(),
+  clientId: z.string().optional(),
+  projectId: z.string().optional(),
   gstTagged: z.boolean(),
   gstAmount: z.string().optional(),
 })
@@ -42,6 +44,8 @@ type EditableTransaction = {
   date: number
   paymentMode: FormData['paymentMode']
   bankAccountId?: string
+  clientId?: string
+  projectId?: string
   gstTagged?: boolean
   gstAmount?: number
 }
@@ -66,6 +70,8 @@ export function AddTransactionDialog({
   const isEditing = Boolean(transaction)
 
   const bankAccounts = useQuery(api.finance.listBankAccounts) ?? []
+  const clients = useQuery(api.clients.list) ?? []
+  const projects = useQuery(api.projects.list) ?? []
   const createTransaction = useMutation(api.finance.createTransaction)
   const updateTransaction = useMutation(api.finance.updateTransaction)
 
@@ -76,6 +82,8 @@ export function AddTransactionDialog({
       paymentMode: 'UPI',
       gstTagged: false,
       bankAccountId: defaultBankAccountId ?? '',
+      clientId: '',
+      projectId: '',
       date: new Date().toISOString().split('T')[0],
       notes: '',
     },
@@ -89,6 +97,8 @@ export function AddTransactionDialog({
       paymentMode: transaction?.paymentMode ?? 'UPI',
       gstTagged: transaction?.gstTagged ?? false,
       bankAccountId: transaction?.bankAccountId ?? defaultBankAccountId ?? '',
+      clientId: transaction?.clientId ?? '',
+      projectId: transaction?.projectId ?? '',
       date: transaction ? toDateInput(transaction.date) : new Date().toISOString().split('T')[0],
       amount: transaction ? String(transaction.amount) : '',
       category: transaction?.category ?? '',
@@ -102,6 +112,8 @@ export function AddTransactionDialog({
   const type = watch('type')
   const paymentMode = watch('paymentMode')
   const bankAccountId = watch('bankAccountId')
+  const clientId = watch('clientId')
+  const projectId = watch('projectId')
 
   async function onSubmit(data: FormData) {
     setLoading(true)
@@ -115,6 +127,8 @@ export function AddTransactionDialog({
         date: new Date(data.date).getTime(),
         paymentMode: data.paymentMode,
         bankAccountId: (data.bankAccountId || undefined) as Id<'bankAccounts'> | undefined,
+        clientId: (data.clientId || undefined) as Id<'clients'> | undefined,
+        projectId: (data.projectId || undefined) as Id<'projects'> | undefined,
         gstTagged: data.gstTagged,
         gstAmount: data.gstAmount ? parseFloat(data.gstAmount) : undefined,
       }
@@ -134,6 +148,8 @@ export function AddTransactionDialog({
         paymentMode: 'UPI',
         gstTagged: false,
         bankAccountId: defaultBankAccountId ?? '',
+        clientId: '',
+        projectId: '',
         date: new Date().toISOString().split('T')[0],
         amount: '',
         category: '',
@@ -162,7 +178,7 @@ export function AddTransactionDialog({
       >
         {isEditing ? <Pencil className="h-3.5 w-3.5" /> : <><Plus className="h-4 w-4 mr-1" /> {triggerLabel}</>}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader><DialogTitle>{isEditing ? 'Edit Transaction' : 'Record Transaction'}</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -235,6 +251,33 @@ export function AddTransactionDialog({
                 </SelectContent>
               </Select>
             )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label>Link to client</Label>
+              <Select value={clientId || 'none'} onValueChange={(v) => setValue('clientId', v == null ? '' : v === 'none' ? '' : v)}>
+                <SelectTrigger><SelectValue placeholder="No client" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No client</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>{client.companyName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Link to project</Label>
+              <Select value={projectId || 'none'} onValueChange={(v) => setValue('projectId', v == null ? '' : v === 'none' ? '' : v)}>
+                <SelectTrigger><SelectValue placeholder="No project" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No project</SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">

@@ -793,10 +793,20 @@ function ProjectCard({
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
-          <span className="inline-flex items-center gap-1 pl-1 font-medium text-foreground">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1 px-2 font-medium text-foreground"
+            aria-label={`Open ${project.name}`}
+            onClick={(event) => {
+              event.stopPropagation()
+              onOpen()
+            }}
+          >
             Open
             <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-          </span>
+          </Button>
         </div>
       </div>
     </article>
@@ -832,7 +842,20 @@ function BoardProjectCard({
             <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">{project.name}</p>
             <p className="mt-1 truncate text-xs text-muted-foreground">{project.client.companyName}</p>
           </div>
-          <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1 px-2"
+            aria-label={`Open ${project.name}`}
+            onClick={(event) => {
+              event.stopPropagation()
+              onOpen()
+            }}
+          >
+            Open
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Button>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">

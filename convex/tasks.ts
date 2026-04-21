@@ -1,12 +1,14 @@
 import { query, mutation, type QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
 import { getCurrentUserId, requireIdentity } from "./auth";
 
 async function getAssignee(ctx: QueryCtx, assigneeId?: string) {
   if (!assigneeId) return null;
 
-  const member = await ctx.db.get(assigneeId as Id<"teamMembers">);
+  const teamMemberId = ctx.db.normalizeId("teamMembers", assigneeId);
+  if (!teamMemberId) return null;
+
+  const member = await ctx.db.get(teamMemberId);
   if (!member) return null;
 
   return {

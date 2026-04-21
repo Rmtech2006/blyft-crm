@@ -64,6 +64,13 @@ test("projects page exposes quick edit, archive, restore, delete, and stronger f
   assert.match(page, /Project deleted/);
 });
 
+test("projects page has explicit open buttons for project cards", () => {
+  const page = read("src/app/(dashboard)/projects/page.tsx");
+
+  assert.match(page, /aria-label=\{`Open \$\{project\.name\}`\}/);
+  assert.match(page, /event\.stopPropagation\(\)[\s\S]*onOpen\(\)/);
+});
+
 test("project detail exposes safe archive restore and delete controls", () => {
   const page = read("src/app/(dashboard)/projects/[id]/page.tsx");
 
@@ -149,4 +156,24 @@ test("task assignment uses the real team directory", () => {
   assert.match(tasks, /teamMembers/);
   assert.match(addTaskDialog, /api\.team\.list/);
   assert.doesNotMatch(addTaskDialog, /api\.tasks\.listUsers/);
+});
+
+test("tasks list tolerates legacy assignee strings", () => {
+  const tasks = read("convex/tasks.ts");
+
+  assert.match(tasks, /normalizeId\("teamMembers", assigneeId\)/);
+});
+
+test("finance transaction form links entries to clients and projects", () => {
+  const dialog = read("src/components/finance/add-transaction-dialog.tsx");
+  const finance = read("convex/finance.ts");
+
+  assert.match(finance, /clientId: v\.optional\(v\.id\("clients"\)\)/);
+  assert.match(finance, /projectId: v\.optional\(v\.id\("projects"\)\)/);
+  assert.match(dialog, /api\.clients\.list/);
+  assert.match(dialog, /api\.projects\.list/);
+  assert.match(dialog, /clientId:/);
+  assert.match(dialog, /projectId:/);
+  assert.match(dialog, /Link to client/);
+  assert.match(dialog, /Link to project/);
 });
