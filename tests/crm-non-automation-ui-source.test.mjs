@@ -189,3 +189,16 @@ test("finance transaction edit form renders selected account client and project 
   assert.match(dialog, /clients\.find\(\(client\) => client\.id === clientId\)\?\.companyName/);
   assert.match(dialog, /projects\.find\(\(project\) => project\.id === projectId\)\?\.name/);
 });
+
+test("client contact cards expose an edit dialog backed by Convex updateContact", () => {
+  const page = read("src/app/(dashboard)/clients/[id]/page.tsx");
+  const dialog = read("src/components/clients/edit-client-contact-dialog.tsx");
+  const clients = read("convex/clients.ts");
+
+  assert.match(clients, /export const updateContact/);
+  assert.match(clients, /id: v\.id\("clientContacts"\)/);
+  assert.match(dialog, /export function EditClientContactDialog/);
+  assert.match(dialog, /api\.clients\.updateContact/);
+  assert.match(dialog, /Contact updated/);
+  assert.match(page, /EditClientContactDialog/);
+});

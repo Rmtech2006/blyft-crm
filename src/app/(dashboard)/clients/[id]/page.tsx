@@ -11,10 +11,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowLeft, Phone, Mail, CheckCircle2, Circle, Trash2 } from 'lucide-react'
+import { ArrowLeft, Phone, Mail, CheckCircle2, Circle, Trash2, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { ComposeEmailDialog } from '@/components/clients/compose-email-dialog'
 import { EditClientDialog } from '@/components/clients/edit-client-dialog'
+import { EditClientContactDialog } from '@/components/clients/edit-client-contact-dialog'
 import { ONBOARDING_TEMPLATE } from '@/lib/leads'
 
 function formatINR(amount: number) {
@@ -264,6 +265,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                     </div>
                     <div className="flex items-center gap-2">
                       {c.isPrimary && <Badge className="text-xs border-0">Primary</Badge>}
+                      <EditClientContactDialog
+                        contact={c}
+                        trigger={
+                          <Button size="icon" variant="ghost" className="h-7 w-7" aria-label={`Edit ${c.name}`}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        }
+                      />
                       {c.email && (
                         <ComposeEmailDialog
                           contacts={client.contacts ?? []}

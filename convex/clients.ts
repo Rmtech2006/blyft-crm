@@ -164,6 +164,21 @@ export const addContact = mutation({
   },
 });
 
+export const updateContact = mutation({
+  args: {
+    id: v.id("clientContacts"),
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+    whatsapp: v.optional(v.string()),
+    designation: v.optional(v.string()),
+    isPrimary: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...rest } = args;
+    await ctx.db.patch(id, rest);
+  },
+});
+
 export const addNote = mutation({
   args: {
     clientId: v.id("clients"),
