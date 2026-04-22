@@ -9,12 +9,14 @@ import {
   CreditCard,
   Download,
   FileWarning,
+  Pencil,
   Receipt,
   ShieldCheck,
   WalletCards,
   XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { EditReimbursementDialog } from '@/components/reimbursements/edit-reimbursement-dialog'
 import { SubmitReimbursementDialog } from '@/components/reimbursements/submit-reimbursement-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -27,12 +29,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn, formatEnum } from '@/lib/utils'
 
 type ReimbursementStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED'
+type ReimbursementCategory = 'TRAVEL' | 'FOOD_ENTERTAINMENT' | 'TOOLS_SOFTWARE' | 'OFFICE_SUPPLIES' | 'AD_SPEND' | 'MISCELLANEOUS'
 
 type ReimbursementItem = {
   id: string
   date: number
   amount: number
-  category: string
+  category: ReimbursementCategory
   description: string
   status: ReimbursementStatus
   receiptUrl?: string
@@ -291,8 +294,22 @@ export default function ReimbursementsPage() {
                   <Badge className={cn('rounded-md border text-xs', statusMeta[item.status].badge)}>{statusMeta[item.status].label}</Badge>
                 </TableCell>
                 <TableCell>
-                  {item.status === 'PENDING' && (
-                    <div className="flex gap-1">
+                  <div className="flex gap-1">
+                    <EditReimbursementDialog
+                      reimbursement={item}
+                      trigger={
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 rounded-lg text-muted-foreground"
+                          aria-label={`Edit reimbursement ${item.description}`}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      }
+                    />
+                    {item.status === 'PENDING' && (
+                      <>
                       <Button
                         size="icon"
                         variant="ghost"
@@ -311,8 +328,9 @@ export default function ReimbursementsPage() {
                       >
                         <XCircle className="h-4 w-4" />
                       </Button>
-                    </div>
-                  )}
+                      </>
+                    )}
+                  </div>
                   {item.status === 'APPROVED' && (
                     <Button
                       size="sm"

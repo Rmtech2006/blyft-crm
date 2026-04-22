@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 import { ComposeEmailDialog } from '@/components/clients/compose-email-dialog'
 import { EditClientDialog } from '@/components/clients/edit-client-dialog'
 import { EditClientContactDialog } from '@/components/clients/edit-client-contact-dialog'
+import { EditTextDialog } from '@/components/shared/edit-text-dialog'
 import { ONBOARDING_TEMPLATE } from '@/lib/leads'
 
 function formatINR(amount: number) {
@@ -47,6 +48,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const updateClient = useMutation(api.clients.update)
   const removeClient = useMutation(api.clients.remove)
   const addNote = useMutation(api.clients.addNote)
+  const updateNote = useMutation(api.clients.updateNote)
+  const removeNote = useMutation(api.clients.removeNote)
   const addContact = useMutation(api.clients.addContact)
   const [noteContent, setNoteContent] = useState('')
   const [contactForm, setContactForm] = useState({ name: '', email: '', whatsapp: '', designation: '' })
@@ -92,6 +95,16 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       router.push('/clients')
     } catch {
       toast.error('Failed to delete client')
+    }
+  }
+
+  async function handleRemoveNote(noteId: string) {
+    if (!confirm('Delete this note?')) return
+    try {
+      await removeNote({ id: noteId as Id<'clientNotes'> })
+      toast.success('Note deleted')
+    } catch {
+      toast.error('Failed to delete note')
     }
   }
 
@@ -326,6 +339,25 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <Card key={n.id}>
                 <CardContent className="p-4">
                   <p className="text-sm whitespace-pre-wrap">{n.content}</p>
+                  <div className="mt-3 flex justify-end gap-1">
+                    <EditTextDialog
+                      title="Edit Note"
+                      label="Note"
+                      value={n.content}
+                      successMessage="Note updated"
+                      onSave={async (value) => {
+                        await updateNote({ id: n.id as Id<'clientNotes'>, content: value })
+                      }}
+                      trigger={
+                        <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Edit note">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      }
+                    />
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveNote(n.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                   <p className="text-xs text-muted-foreground mt-2">{n.createdBy} · {new Date(n.createdAt).toLocaleDateString('en-IN')}</p>
                 </CardContent>
               </Card>

@@ -65,6 +65,26 @@ export const create = mutation({
   },
 });
 
+export const update = mutation({
+  args: {
+    id: v.id("reimbursements"),
+    category: v.union(
+      v.literal("TRAVEL"), v.literal("FOOD_ENTERTAINMENT"), v.literal("TOOLS_SOFTWARE"),
+      v.literal("OFFICE_SUPPLIES"), v.literal("AD_SPEND"), v.literal("MISCELLANEOUS")
+    ),
+    amount: v.number(),
+    description: v.string(),
+    date: v.number(),
+    receiptUrl: v.optional(v.string()),
+    receiptStorageId: v.optional(v.string()),
+    teamMemberId: v.optional(v.id("teamMembers")),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...rest } = args;
+    await ctx.db.patch(id, rest);
+  },
+});
+
 export const updateStatus = mutation({
   args: {
     id: v.id("reimbursements"),

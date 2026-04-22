@@ -14,11 +14,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { EditLeadDialog } from '@/components/leads/edit-lead-dialog'
 import { WhatsappMessagePanel } from '@/components/leads/whatsapp-message-panel'
-import { ArrowLeft, Mail, MessageCircle, Pencil, UserCheck } from 'lucide-react'
+import { ArrowLeft, Mail, MessageCircle, Pencil, Trash2, UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { LEAD_STAGES, STAGE_COLORS, STAGE_TEMPLATE, type LeadStage } from '@/lib/leads'
 import { formatEnum } from '@/lib/utils'
 import { toWhatsappLink } from '@/lib/crm-automation-rules.mjs'
+import { EditTextDialog } from '@/components/shared/edit-text-dialog'
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
@@ -34,7 +35,11 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const templates = useQuery(api.templates.list)
   const updateLead = useMutation(api.leads.update)
   const addNote = useMutation(api.leads.addNote)
+  const updateNote = useMutation(api.leads.updateNote)
+  const removeNote = useMutation(api.leads.removeNote)
   const addCallLog = useMutation(api.leads.addCallLog)
+  const updateCallLog = useMutation(api.leads.updateCallLog)
+  const removeCallLog = useMutation(api.leads.removeCallLog)
   const convertToClient = useMutation(api.leads.convertToClient)
 
   const [noteContent, setNoteContent] = useState('')
@@ -98,6 +103,26 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
       toast.error(e instanceof Error ? e.message : 'Failed to convert')
     } finally {
       setConverting(false)
+    }
+  }
+
+  async function handleRemoveNote(noteId: string) {
+    if (!confirm('Delete this note?')) return
+    try {
+      await removeNote({ id: noteId as Id<'leadNotes'> })
+      toast.success('Note deleted')
+    } catch {
+      toast.error('Failed to delete note')
+    }
+  }
+
+  async function handleRemoveCallLog(callLogId: string) {
+    if (!confirm('Delete this call log?')) return
+    try {
+      await removeCallLog({ id: callLogId as Id<'leadCallLogs'> })
+      toast.success('Call log deleted')
+    } catch {
+      toast.error('Failed to delete call log')
     }
   }
 
@@ -265,6 +290,25 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               <Card key={n.id}>
                 <CardContent className="p-4">
                   <p className="text-sm whitespace-pre-wrap">{n.content}</p>
+                  <div className="mt-3 flex justify-end gap-1">
+                    <EditTextDialog
+                      title="Edit Note"
+                      label="Note"
+                      value={n.content}
+                      successMessage="Note updated"
+                      onSave={async (value) => {
+                        await updateNote({ id: n.id as Id<'leadNotes'>, content: value })
+                      }}
+                      trigger={
+                        <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Edit note">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      }
+                    />
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveNote(n.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                   <p className="text-xs text-muted-foreground mt-2">{new Date(n.createdAt).toLocaleDateString('en-IN')}</p>
                 </CardContent>
               </Card>
@@ -286,6 +330,29 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               <Card key={c.id}>
                 <CardContent className="p-4">
                   <p className="text-sm whitespace-pre-wrap">{c.summary}</p>
+                  <div className="mt-3 flex justify-end gap-1">
+                    <EditTextDialog
+                      title="Edit Call Log"
+                      label="Call summary"
+                      value={c.summary}
+                      successMessage="Call log updated"
+                      onSave={async (value) => {
+                        await updateCallLog({
+                          id: c.id as Id<'leadCallLogs'>,
+                          summary: value,
+                          callDate: c.callDate,
+                        })
+                      }}
+                      trigger={
+                        <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Edit call log">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      }
+                    />
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveCallLog(c.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                   <p className="text-xs text-muted-foreground mt-2">{new Date(c.callDate).toLocaleDateString('en-IN')}</p>
                 </CardContent>
               </Card>

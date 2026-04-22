@@ -13,10 +13,12 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, Plus, Trash2, Send, Calendar, User, FolderKanban, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Send, Calendar, User, FolderKanban, RefreshCw, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatEnum } from '@/lib/utils'
 import { formatDistanceToNow } from 'date-fns'
+import { EditTaskDialog } from '@/components/tasks/edit-task-dialog'
+import { EditTextDialog } from '@/components/shared/edit-text-dialog'
 
 type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED'
 
@@ -44,8 +46,10 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const updateStatus = useMutation(api.tasks.updateStatus)
   const addSubtask = useMutation(api.tasks.addSubtask)
   const toggleSubtask = useMutation(api.tasks.toggleSubtask)
+  const updateSubtask = useMutation(api.tasks.updateSubtask)
   const removeSubtask = useMutation(api.tasks.removeSubtask)
   const addComment = useMutation(api.tasks.addComment)
+  const updateComment = useMutation(api.tasks.updateComment)
   const removeComment = useMutation(api.tasks.removeComment)
 
   const [newSubtask, setNewSubtask] = useState('')
@@ -115,6 +119,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
             ))}
           </SelectContent>
         </Select>
+        <EditTaskDialog task={task} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -160,6 +165,24 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                   <span className={`flex-1 text-sm ${s.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                     {s.title}
                   </span>
+                  <EditTextDialog
+                    title="Edit Subtask"
+                    label="Subtask"
+                    value={s.title}
+                    successMessage="Subtask updated"
+                    onSave={async (value) => {
+                      await updateSubtask({ id: s.id as Id<'subtasks'>, title: value })
+                    }}
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    }
+                  />
                   <Button
                     variant="ghost"
                     size="icon"
@@ -213,6 +236,24 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                     </div>
                     <p className="text-sm text-foreground/90 mt-0.5 leading-snug">{c.content}</p>
                   </div>
+                  <EditTextDialog
+                    title="Edit Comment"
+                    label="Comment"
+                    value={c.content}
+                    successMessage="Comment updated"
+                    onSave={async (value) => {
+                      await updateComment({ id: c.id as Id<'taskComments'>, content: value })
+                    }}
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground shrink-0"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    }
+                  />
                   <Button
                     variant="ghost"
                     size="icon"

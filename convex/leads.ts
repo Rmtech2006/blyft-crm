@@ -215,6 +215,20 @@ export const addNote = mutation({
   },
 });
 
+export const updateNote = mutation({
+  args: { id: v.id("leadNotes"), content: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, { content: args.content });
+  },
+});
+
+export const removeNote = mutation({
+  args: { id: v.id("leadNotes") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});
+
 export const addCallLog = mutation({
   args: { leadId: v.id("leads"), summary: v.string(), callDate: v.number() },
   handler: async (ctx, args) => {
@@ -223,6 +237,23 @@ export const addCallLog = mutation({
       summary: args.summary,
       callDate: args.callDate,
     });
+  },
+});
+
+export const updateCallLog = mutation({
+  args: { id: v.id("leadCallLogs"), summary: v.string(), callDate: v.number() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      summary: args.summary,
+      callDate: args.callDate,
+    });
+  },
+});
+
+export const removeCallLog = mutation({
+  args: { id: v.id("leadCallLogs") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
   },
 });
 

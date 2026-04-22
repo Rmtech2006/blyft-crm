@@ -15,6 +15,7 @@ import {
   Flag,
   ListChecks,
   ListFilter,
+  Pencil,
   Search,
   ShieldAlert,
   Trash2,
@@ -23,6 +24,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AddTaskDialog } from '@/components/tasks/add-task-dialog'
+import { EditTaskDialog } from '@/components/tasks/edit-task-dialog'
 import { ExportMenu } from '@/components/shared/export-menu'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -52,9 +54,13 @@ type TaskPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
 type TaskItem = {
   id: string
   title: string
+  description?: string | null
   status: TaskStatus
   priority: TaskPriority
   dueDate?: number | null
+  recurringType?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'NONE' | null
+  projectId?: string | null
+  assigneeId?: string | null
   assignee?: { name: string } | null
   project?: { name: string } | null
 }
@@ -592,14 +598,24 @@ export default function TasksPage() {
                         {task.project?.name ?? '-'}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive"
-                          onClick={() => setTaskToDelete(task.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <EditTaskDialog
+                            task={task}
+                            trigger={
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground" aria-label={`Edit ${task.title}`}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            }
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive"
+                            onClick={() => setTaskToDelete(task.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -704,14 +720,29 @@ function MissionTaskCard({ task, onDelete }: { task: TaskItem; onDelete: () => v
               {task.title}
             </h3>
           </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0 rounded-lg text-muted-foreground opacity-70 transition-opacity hover:text-destructive group-hover:opacity-100"
-            onClick={onDelete}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          <div className="flex shrink-0 gap-1">
+            <EditTaskDialog
+              task={task}
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg text-muted-foreground opacity-70 transition-opacity group-hover:opacity-100"
+                  aria-label={`Edit ${task.title}`}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              }
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-lg text-muted-foreground opacity-70 transition-opacity hover:text-destructive group-hover:opacity-100"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">

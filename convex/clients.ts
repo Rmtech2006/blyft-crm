@@ -193,3 +193,17 @@ export const addNote = mutation({
     });
   },
 });
+
+export const updateNote = mutation({
+  args: { id: v.id("clientNotes"), content: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, { content: args.content });
+  },
+});
+
+export const removeNote = mutation({
+  args: { id: v.id("clientNotes") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});

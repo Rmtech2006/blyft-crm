@@ -121,6 +121,11 @@ export const update = mutation({
       v.literal("CRITICAL"), v.literal("HIGH"), v.literal("MEDIUM"), v.literal("LOW")
     )),
     dueDate: v.optional(v.number()),
+    dueTime: v.optional(v.string()),
+    recurringType: v.optional(v.union(
+      v.literal("DAILY"), v.literal("WEEKLY"), v.literal("MONTHLY"), v.literal("NONE")
+    )),
+    projectId: v.optional(v.id("projects")),
     assigneeId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -161,6 +166,13 @@ export const toggleSubtask = mutation({
   },
 });
 
+export const updateSubtask = mutation({
+  args: { id: v.id("subtasks"), title: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, { title: args.title });
+  },
+});
+
 export const removeSubtask = mutation({
   args: { id: v.id("subtasks") },
   handler: async (ctx, args) => {
@@ -183,6 +195,13 @@ export const addComment = mutation({
       authorId: identity.subject,
       authorName: identity.name ?? identity.email ?? "User",
     });
+  },
+});
+
+export const updateComment = mutation({
+  args: { id: v.id("taskComments"), content: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, { content: args.content });
   },
 });
 

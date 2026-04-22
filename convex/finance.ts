@@ -228,6 +228,25 @@ export const updateBankAccountBalance = mutation({
   },
 });
 
+export const updateBankAccount = mutation({
+  args: {
+    id: v.id("bankAccounts"),
+    name: v.string(),
+    bankName: v.string(),
+    accountNumber: v.optional(v.string()),
+    balance: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      name: args.name,
+      bankName: args.bankName,
+      accountNumber: args.accountNumber ?? "",
+      balance: args.balance,
+      lastUpdated: Date.now(),
+    });
+  },
+});
+
 export const removeBankAccount = mutation({
   args: { id: v.id("bankAccounts") },
   handler: async (ctx, args) => {
@@ -323,6 +342,26 @@ export const addPettyCash = mutation({
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("pettyCash", args);
+  },
+});
+
+export const updatePettyCash = mutation({
+  args: {
+    id: v.id("pettyCash"),
+    description: v.string(),
+    amount: v.number(),
+    type: v.union(v.literal("IN"), v.literal("OUT")),
+    date: v.number(),
+    category: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      description: args.description,
+      amount: args.amount,
+      type: args.type,
+      date: args.date,
+      category: args.category,
+    });
   },
 });
 

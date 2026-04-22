@@ -202,3 +202,68 @@ test("client contact cards expose an edit dialog backed by Convex updateContact"
   assert.match(dialog, /Contact updated/);
   assert.match(page, /EditClientContactDialog/);
 });
+
+test("tasks expose edit dialogs for task details, subtasks, and comments", () => {
+  const listPage = read("src/app/(dashboard)/tasks/page.tsx");
+  const detailPage = read("src/app/(dashboard)/tasks/[id]/page.tsx");
+  const taskDialog = read("src/components/tasks/edit-task-dialog.tsx");
+  const inlineDialog = read("src/components/shared/edit-text-dialog.tsx");
+  const tasks = read("convex/tasks.ts");
+
+  assert.match(tasks, /export const updateSubtask/);
+  assert.match(tasks, /export const updateComment/);
+  assert.match(taskDialog, /api\.tasks\.update/);
+  assert.match(taskDialog, /Task updated/);
+  assert.match(inlineDialog, /export function EditTextDialog/);
+  assert.match(detailPage, /EditTaskDialog/);
+  assert.match(detailPage, /EditTextDialog/);
+  assert.match(listPage, /EditTaskDialog/);
+});
+
+test("project milestones can be edited and deleted from project detail", () => {
+  const page = read("src/app/(dashboard)/projects/[id]/page.tsx");
+  const dialog = read("src/components/projects/edit-milestone-dialog.tsx");
+  const projects = read("convex/projects.ts");
+
+  assert.match(projects, /export const updateMilestone/);
+  assert.match(projects, /export const removeMilestone/);
+  assert.match(dialog, /api\.projects\.updateMilestone/);
+  assert.match(dialog, /Milestone updated/);
+  assert.match(page, /EditMilestoneDialog/);
+  assert.match(page, /removeMilestone/);
+});
+
+test("client and lead notes plus lead call logs expose edit and delete actions", () => {
+  const clientPage = read("src/app/(dashboard)/clients/[id]/page.tsx");
+  const leadPage = read("src/app/(dashboard)/leads/[id]/page.tsx");
+  const clients = read("convex/clients.ts");
+  const leads = read("convex/leads.ts");
+
+  assert.match(clients, /export const updateNote/);
+  assert.match(clients, /export const removeNote/);
+  assert.match(leads, /export const updateNote/);
+  assert.match(leads, /export const removeNote/);
+  assert.match(leads, /export const updateCallLog/);
+  assert.match(leads, /export const removeCallLog/);
+  assert.match(clientPage, /EditTextDialog/);
+  assert.match(clientPage, /removeNote/);
+  assert.match(leadPage, /EditTextDialog/);
+  assert.match(leadPage, /removeCallLog/);
+});
+
+test("reimbursements, petty cash, and bank accounts expose edit options", () => {
+  const reimbursementsPage = read("src/app/(dashboard)/reimbursements/page.tsx");
+  const financePage = read("src/app/(dashboard)/finance/page.tsx");
+  const reimbursementDialog = read("src/components/reimbursements/edit-reimbursement-dialog.tsx");
+  const finance = read("convex/finance.ts");
+  const reimbursements = read("convex/reimbursements.ts");
+
+  assert.match(reimbursements, /export const update/);
+  assert.match(reimbursementDialog, /api\.reimbursements\.update/);
+  assert.match(reimbursementDialog, /Reimbursement updated/);
+  assert.match(reimbursementsPage, /EditReimbursementDialog/);
+  assert.match(finance, /export const updateBankAccount/);
+  assert.match(finance, /export const updatePettyCash/);
+  assert.match(financePage, /EditBankAccountDialog/);
+  assert.match(financePage, /EditPettyCashDialog/);
+});

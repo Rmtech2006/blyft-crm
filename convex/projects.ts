@@ -166,6 +166,27 @@ export const toggleMilestone = mutation({
   },
 });
 
+export const updateMilestone = mutation({
+  args: {
+    id: v.id("milestones"),
+    title: v.string(),
+    dueDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      title: args.title,
+      dueDate: args.dueDate,
+    });
+  },
+});
+
+export const removeMilestone = mutation({
+  args: { id: v.id("milestones") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});
+
 export const setTeamMembers = mutation({
   args: {
     projectId: v.id("projects"),

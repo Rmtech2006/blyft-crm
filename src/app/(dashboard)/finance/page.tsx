@@ -100,6 +100,8 @@ function AddBankAccountDialog() {
 }
 
 // ── Edit Balance Dialog ───────────────────────────────────────────────────────
+// Kept as a lightweight balance-only editor if the full account form needs to be split again.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function EditBalanceDialog({ account }: { account: { id: string; name: string; balance: number } }) {
   const [open, setOpen] = useState(false)
   const [balance, setBalance] = useState(String(account.balance))
@@ -136,6 +138,201 @@ function EditBalanceDialog({ account }: { account: { id: string; name: string; b
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={loading}>{loading ? 'Saving…' : 'Save'}</Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function EditBankAccountDialog({
+  account,
+  trigger,
+}: {
+  account: { id: string; name: string; bankName: string; accountNumber?: string; balance: number }
+  trigger?: React.ReactElement
+}) {
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState({
+    name: account.name,
+    bankName: account.bankName,
+    accountNumber: account.accountNumber ?? '',
+    balance: String(account.balance),
+  })
+  const updateBankAccount = useMutation(api.finance.updateBankAccount)
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    if (!form.name.trim() || !form.bankName.trim()) {
+      toast.error('Account name and bank name are required')
+      return
+    }
+    setLoading(true)
+    try {
+      await updateBankAccount({
+        id: account.id as Id<'bankAccounts'>,
+        name: form.name.trim(),
+        bankName: form.bankName.trim(),
+        accountNumber: form.accountNumber.trim() || undefined,
+        balance: parseFloat(form.balance || '0'),
+      })
+      toast.success('Bank account updated')
+      setOpen(false)
+    } catch {
+      toast.error('Failed to update bank account')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(nextOpen) => {
+      setOpen(nextOpen)
+      if (nextOpen) {
+        setForm({
+          name: account.name,
+          bankName: account.bankName,
+          accountNumber: account.accountNumber ?? '',
+          balance: String(account.balance),
+        })
+      }
+    }}>
+      {trigger ? (
+        <DialogTrigger render={trigger} />
+      ) : (
+        <DialogTrigger render={<Button variant="ghost" size="icon" className="h-7 w-7" title="Edit account" />}>
+          <Pencil className="h-3.5 w-3.5" />
+        </DialogTrigger>
+      )}
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader><DialogTitle>Edit Bank Account</DialogTitle></DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <Label>Account Label</Label>
+            <Input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+          </div>
+          <div className="space-y-1">
+            <Label>Bank Name</Label>
+            <Input value={form.bankName} onChange={(event) => setForm((current) => ({ ...current, bankName: event.target.value }))} />
+          </div>
+          <div className="space-y-1">
+            <Label>Account Number</Label>
+            <Input value={form.accountNumber} onChange={(event) => setForm((current) => ({ ...current, accountNumber: event.target.value }))} />
+          </div>
+          <div className="space-y-1">
+            <Label>Balance</Label>
+            <Input type="number" step="0.01" value={form.balance} onChange={(event) => setForm((current) => ({ ...current, balance: event.target.value }))} />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function EditPettyCashDialog({
+  entry,
+  trigger,
+}: {
+  entry: { id: string; description: string; amount: number; type: 'IN' | 'OUT'; date: number; category: string }
+  trigger?: React.ReactElement
+}) {
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState({
+    description: entry.description,
+    amount: String(entry.amount),
+    type: entry.type,
+    category: entry.category,
+    date: new Date(entry.date).toISOString().slice(0, 10),
+  })
+  const updatePettyCash = useMutation(api.finance.updatePettyCash)
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    if (!form.description.trim() || !form.amount || !form.category.trim()) {
+      toast.error('Fill all fields')
+      return
+    }
+    setLoading(true)
+    try {
+      await updatePettyCash({
+        id: entry.id as Id<'pettyCash'>,
+        description: form.description.trim(),
+        amount: parseFloat(form.amount),
+        type: form.type,
+        category: form.category.trim(),
+        date: new Date(form.date).getTime(),
+      })
+      toast.success('Petty cash entry updated')
+      setOpen(false)
+    } catch {
+      toast.error('Failed to update petty cash entry')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(nextOpen) => {
+      setOpen(nextOpen)
+      if (nextOpen) {
+        setForm({
+          description: entry.description,
+          amount: String(entry.amount),
+          type: entry.type,
+          category: entry.category,
+          date: new Date(entry.date).toISOString().slice(0, 10),
+        })
+      }
+    }}>
+      {trigger ? (
+        <DialogTrigger render={trigger} />
+      ) : (
+        <DialogTrigger render={<Button variant="ghost" size="icon" className="h-7 w-7" title="Edit petty cash entry" />}>
+          <Pencil className="h-3.5 w-3.5" />
+        </DialogTrigger>
+      )}
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader><DialogTitle>Edit Petty Cash Entry</DialogTitle></DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label>Type</Label>
+              <Select value={form.type} onValueChange={(value) => setForm((current) => ({ ...current, type: value as 'IN' | 'OUT' }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="IN">Cash In</SelectItem>
+                  <SelectItem value="OUT">Cash Out</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Date</Label>
+              <Input type="date" value={form.date} onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))} />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Description</Label>
+            <Input value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label>Amount</Label>
+              <Input type="number" step="1" value={form.amount} onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Category</Label>
+              <Input value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))} />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
           </div>
         </form>
       </DialogContent>
@@ -417,9 +614,12 @@ function PettyCashTab() {
                 <TableCell className="text-right font-medium text-emerald-500">{e.type === 'IN' ? formatINR(e.amount) : '—'}</TableCell>
                 <TableCell className="text-right font-medium text-destructive">{e.type === 'OUT' ? formatINR(e.amount) : '—'}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500" onClick={() => removeEntry({ id: e.id as Id<'pettyCash'> })}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex justify-end gap-1">
+                    <EditPettyCashDialog entry={e} />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500" onClick={() => removeEntry({ id: e.id as Id<'pettyCash'> })}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -668,7 +868,7 @@ export default function FinancePage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            <EditBalanceDialog account={account} />
+                            <EditBankAccountDialog account={account} />
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500" onClick={() => deleteAccount(account.id)}>
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>

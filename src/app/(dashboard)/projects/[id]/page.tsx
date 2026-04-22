@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { EditProjectDialog } from '@/components/projects/edit-project-dialog'
+import { EditMilestoneDialog } from '@/components/projects/edit-milestone-dialog'
 import { ManageProjectTeamDialog } from '@/components/projects/manage-project-team-dialog'
 import {
   AlertDialog,
@@ -59,6 +60,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const project = useQuery(api.projects.get, { id: id as Id<'projects'> })
   const addMilestone = useMutation(api.projects.addMilestone)
   const toggleMilestone = useMutation(api.projects.toggleMilestone)
+  const removeMilestone = useMutation(api.projects.removeMilestone)
   const archiveProject = useMutation(api.projects.archive)
   const restoreProject = useMutation(api.projects.restore)
   const removeProject = useMutation(api.projects.remove)
@@ -69,10 +71,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   if (!project) return <div className="p-8 text-center text-muted-foreground">Loading...</div>
+  const currentProject = project
 
   async function handleArchiveToggle() {
     try {
-      if (project.archivedAt) {
+      if (currentProject.archivedAt) {
         await restoreProject({ id: id as Id<'projects'> })
         toast.success('Project restored')
       } else {
@@ -80,7 +83,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         toast.success('Project archived')
       }
     } catch {
-      toast.error(project.archivedAt ? 'Failed to restore project' : 'Failed to archive project')
+      toast.error(currentProject.archivedAt ? 'Failed to restore project' : 'Failed to archive project')
     }
   }
 
@@ -109,6 +112,16 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       toast.error('Failed to add milestone')
     } finally {
       setAddingMilestone(false)
+    }
+  }
+
+  async function handleRemoveMilestone(milestoneId: string) {
+    if (!confirm('Delete this milestone?')) return
+    try {
+      await removeMilestone({ id: milestoneId as Id<'milestones'> })
+      toast.success('Milestone deleted')
+    } catch {
+      toast.error('Failed to delete milestone')
     }
   }
 
@@ -277,6 +290,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     <p className="text-xs text-muted-foreground">Due {new Date(m.dueDate).toLocaleDateString('en-IN')}</p>
                   </div>
                   {m.completed && <Badge className="bg-emerald-500/15 text-emerald-500 border-0 text-xs">Done</Badge>}
+                  <EditMilestoneDialog
+                    milestone={m}
+                    trigger={
+                      <Button size="icon" variant="ghost" className="h-7 w-7" aria-label={`Edit ${m.title}`}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    }
+                  />
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveMilestone(m.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -316,7 +340,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       <ManageProjectTeamDialog
         projectId={project.id}
         projectName={project.name}
-        assignedTeamMembers={project.teamMembers ?? []}
+        assignedTeamMembers={(project.teamMembers ?? []).filter((item): item is NonNullable<typeof item> => item !== null)}
         open={teamDialogOpen}
         onClose={() => setTeamDialogOpen(false)}
       />
