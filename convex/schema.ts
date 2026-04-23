@@ -67,7 +67,9 @@ export default defineSchema({
     archivedAt: v.optional(v.number()),
     clientId: v.id("clients"),
   }).index("by_clientId", ["clientId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_deadline", ["deadline"])
+    .index("by_status_and_deadline", ["status", "deadline"]),
 
   milestones: defineTable({
     projectId: v.id("projects"),
@@ -316,6 +318,7 @@ export default defineSchema({
     clientId: v.optional(v.id("clients")),
     projectId: v.optional(v.id("projects")),
   }).index("by_type", ["type"])
+    .index("by_type_and_date", ["type", "date"])
     .index("by_bankAccountId", ["bankAccountId"])
     .index("by_clientId", ["clientId"])
     .index("by_date", ["date"]),
