@@ -9,6 +9,19 @@ const NON_OPERATING_INCOME_CATEGORIES = new Set([
   "non-operating income",
   "non operating income",
 ]);
+const ACTIVE_PROJECT_STATUSES = ["IN_PROGRESS", "NOT_STARTED", "IN_REVIEW"] as const;
+const ACTIVE_TASK_STATUSES = ["TODO", "IN_PROGRESS", "IN_REVIEW"] as const;
+const OPEN_LEAD_STAGES = [
+  "LEAD_CAPTURED",
+  "QUALIFICATION_SUBMITTED",
+  "STRATEGY_CALL",
+  "PROPOSAL_SENT",
+  "NURTURE",
+  "NEW_LEAD",
+  "CONTACTED",
+  "DISCOVERY",
+  "NEGOTIATION",
+] as const;
 
 function isOperatingIncome(transaction: { category: string }) {
   return !NON_OPERATING_INCOME_CATEGORIES.has(transaction.category.trim().toLowerCase());
@@ -22,51 +35,64 @@ const currentMonthKey = getMonthKey(nowDate);
 const startOfMonth = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1).getTime();
 const now = Date.now();
 const SIX_MONTH_WINDOW = new Date(nowDate.getFullYear(), nowDate.getMonth() - 5, 1).getTime();
+const NEXT_MONTH_START = new Date(nowDate.getFullYear(), nowDate.getMonth() + 1, 1).getTime();
 
     const [
       clients,
-      projects,
-      leads,
       incomeTransactions,
       activityLogs,
       reimbursements,
-      tasks,
       currentMonthTargets,
       overallTargets,
+      projectBatches,
+      leadBatches,
+      activeTaskBatches,
     ] = await Promise.all([
       ctx.db.query("clients").order("desc").take(250),
-      ctx.db.query("projects").order("desc").take(250),
-      ctx.db.query("leads").order("desc").take(250),
       ctx.db
         .query("transactions")
-        .withIndex("by_type", (q) => q.eq("type", "INCOME"))
-        .order("desc")
+        .withIndex("by_type_and_date", (q) =>
+          q.eq("type", "INCOME").gt("date", SIX_MONTH_WINDOW - 1).lt("date", NEXT_MONTH_START)
+        )
         .take(500),
       ctx.db.query("activityLogs").order("desc").take(8),
       ctx.db.query("reimbursements").withIndex("by_status", (q) => q.eq("status", "PENDING")).take(100),
-      ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "TODO")).take(200),
       ctx.db.query("salesTargets").withIndex("by_monthKey", (q) => q.eq("monthKey", currentMonthKey)).take(50),
       ctx.db.query("salesTargets").withIndex("by_scopeType_and_monthKey", (q) => q.eq("scopeType", "OVERALL")).take(24),
+      Promise.all(
+        ACTIVE_PROJECT_STATUSES.map((status) =>
+          ctx.db.query("projects").withIndex("by_status", (q) => q.eq("status", status)).take(100)
+        )
+      ),
+      Promise.all(
+        OPEN_LEAD_STAGES.map((stage) =>
+          ctx.db.query("leads").withIndex("by_stage", (q) => q.eq("stage", stage)).take(100)
+        )
+      ),
+      Promise.all(
+        ACTIVE_TASK_STATUSES.map((status) =>
+          ctx.db
+            .query("tasks")
+            .withIndex("by_status_and_dueDate", (q) => q.eq("status", status).lt("dueDate", now))
+            .take(200)
+        )
+      ),
     ]);
 
-    const additionalTasks = await Promise.all([
-      ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "IN_PROGRESS")).take(200),
-      ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "IN_REVIEW")).take(200),
-    ]);
-    const activeTasks = [...tasks, ...additionalTasks.flat()];
+    const projects = projectBatches.flat();
+    const leads = leadBatches.flat();
+    const activeTasks = activeTaskBatches.flat();
     const sixMonthIncomeTransactions = incomeTransactions.filter(
       (transaction) => transaction.date >= SIX_MONTH_WINDOW && isOperatingIncome(transaction)
     );
 
     const totalClients = clients.filter((client) => client.status === "ACTIVE").length;
-    const activeProjects = projects.filter((project) =>
-      ["IN_PROGRESS", "NOT_STARTED", "IN_REVIEW"].includes(project.status)
-    ).length;
-    const openLeads = leads.filter((lead) => !["PROPOSAL_ACCEPTED", "LOST"].includes(lead.stage)).length;
+    const activeProjects = projects.length;
+    const openLeads = leads.length;
     const monthlyRevenue = sixMonthIncomeTransactions
       .filter((transaction) => transaction.date >= startOfMonth)
       .reduce((sum, transaction) => sum + transaction.amount, 0);
-    const overdueCount = activeTasks.filter((task) => task.dueDate && task.dueDate < now).length;
+    const overdueCount = activeTasks.length;
 
     const memberIds = [
       ...new Set(

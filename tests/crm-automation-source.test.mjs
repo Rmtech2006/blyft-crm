@@ -39,3 +39,14 @@ test("dashboard and lead detail expose phase 1-3 helpers", () => {
   assert.match(leadDetail, /WhatsappMessagePanel/);
   assert.match(whatsappPanel, /buildLeadWhatsappMessages/);
 });
+
+test("dashboard stats queries stay bounded and index-backed", () => {
+  const dashboard = read("convex/dashboard.ts");
+  const schema = read("convex/schema.ts");
+
+  assert.match(schema, /index\("by_deadline", \["deadline"\]\)/);
+  assert.match(schema, /index\("by_status_and_deadline", \["status", "deadline"\]\)/);
+  assert.match(schema, /index\("by_type_and_date", \["type", "date"\]\)/);
+  assert.match(dashboard, /withIndex\("by_type_and_date"/);
+  assert.match(dashboard, /withIndex\("by_status_and_dueDate"/);
+});
