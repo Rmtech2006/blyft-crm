@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
+import { useSession } from 'next-auth/react'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import { Id } from '@convex/_generated/dataModel'
@@ -30,10 +31,12 @@ export function SubmitReimbursementDialog() {
   const [loading, setLoading] = useState(false)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const { data: session } = useSession()
 
   const teamMembers = useQuery(api.team.list) ?? []
   const createReimbursement = useMutation(api.reimbursements.create)
   const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+  const selfLabel = session?.user?.name ? `Self (${session.user.name})` : 'Self'
 
   const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -68,7 +71,6 @@ export function SubmitReimbursementDialog() {
         receiptUrl,
         receiptStorageId,
         teamMemberId: data.teamMemberId ? (data.teamMemberId as Id<'teamMembers'>) : undefined,
-        submittedById: 'ritish',
       })
       toast.success('Reimbursement submitted')
       reset()
@@ -124,7 +126,7 @@ export function SubmitReimbursementDialog() {
             <Select onValueChange={(v) => setValue('teamMemberId', v === 'none' || v == null ? undefined : String(v))}>
               <SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Self</SelectItem>
+                <SelectItem value="none">{selfLabel}</SelectItem>
                 {teamMembers.map((m) => <SelectItem key={m.id} value={m.id}>{m.fullName}</SelectItem>)}
               </SelectContent>
             </Select>

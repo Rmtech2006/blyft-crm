@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { getCurrentUserId } from "./auth";
 
 const USERS: Record<string, { id: string; name: string }> = {
   ritish: { id: "ritish", name: "Ritish" },
@@ -48,9 +49,10 @@ export const create = mutation({
     receiptUrl: v.optional(v.string()),
     receiptStorageId: v.optional(v.string()),
     teamMemberId: v.optional(v.id("teamMembers")),
-    submittedById: v.string(),
   },
   handler: async (ctx, args) => {
+    const submittedById = await getCurrentUserId(ctx);
+
     return await ctx.db.insert("reimbursements", {
       category: args.category,
       amount: args.amount,
@@ -59,7 +61,7 @@ export const create = mutation({
       receiptUrl: args.receiptUrl,
       receiptStorageId: args.receiptStorageId,
       status: "PENDING",
-      submittedById: args.submittedById,
+      submittedById,
       teamMemberId: args.teamMemberId,
     });
   },
