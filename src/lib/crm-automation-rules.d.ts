@@ -22,6 +22,15 @@ export type AutomationTask = {
   dueDate?: number;
 };
 
+export type AutomationProject = {
+  id?: string;
+  _id?: string;
+  clientId?: string;
+  deadline?: number;
+  archivedAt?: number;
+  status?: string;
+};
+
 export type LeadDuplicateKeys = {
   emailKey: string | null;
   whatsappKey: string | null;
@@ -43,6 +52,11 @@ export function getStaleProposalLeads<T extends AutomationLead>(
   staleAfterDays?: number
 ): T[];
 export function getOverdueTasks<T extends AutomationTask>(tasks: T[], nowMs?: number): T[];
+export function getDueProjectDeadlines<T extends AutomationProject>(
+  projects: T[],
+  nowMs?: number,
+  dueWithinDays?: number
+): T[];
 export function normalizeEmailKey(email?: string | null): string | null;
 export function normalizeWhatsappKey(whatsapp?: string | null): string | null;
 export function buildLeadDuplicateKeys(lead: Pick<AutomationLead, "email" | "whatsapp">): LeadDuplicateKeys;

@@ -5,10 +5,12 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { buildLeadWhatsappMessages, type AutomationLead } from '@/lib/crm-automation-rules.mjs'
+import { buildLeadWhatsappMessages } from '@/lib/crm-automation-rules.mjs'
+
+type WhatsappMessageLead = Parameters<typeof buildLeadWhatsappMessages>[0]
 
 type WhatsappMessagePanelProps = {
-  lead: AutomationLead
+  lead: WhatsappMessageLead
 }
 
 export function WhatsappMessagePanel({ lead }: WhatsappMessagePanelProps) {

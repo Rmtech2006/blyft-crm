@@ -18,7 +18,7 @@ import { ArrowLeft, Mail, MessageCircle, Pencil, Trash2, UserCheck } from 'lucid
 import { toast } from 'sonner'
 import { LEAD_STAGES, STAGE_COLORS, STAGE_TEMPLATE, type LeadStage } from '@/lib/leads'
 import { formatEnum } from '@/lib/utils'
-import { toWhatsappLink } from '@/lib/crm-automation-rules.mjs'
+import { getDefaultLeadFollowUpDate, toWhatsappLink } from '@/lib/crm-automation-rules.mjs'
 import { EditTextDialog } from '@/components/shared/edit-text-dialog'
 
 function formatINR(amount: number) {
@@ -34,6 +34,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const lead = useQuery(api.leads.get, { id: id as Id<'leads'> })
   const templates = useQuery(api.templates.list)
   const updateLead = useMutation(api.leads.update)
+  const setFollowUpDate = useMutation(api.leads.setFollowUpDate)
   const addNote = useMutation(api.leads.addNote)
   const updateNote = useMutation(api.leads.updateNote)
   const removeNote = useMutation(api.leads.removeNote)
@@ -48,6 +49,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const [addingCall, setAddingCall] = useState(false)
   const [converting, setConverting] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [savingFollowUpKey, setSavingFollowUpKey] = useState<string | null>(null)
 
   if (!lead) return <div className="p-8 text-center text-muted-foreground">Loading…</div>
 
@@ -126,11 +128,33 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
     }
   }
 
+  async function handleQuickFollowUp(action: { key: string; label: string; followUpDate: number }) {
+    setSavingFollowUpKey(action.key)
+    try {
+      await setFollowUpDate({
+        id: id as Id<'leads'>,
+        followUpDate: action.followUpDate,
+      })
+      toast.success(`${action.label} follow-up scheduled`)
+    } catch {
+      toast.error('Failed to update follow-up date')
+    } finally {
+      setSavingFollowUpKey(null)
+    }
+  }
+
   const alreadyConverted = !!lead.convertedClientId
   const primaryWhatsappLink = toWhatsappLink(
     lead.whatsapp,
     `Hi ${lead.contactName || lead.name}, following up from BLYFT regarding ${formatEnum(lead.stage).toLowerCase()}.`
   )
+  const now = Date.now()
+  const quickFollowUpActions = [
+    { key: 'followed_today', label: 'Followed up today', followUpDate: getDefaultLeadFollowUpDate(now) },
+    { key: 'tomorrow', label: 'Tomorrow', followUpDate: now + 24 * 60 * 60 * 1000 },
+    { key: 'in_3_days', label: 'In 3 days', followUpDate: now + 3 * 24 * 60 * 60 * 1000 },
+    { key: 'next_week', label: 'Next week', followUpDate: now + 7 * 24 * 60 * 60 * 1000 },
+  ]
 
   return (
     <div className="space-y-6">
@@ -234,6 +258,35 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             ) : null
           })()}
           <WhatsappMessagePanel lead={lead} />
+          <Card className="mb-4 border-amber-500/25 bg-amber-500/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Follow-up actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Set the next follow-up without opening the full edit form.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {quickFollowUpActions.map((action) => (
+                  <Button
+                    key={action.key}
+                    size="sm"
+                    variant="outline"
+                    disabled={savingFollowUpKey !== null}
+                    onClick={() => handleQuickFollowUp(action)}
+                  >
+                    {savingFollowUpKey === action.key ? 'Saving…' : action.label}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Current follow-up:{' '}
+                <span className="font-medium text-foreground">
+                  {lead.followUpDate ? new Date(lead.followUpDate).toLocaleDateString('en-IN') : 'Not set'}
+                </span>
+              </p>
+            </CardContent>
+          </Card>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader><CardTitle className="text-sm">Lead Info</CardTitle></CardHeader>

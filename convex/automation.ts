@@ -128,7 +128,7 @@ async function loadHighValueLeads(ctx: ReadCtx) {
 
 async function loadDueProjectDeadlines(ctx: ReadCtx, now: number) {
   const projects = await ctx.db.query("projects").collect();
-  const dueProjects = getDueProjectDeadlines(projects, now, 7).slice(0, 20);
+  const dueProjects: Doc<"projects">[] = getDueProjectDeadlines(projects, now, 7).slice(0, 20);
 
   return await Promise.all(
     dueProjects.map(async (project) => {

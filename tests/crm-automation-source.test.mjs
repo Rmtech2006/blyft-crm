@@ -31,6 +31,27 @@ test("lead creation applies free automation rules", () => {
   assert.match(leads, /duplicate/i);
 });
 
+test("lead quick follow-up workflow is wired on detail page", () => {
+  const leads = read("convex/leads.ts");
+  const leadDetail = read("src/app/(dashboard)/leads/[id]/page.tsx");
+
+  assert.match(leads, /export const setFollowUpDate/);
+  assert.match(leadDetail, /api\.leads\.setFollowUpDate/);
+  assert.match(leadDetail, /Follow-up actions/);
+  assert.match(leadDetail, /Followed up today/);
+  assert.match(leadDetail, /Tomorrow/);
+  assert.match(leadDetail, /In 3 days/);
+  assert.match(leadDetail, /Next week/);
+});
+
+test("lead duplicate refresh avoids self-linking during contact updates", () => {
+  const leads = read("convex/leads.ts");
+
+  assert.match(leads, /duplicateOfLeadId/);
+  assert.match(leads, /excludeLeadId/);
+  assert.match(leads, /duplicate\._id !== excludeLeadId/);
+});
+
 test("dashboard and lead detail expose phase 1-3 helpers", () => {
   const dashboard = read("src/app/(dashboard)/page.tsx");
   const leadDetail = read("src/app/(dashboard)/leads/[id]/page.tsx");

@@ -4,8 +4,9 @@ import type { Doc } from "./_generated/dataModel";
 import {
   buildLeadDuplicateKeys,
   getDefaultLeadFollowUpDate,
-  type LeadDuplicateKeys,
 } from "../src/lib/crm-automation-rules.mjs";
+
+type LeadDuplicateKeys = ReturnType<typeof buildLeadDuplicateKeys>;
 
 const USERS: Record<string, { id: string; name: string }> = {
   ritish: { id: "ritish", name: "Ritish" },
@@ -18,25 +19,43 @@ function istDayKey(now: number): string {
 
 async function findDuplicateLead(
   ctx: MutationCtx,
-  keys: LeadDuplicateKeys
+  keys: LeadDuplicateKeys,
+  excludeLeadId?: Doc<"leads">["_id"]
 ): Promise<Doc<"leads"> | null> {
   if (keys.emailKey) {
     const matches = await ctx.db
       .query("leads")
       .withIndex("by_emailKey", (q) => q.eq("emailKey", keys.emailKey!))
-      .take(1);
-    if (matches[0]) return matches[0];
+      .take(5);
+    const duplicate = matches.find((lead) => lead._id !== excludeLeadId);
+    if (duplicate && duplicate._id !== excludeLeadId) return duplicate;
   }
 
   if (keys.whatsappKey) {
     const matches = await ctx.db
       .query("leads")
       .withIndex("by_whatsappKey", (q) => q.eq("whatsappKey", keys.whatsappKey!))
-      .take(1);
-    if (matches[0]) return matches[0];
+      .take(5);
+    const duplicate = matches.find((lead) => lead._id !== excludeLeadId);
+    if (duplicate && duplicate._id !== excludeLeadId) return duplicate;
   }
 
   return null;
+}
+
+async function refreshDuplicateFields(
+  ctx: MutationCtx,
+  input: { email?: string; whatsapp?: string },
+  excludeLeadId?: Doc<"leads">["_id"]
+) {
+  const duplicateKeys = buildLeadDuplicateKeys(input);
+  const duplicate = await findDuplicateLead(ctx, duplicateKeys, excludeLeadId);
+
+  return {
+    emailKey: duplicateKeys.emailKey ?? undefined,
+    whatsappKey: duplicateKeys.whatsappKey ?? undefined,
+    duplicateOfLeadId: duplicate?._id,
+  };
 }
 
 export const list = query({
@@ -108,23 +127,20 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    const duplicateKeys = buildLeadDuplicateKeys(args);
-    const duplicate = await findDuplicateLead(ctx, duplicateKeys);
+    const duplicateFields = await refreshDuplicateFields(ctx, args);
     const leadId = await ctx.db.insert("leads", {
       ...args,
       followUpDate: args.followUpDate ?? getDefaultLeadFollowUpDate(now),
-      emailKey: duplicateKeys.emailKey ?? undefined,
-      whatsappKey: duplicateKeys.whatsappKey ?? undefined,
-      duplicateOfLeadId: duplicate?._id,
+      ...duplicateFields,
     });
 
     await ctx.db.insert("notifications", {
       userId: args.ownerId ?? "ritish",
-      title: duplicate ? "Possible duplicate lead" : "New lead captured",
-      message: duplicate
-        ? `${args.name} may already exist as ${duplicate.name}. Check before creating a second conversation.`
+      title: duplicateFields.duplicateOfLeadId ? "Possible duplicate lead" : "New lead captured",
+      message: duplicateFields.duplicateOfLeadId
+        ? `${args.name} may already exist as another lead. Check before creating a second conversation.`
         : `${args.name} needs a first follow-up tomorrow.`,
-      type: duplicate ? "LEAD_DUPLICATE" : "NEW_LEAD",
+      type: duplicateFields.duplicateOfLeadId ? "LEAD_DUPLICATE" : "NEW_LEAD",
       read: false,
       link: `/leads/${leadId}`,
       dedupeKey: `lead-created:${leadId}`,
@@ -171,21 +187,27 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const { id, ...rest } = args;
     const patch: Record<string, unknown> = { ...rest };
+    const existing = await ctx.db.get(id);
+    if (!existing) throw new Error("Lead not found");
+
     if (rest.email !== undefined || rest.whatsapp !== undefined) {
-      const existing = await ctx.db.get(id);
-      const duplicateKeys = buildLeadDuplicateKeys({
+      const duplicateFields = await refreshDuplicateFields(
+        ctx,
+        {
         email: rest.email ?? existing?.email,
         whatsapp: rest.whatsapp ?? existing?.whatsapp,
-      });
-      patch.emailKey = duplicateKeys.emailKey ?? undefined;
-      patch.whatsappKey = duplicateKeys.whatsappKey ?? undefined;
+        },
+        id
+      );
+      patch.emailKey = duplicateFields.emailKey;
+      patch.whatsappKey = duplicateFields.whatsappKey;
+      patch.duplicateOfLeadId = duplicateFields.duplicateOfLeadId;
     }
     // Auto-stamp qualification submission and advance stage
     if (
       (rest.goals || rest.budget || rest.servicesRequired || rest.timeline) &&
       !rest.qualificationSubmittedAt
     ) {
-      const existing = await ctx.db.get(id);
       if (existing && !existing.qualificationSubmittedAt) {
         patch.qualificationSubmittedAt = Date.now();
         if (existing.stage === "LEAD_CAPTURED" && !patch.stage) {
@@ -194,6 +216,26 @@ export const update = mutation({
       }
     }
     await ctx.db.patch(id, patch);
+  },
+});
+
+export const setFollowUpDate = mutation({
+  args: {
+    id: v.id("leads"),
+    followUpDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const lead = await ctx.db.get(args.id);
+    if (!lead) throw new Error("Lead not found");
+
+    await ctx.db.patch(args.id, {
+      followUpDate: args.followUpDate,
+    });
+
+    return {
+      id: args.id,
+      followUpDate: args.followUpDate,
+    };
   },
 });
 
