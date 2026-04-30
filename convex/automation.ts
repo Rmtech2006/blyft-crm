@@ -4,7 +4,6 @@ import type { Doc } from "./_generated/dataModel";
 import {
   buildLeadDuplicateKeys,
   getDueLeadFollowUps,
-  getDueProjectDeadlines,
   getOverdueTasks,
   getStaleProposalLeads,
 } from "../src/lib/crm-automation-rules.mjs";
@@ -127,8 +126,25 @@ async function loadHighValueLeads(ctx: ReadCtx) {
 }
 
 async function loadDueProjectDeadlines(ctx: ReadCtx, now: number) {
-  const projects = await ctx.db.query("projects").collect();
-  const dueProjects: Doc<"projects">[] = getDueProjectDeadlines(projects, now, 7).slice(0, 20);
+  const dueBefore = now + 7 * DAY_MS;
+  const ACTIVE_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "IN_REVIEW"] as const;
+
+  const batches = await Promise.all(
+    ACTIVE_STATUSES.map((status) =>
+      ctx.db
+        .query("projects")
+        .withIndex("by_status_and_deadline", (q) =>
+          q.eq("status", status).gte("deadline", now).lte("deadline", dueBefore)
+        )
+        .take(30)
+    )
+  );
+
+  const dueProjects = batches
+    .flat()
+    .filter((p) => !p.archivedAt)
+    .sort((a, b) => (a.deadline ?? 0) - (b.deadline ?? 0))
+    .slice(0, 20);
 
   return await Promise.all(
     dueProjects.map(async (project) => {

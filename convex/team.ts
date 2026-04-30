@@ -9,7 +9,7 @@ const workLinkValidator = v.object({
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const members = await ctx.db.query("teamMembers").order("desc").collect();
+    const members = await ctx.db.query("teamMembers").order("desc").take(200);
     return await Promise.all(
       members.map(async (member) => {
         const photoUrl = member.photoStorageId
@@ -18,7 +18,7 @@ export const list = query({
         const ptms = await ctx.db
           .query("projectTeamMembers")
           .withIndex("by_teamMemberId", (q) => q.eq("teamMemberId", member._id))
-          .collect();
+          .take(50);
         const projects = await Promise.all(
           ptms.map(async (ptm) => {
             const project = await ctx.db.get(ptm.projectId);
@@ -47,7 +47,7 @@ export const get = query({
     const ptms = await ctx.db
       .query("projectTeamMembers")
       .withIndex("by_teamMemberId", (q) => q.eq("teamMemberId", args.id))
-      .collect();
+      .take(50);
     const projects = await Promise.all(
       ptms.map(async (ptm) => {
         const project = await ctx.db.get(ptm.projectId);
@@ -59,7 +59,7 @@ export const get = query({
     const reimbursements = await ctx.db
       .query("reimbursements")
       .withIndex("by_teamMemberId", (q) => q.eq("teamMemberId", args.id))
-      .collect();
+      .take(200);
     return {
       ...member,
       id: member._id,
@@ -178,11 +178,11 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id("teamMembers") },
   handler: async (ctx, args) => {
-    const ptms = await ctx.db.query("projectTeamMembers").withIndex("by_teamMemberId", (q) => q.eq("teamMemberId", args.id)).collect();
+    const ptms = await ctx.db.query("projectTeamMembers").withIndex("by_teamMemberId", (q) => q.eq("teamMemberId", args.id)).take(50);
     const reimbursements = await ctx.db
       .query("reimbursements")
       .withIndex("by_teamMemberId", (q) => q.eq("teamMemberId", args.id))
-      .collect();
+      .take(50);
 
     if (ptms.length > 0 || reimbursements.length > 0) {
       await ctx.db.patch(args.id, { status: "OFFBOARDED" });

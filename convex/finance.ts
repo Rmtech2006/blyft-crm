@@ -30,16 +30,43 @@ export const listTransactions = query({
     dateTo: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    let transactions = await ctx.db.query("transactions").order("desc").collect();
-    if (args.type) {
-      transactions = transactions.filter((t) => t.type === args.type);
+    let transactions;
+
+    if (args.type && args.dateFrom) {
+      transactions = await ctx.db
+        .query("transactions")
+        .withIndex("by_type_and_date", (q) => {
+          const base = q.eq("type", args.type!);
+          return args.dateTo
+            ? base.gte("date", args.dateFrom!).lte("date", args.dateTo)
+            : base.gte("date", args.dateFrom!);
+        })
+        .order("desc")
+        .take(500);
+    } else if (args.type) {
+      transactions = await ctx.db
+        .query("transactions")
+        .withIndex("by_type", (q) => q.eq("type", args.type!))
+        .order("desc")
+        .take(500);
+    } else if (args.dateFrom) {
+      transactions = await ctx.db
+        .query("transactions")
+        .withIndex("by_date", (q) =>
+          args.dateTo
+            ? q.gte("date", args.dateFrom!).lte("date", args.dateTo)
+            : q.gte("date", args.dateFrom!)
+        )
+        .order("desc")
+        .take(500);
+    } else {
+      transactions = await ctx.db
+        .query("transactions")
+        .withIndex("by_date")
+        .order("desc")
+        .take(500);
     }
-    if (args.dateFrom) {
-      transactions = transactions.filter((t) => t.date >= args.dateFrom!);
-    }
-    if (args.dateTo) {
-      transactions = transactions.filter((t) => t.date <= args.dateTo!);
-    }
+
     return await Promise.all(
       transactions.map(async (t) => {
         const client = t.clientId ? await ctx.db.get(t.clientId) : null;
@@ -184,14 +211,15 @@ export const removeTransaction = mutation({
 export const listBankAccounts = query({
   args: {},
   handler: async (ctx) => {
-    const accounts = await ctx.db.query("bankAccounts").collect();
+    const accounts = await ctx.db.query("bankAccounts").take(50);
     const activeAccounts = accounts.filter((a) => a.isActive);
     return await Promise.all(
       activeAccounts.map(async (account) => {
         const transactions = await ctx.db
           .query("transactions")
           .withIndex("by_bankAccountId", (q) => q.eq("bankAccountId", account._id))
-          .collect();
+          .order("desc")
+          .take(200);
         return {
           ...account,
           id: account._id,
@@ -262,24 +290,47 @@ export const getSnapshot = query({
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
     const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
-    const transactions = await ctx.db.query("transactions").collect();
 
-    const monthIncome = transactions.filter((t) => isOperatingIncome(t) && t.date >= startOfMonth).reduce((s, t) => s + t.amount, 0);
-    const monthNonOperatingIncome = transactions.filter((t) => isNonOperatingIncome(t) && t.date >= startOfMonth).reduce((s, t) => s + t.amount, 0);
-    const monthExpense = transactions.filter((t) => t.type === "EXPENSE" && t.date >= startOfMonth).reduce((s, t) => s + t.amount, 0);
-    const ytdIncome = transactions.filter((t) => isOperatingIncome(t) && t.date >= startOfYear).reduce((s, t) => s + t.amount, 0);
-    const ytdNonOperatingIncome = transactions.filter((t) => isNonOperatingIncome(t) && t.date >= startOfYear).reduce((s, t) => s + t.amount, 0);
-    const ytdExpense = transactions.filter((t) => t.type === "EXPENSE" && t.date >= startOfYear).reduce((s, t) => s + t.amount, 0);
+    const [incomeTransactions, expenseTransactions] = await Promise.all([
+      ctx.db
+        .query("transactions")
+        .withIndex("by_type_and_date", (q) => q.eq("type", "INCOME").gte("date", startOfYear))
+        .take(2000),
+      ctx.db
+        .query("transactions")
+        .withIndex("by_type_and_date", (q) => q.eq("type", "EXPENSE").gte("date", startOfYear))
+        .take(2000),
+    ]);
 
-    // Monthly revenue for last 6 months
+    const monthIncome = incomeTransactions
+      .filter((t) => isOperatingIncome(t) && t.date >= startOfMonth)
+      .reduce((s, t) => s + t.amount, 0);
+    const monthNonOperatingIncome = incomeTransactions
+      .filter((t) => isNonOperatingIncome(t) && t.date >= startOfMonth)
+      .reduce((s, t) => s + t.amount, 0);
+    const monthExpense = expenseTransactions
+      .filter((t) => t.date >= startOfMonth)
+      .reduce((s, t) => s + t.amount, 0);
+    const ytdIncome = incomeTransactions
+      .filter((t) => isOperatingIncome(t))
+      .reduce((s, t) => s + t.amount, 0);
+    const ytdNonOperatingIncome = incomeTransactions
+      .filter((t) => isNonOperatingIncome(t))
+      .reduce((s, t) => s + t.amount, 0);
+    const ytdExpense = expenseTransactions.reduce((s, t) => s + t.amount, 0);
+
     const monthlyRevenue: { month: string; income: number; expense: number }[] = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const start = d.getTime();
       const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59).getTime();
       const label = d.toLocaleString("en-IN", { month: "short", year: "2-digit" });
-      const income = transactions.filter((t) => isOperatingIncome(t) && t.date >= start && t.date <= end).reduce((s, t) => s + t.amount, 0);
-      const expense = transactions.filter((t) => t.type === "EXPENSE" && t.date >= start && t.date <= end).reduce((s, t) => s + t.amount, 0);
+      const income = incomeTransactions
+        .filter((t) => isOperatingIncome(t) && t.date >= start && t.date <= end)
+        .reduce((s, t) => s + t.amount, 0);
+      const expense = expenseTransactions
+        .filter((t) => t.date >= start && t.date <= end)
+        .reduce((s, t) => s + t.amount, 0);
       monthlyRevenue.push({ month: label, income, expense });
     }
 
@@ -292,20 +343,32 @@ export const getSnapshot = query({
 export const getOutstanding = query({
   args: {},
   handler: async (ctx) => {
-    const clients = await ctx.db.query("clients").filter((q) => q.eq(q.field("status"), "ACTIVE")).collect();
-    const transactions = await ctx.db.query("transactions").filter((q) => q.eq(q.field("type"), "INCOME")).collect();
     const now = Date.now();
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
 
-    return clients
-      .filter((c) => c.retainerAmount && c.retainerAmount > 0)
-      .map((c) => {
-        const clientTransactions = transactions.filter((t) => t.clientId === c._id);
-        const receivedThisMonth = clientTransactions.filter((t) => t.date >= startOfMonth).reduce((s, t) => s + t.amount, 0);
-        const totalReceived = clientTransactions.reduce((s, t) => s + t.amount, 0);
+    const activeClients = await ctx.db
+      .query("clients")
+      .withIndex("by_status", (q) => q.eq("status", "ACTIVE"))
+      .take(250);
+
+    const retainerClients = activeClients.filter((c) => c.retainerAmount && c.retainerAmount > 0);
+
+    const results = await Promise.all(
+      retainerClients.map(async (c) => {
+        const clientTransactions = await ctx.db
+          .query("transactions")
+          .withIndex("by_clientId", (q) => q.eq("clientId", c._id))
+          .take(500);
+        const incomeOnly = clientTransactions.filter((t) => t.type === "INCOME");
+        const receivedThisMonth = incomeOnly
+          .filter((t) => t.date >= startOfMonth)
+          .reduce((s, t) => s + t.amount, 0);
+        const totalReceived = incomeOnly.reduce((s, t) => s + t.amount, 0);
         const outstanding = Math.max(0, (c.retainerAmount ?? 0) - receivedThisMonth);
-        const lastPayment = clientTransactions.sort((a, b) => b.date - a.date)[0];
-        const daysSincePayment = lastPayment ? Math.floor((now - lastPayment.date) / (1000 * 60 * 60 * 24)) : null;
+        const lastPayment = [...incomeOnly].sort((a, b) => b.date - a.date)[0];
+        const daysSincePayment = lastPayment
+          ? Math.floor((now - lastPayment.date) / (1000 * 60 * 60 * 24))
+          : null;
         return {
           id: c._id,
           companyName: c.companyName,
@@ -317,7 +380,9 @@ export const getOutstanding = query({
           lastPaymentDate: lastPayment?.date ?? null,
         };
       })
-      .filter((c) => c.outstanding > 0);
+    );
+
+    return results.filter((c) => c.outstanding > 0);
   },
 });
 

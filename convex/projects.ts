@@ -4,14 +4,14 @@ import { v } from "convex/values";
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const projects = await ctx.db.query("projects").order("desc").collect();
+    const projects = await ctx.db.query("projects").order("desc").take(300);
     return await Promise.all(
       projects.map(async (project) => {
         const client = await ctx.db.get(project.clientId);
         const tasks = await ctx.db
           .query("tasks")
           .withIndex("by_projectId", (q) => q.eq("projectId", project._id))
-          .collect();
+          .take(200);
         return {
           ...project,
           id: project._id,
@@ -32,11 +32,11 @@ export const get = query({
     const milestones = await ctx.db
       .query("milestones")
       .withIndex("by_projectId", (q) => q.eq("projectId", args.id))
-      .collect();
+      .take(100);
     const ptms = await ctx.db
       .query("projectTeamMembers")
       .withIndex("by_projectId", (q) => q.eq("projectId", args.id))
-      .collect();
+      .take(50);
     const teamMembers = await Promise.all(
       ptms.map(async (ptm) => {
         const member = await ctx.db.get(ptm.teamMemberId);
@@ -46,7 +46,7 @@ export const get = query({
     const tasks = await ctx.db
       .query("tasks")
       .withIndex("by_projectId", (q) => q.eq("projectId", args.id))
-      .collect();
+      .take(200);
     return {
       ...project,
       id: project._id,
@@ -119,11 +119,11 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id("projects") },
   handler: async (ctx, args) => {
-    const milestones = await ctx.db.query("milestones").withIndex("by_projectId", (q) => q.eq("projectId", args.id)).collect();
+    const milestones = await ctx.db.query("milestones").withIndex("by_projectId", (q) => q.eq("projectId", args.id)).take(200);
     for (const m of milestones) await ctx.db.delete(m._id);
-    const ptms = await ctx.db.query("projectTeamMembers").withIndex("by_projectId", (q) => q.eq("projectId", args.id)).collect();
+    const ptms = await ctx.db.query("projectTeamMembers").withIndex("by_projectId", (q) => q.eq("projectId", args.id)).take(50);
     for (const ptm of ptms) await ctx.db.delete(ptm._id);
-    const tasks = await ctx.db.query("tasks").withIndex("by_projectId", (q) => q.eq("projectId", args.id)).collect();
+    const tasks = await ctx.db.query("tasks").withIndex("by_projectId", (q) => q.eq("projectId", args.id)).take(200);
     for (const t of tasks) await ctx.db.delete(t._id);
     await ctx.db.delete(args.id);
   },
@@ -196,7 +196,7 @@ export const setTeamMembers = mutation({
     const existing = await ctx.db
       .query("projectTeamMembers")
       .withIndex("by_projectId", (q) => q.eq("projectId", args.projectId))
-      .collect();
+      .take(50);
 
     const nextIds = new Set(args.teamMemberIds);
 

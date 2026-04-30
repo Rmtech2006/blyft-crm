@@ -61,7 +61,7 @@ async function refreshDuplicateFields(
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const leads = await ctx.db.query("leads").order("desc").collect();
+    const leads = await ctx.db.query("leads").order("desc").take(500);
     return leads.map((lead) => ({
       ...lead,
       id: lead._id,
@@ -79,12 +79,12 @@ export const get = query({
       .query("leadNotes")
       .withIndex("by_leadId", (q) => q.eq("leadId", args.id))
       .order("desc")
-      .collect();
+      .take(100);
     const callLogs = await ctx.db
       .query("leadCallLogs")
       .withIndex("by_leadId", (q) => q.eq("leadId", args.id))
       .order("desc")
-      .collect();
+      .take(100);
     return {
       ...lead,
       id: lead._id,
@@ -242,9 +242,9 @@ export const setFollowUpDate = mutation({
 export const remove = mutation({
   args: { id: v.id("leads") },
   handler: async (ctx, args) => {
-    const notes = await ctx.db.query("leadNotes").withIndex("by_leadId", (q) => q.eq("leadId", args.id)).collect();
+    const notes = await ctx.db.query("leadNotes").withIndex("by_leadId", (q) => q.eq("leadId", args.id)).take(200);
     for (const n of notes) await ctx.db.delete(n._id);
-    const calls = await ctx.db.query("leadCallLogs").withIndex("by_leadId", (q) => q.eq("leadId", args.id)).collect();
+    const calls = await ctx.db.query("leadCallLogs").withIndex("by_leadId", (q) => q.eq("leadId", args.id)).take(200);
     for (const c of calls) await ctx.db.delete(c._id);
     await ctx.db.delete(args.id);
   },

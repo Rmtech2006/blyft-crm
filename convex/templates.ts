@@ -9,7 +9,7 @@ function extractVariables(content: string): string[] {
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const templates = await ctx.db.query("messageTemplates").order("desc").collect();
+    const templates = await ctx.db.query("messageTemplates").order("desc").take(200);
     return templates.map((t) => ({ ...t, id: t._id }));
   },
 });
@@ -71,7 +71,7 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const template = await ctx.db.get(args.id);
     if (template?.isLocked) throw new Error("Cannot delete a locked template");
-    const versions = await ctx.db.query("templateVersions").withIndex("by_templateId", (q) => q.eq("templateId", args.id)).collect();
+    const versions = await ctx.db.query("templateVersions").withIndex("by_templateId", (q) => q.eq("templateId", args.id)).take(50);
     for (const v of versions) await ctx.db.delete(v._id);
     await ctx.db.delete(args.id);
   },
@@ -102,7 +102,7 @@ export const getVersions = query({
       .query("templateVersions")
       .withIndex("by_templateId", (q) => q.eq("templateId", args.id))
       .order("desc")
-      .collect();
+      .take(50);
   },
 });
 

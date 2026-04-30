@@ -10,7 +10,7 @@ const USERS: Record<string, { id: string; name: string }> = {
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const items = await ctx.db.query("reimbursements").order("desc").collect();
+    const items = await ctx.db.query("reimbursements").order("desc").take(300);
     return await Promise.all(
       items.map(async (item) => {
         const teamMember = item.teamMemberId ? await ctx.db.get(item.teamMemberId) : null;
