@@ -635,12 +635,18 @@ export default function FinancePage() {
   const [typeFilter, setTypeFilter] = useState('ALL')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
 
+  const clients = useQuery(api.clients.list) ?? []
+  const projects = useQuery(api.projects.list) ?? []
   const transactionsQuery = useQuery(api.finance.listTransactions, {
     type: typeFilter !== 'ALL' ? (typeFilter as 'INCOME' | 'EXPENSE') : undefined,
     dateFrom: dateFrom ? new Date(dateFrom).getTime() : undefined,
     dateTo: dateTo ? new Date(dateTo).getTime() : undefined,
+    clientId: selectedClientId ? (selectedClientId as Id<'clients'>) : undefined,
+    projectId: selectedProjectId ? (selectedProjectId as Id<'projects'>) : undefined,
   }) ?? []
   const transactions = sortTransactionsByDateDesc(transactionsQuery)
 
@@ -759,10 +765,28 @@ export default function FinancePage() {
                 <SelectItem value="EXPENSE">Debit (Expense)</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={selectedClientId ?? 'ALL'} onValueChange={(value) => setSelectedClientId(value === 'ALL' ? null : value)}>
+              <SelectTrigger className="w-48"><SelectValue placeholder="All clients" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All clients</SelectItem>
+                {clients.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>{client.companyName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedProjectId ?? 'ALL'} onValueChange={(value) => setSelectedProjectId(value === 'ALL' ? null : value)}>
+              <SelectTrigger className="w-48"><SelectValue placeholder="All projects" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All projects</SelectItem>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Input type="date" className="w-40" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             <Input type="date" className="w-40" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-            {(typeFilter !== 'ALL' || dateFrom || dateTo) && (
-              <Button variant="outline" size="sm" onClick={() => { setTypeFilter('ALL'); setDateFrom(''); setDateTo('') }}>
+            {(typeFilter !== 'ALL' || dateFrom || dateTo || selectedClientId || selectedProjectId) && (
+              <Button variant="outline" size="sm" onClick={() => { setTypeFilter('ALL'); setDateFrom(''); setDateTo(''); setSelectedClientId(null); setSelectedProjectId(null) }}>
                 Clear
               </Button>
             )}
@@ -795,7 +819,11 @@ export default function FinancePage() {
                         <div>
                           <p className="font-medium text-sm">{t.description}</p>
                           {t.notes && <p className="text-xs text-muted-foreground">{t.notes}</p>}
-                          {t.client && <p className="text-xs text-muted-foreground">{t.client.companyName}</p>}
+                          {(t.client || t.project) && (
+                            <p className="text-xs text-muted-foreground">
+                              {[t.client?.companyName, t.project?.name].filter(Boolean).join(' • ')}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </TableCell>

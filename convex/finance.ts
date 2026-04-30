@@ -28,6 +28,8 @@ export const listTransactions = query({
     type: v.optional(v.union(v.literal("INCOME"), v.literal("EXPENSE"))),
     dateFrom: v.optional(v.number()),
     dateTo: v.optional(v.number()),
+    clientId: v.optional(v.id("clients")),
+    projectId: v.optional(v.id("projects")),
   },
   handler: async (ctx, args) => {
     let transactions;
@@ -65,6 +67,14 @@ export const listTransactions = query({
         .withIndex("by_date")
         .order("desc")
         .take(500);
+    }
+
+    if (args.clientId) {
+      transactions = transactions.filter((transaction) => transaction.clientId === args.clientId);
+    }
+
+    if (args.projectId) {
+      transactions = transactions.filter((transaction) => transaction.projectId === args.projectId);
     }
 
     return await Promise.all(

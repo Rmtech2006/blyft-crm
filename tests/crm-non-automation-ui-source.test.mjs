@@ -267,3 +267,21 @@ test("reimbursements, petty cash, and bank accounts expose edit options", () => 
   assert.match(financePage, /EditBankAccountDialog/);
   assert.match(financePage, /EditPettyCashDialog/);
 });
+
+test("finance transactions can be filtered by linked client and project", () => {
+  const financePage = read("src/app/(dashboard)/finance/page.tsx");
+  const finance = read("convex/finance.ts");
+
+  assert.match(finance, /clientId: v\.optional\(v\.id\("clients"\)\)/);
+  assert.match(finance, /projectId: v\.optional\(v\.id\("projects"\)\)/);
+  assert.match(financePage, /api\.clients\.list/);
+  assert.match(financePage, /api\.projects\.list/);
+  assert.match(financePage, /selectedClientId/);
+  assert.match(financePage, /selectedProjectId/);
+  assert.match(financePage, /clientId: selectedClientId \? \(selectedClientId as Id<'clients'>\) : undefined/);
+  assert.match(financePage, /projectId: selectedProjectId \? \(selectedProjectId as Id<'projects'>\) : undefined/);
+  assert.match(financePage, /All clients/);
+  assert.match(financePage, /All projects/);
+  assert.match(financePage, /setSelectedClientId\(null\)/);
+  assert.match(financePage, /setSelectedProjectId\(null\)/);
+});
