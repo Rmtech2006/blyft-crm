@@ -66,7 +66,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
     if (!noteContent.trim()) return
     setAddingNote(true)
     try {
-      await addNote({ leadId: id as Id<'leads'>, content: noteContent })
+      await addNote({ leadId: id as Id<'leads'>, content: noteContent, createdBy: session?.user?.name ?? undefined })
       toast.success('Note added')
       setNoteContent('')
     } catch {

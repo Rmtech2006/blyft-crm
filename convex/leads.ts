@@ -251,9 +251,13 @@ export const remove = mutation({
 });
 
 export const addNote = mutation({
-  args: { leadId: v.id("leads"), content: v.string() },
+  args: { leadId: v.id("leads"), content: v.string(), createdBy: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("leadNotes", { leadId: args.leadId, content: args.content });
+    return await ctx.db.insert("leadNotes", {
+      leadId: args.leadId,
+      content: args.content,
+      createdBy: args.createdBy,
+    });
   },
 });
 

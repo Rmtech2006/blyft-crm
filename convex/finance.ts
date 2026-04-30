@@ -326,7 +326,7 @@ export const getOutstanding = query({
 export const listPettyCash = query({
   args: {},
   handler: async (ctx) => {
-    const entries = await ctx.db.query("pettyCash").order("desc").collect();
+    const entries = await ctx.db.query("pettyCash").order("desc").take(200);
     return entries.map((e) => ({ ...e, id: e._id }));
   },
 });

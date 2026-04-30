@@ -151,6 +151,7 @@ export default defineSchema({
   leadNotes: defineTable({
     leadId: v.id("leads"),
     content: v.string(),
+    createdBy: v.optional(v.string()),
   }).index("by_leadId", ["leadId"]),
 
   leadCallLogs: defineTable({
@@ -321,7 +322,9 @@ export default defineSchema({
     action: v.string(),
     details: v.optional(v.string()),
     userId: v.optional(v.string()),
-  }),
+  })
+    .index("by_entity", ["entity"])
+    .index("by_entityId", ["entityId"]),
 
   notifications: defineTable({
     userId: v.string(),
@@ -357,7 +360,7 @@ export default defineSchema({
     date: v.number(),
     category: v.string(),
     addedBy: v.string(),
-  }),
+  }).index("by_date", ["date"]),
 
   userSettings: defineTable({
     userId: v.string(),
