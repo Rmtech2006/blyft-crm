@@ -12,7 +12,7 @@ crons.cron(
 
 crons.cron(
   "follow-up sweep",
-  "30 8 * * *",
+  "0 3 * * *",
   internal.automation.runFollowUpSweep,
   {}
 );
