@@ -1,5 +1,15 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
+
+async function logActivity(
+  ctx: MutationCtx,
+  entity: string,
+  entityId: string,
+  action: string,
+  details?: string
+) {
+  await ctx.db.insert("activityLogs", { entity, entityId, action, details });
+}
 
 export const list = query({
   args: {},
@@ -10,11 +20,11 @@ export const list = query({
         const contacts = await ctx.db
           .query("clientContacts")
           .withIndex("by_clientId", (q) => q.eq("clientId", client._id))
-          .collect();
+          .take(50);
         const projects = await ctx.db
           .query("projects")
           .withIndex("by_clientId", (q) => q.eq("clientId", client._id))
-          .collect();
+          .take(50);
         return {
           ...client,
           id: client._id,
@@ -34,20 +44,20 @@ export const get = query({
     const contacts = await ctx.db
       .query("clientContacts")
       .withIndex("by_clientId", (q) => q.eq("clientId", args.id))
-      .collect();
+      .take(50);
     const projects = await ctx.db
       .query("projects")
       .withIndex("by_clientId", (q) => q.eq("clientId", args.id))
-      .collect();
+      .take(50);
     const notes = await ctx.db
       .query("clientNotes")
       .withIndex("by_clientId", (q) => q.eq("clientId", args.id))
       .order("desc")
-      .collect();
+      .take(100);
     const transactions = await ctx.db
       .query("transactions")
       .withIndex("by_clientId", (q) => q.eq("clientId", args.id))
-      .collect();
+      .take(300);
     return {
       ...client,
       id: client._id,
@@ -74,7 +84,7 @@ export const create = mutation({
     startDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("clients", {
+    const id = await ctx.db.insert("clients", {
       companyName: args.companyName,
       industry: args.industry,
       gstNumber: args.gstNumber,
@@ -85,6 +95,8 @@ export const create = mutation({
       paymentTerms: args.paymentTerms,
       startDate: args.startDate,
     });
+    await logActivity(ctx, "client", id, "CREATE", args.companyName);
+    return id;
   },
 });
 
@@ -114,7 +126,9 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const { id, ...rest } = args;
+    const existing = await ctx.db.get(id);
     await ctx.db.patch(id, rest);
+    await logActivity(ctx, "client", id, "UPDATE", existing?.companyName);
     // Auto-promote to ACTIVE once onboarding fully complete
     const updated = await ctx.db.get(id);
     if (

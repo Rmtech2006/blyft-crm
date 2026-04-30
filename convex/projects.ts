@@ -1,5 +1,15 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
+
+async function logActivity(
+  ctx: MutationCtx,
+  entity: string,
+  entityId: string,
+  action: string,
+  details?: string
+) {
+  await ctx.db.insert("activityLogs", { entity, entityId, action, details });
+}
 
 export const list = query({
   args: {},
@@ -77,7 +87,7 @@ export const create = mutation({
     driveFolder: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("projects", {
+    const id = await ctx.db.insert("projects", {
       name: args.name,
       clientId: args.clientId,
       type: args.type,
@@ -88,6 +98,8 @@ export const create = mutation({
       budgetAgreed: args.budgetAgreed,
       driveFolder: args.driveFolder,
     });
+    await logActivity(ctx, "project", id, "CREATE", args.name);
+    return id;
   },
 });
 
@@ -113,6 +125,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const { id, ...rest } = args;
     await ctx.db.patch(id, rest);
+    await logActivity(ctx, "project", id, "UPDATE", args.name);
   },
 });
 

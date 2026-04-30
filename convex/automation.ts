@@ -345,18 +345,20 @@ export const runProjectDeadlineSweep = internalMutation({
     const dueProjectDeadlines = await loadDueProjectDeadlines(ctx, now);
 
     for (const project of dueProjectDeadlines.slice(0, 25)) {
-      await upsertNotification(ctx, {
-        userId: "ritish",
-        title: "Project deadline due soon",
-        message: `${project.name}${project.client ? ` for ${project.client.companyName}` : ""} is due by ${new Date(project.deadline ?? now).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-        })}.`,
-        type: "PROJECT_DEADLINE_DUE",
-        link: project.link,
-        dedupeKey: `project-deadline:${day}:${project.id}`,
-        createdForDay: day,
-      });
+      for (const userId of DIGEST_USER_IDS) {
+        await upsertNotification(ctx, {
+          userId,
+          title: "Project deadline due soon",
+          message: `${project.name}${project.client ? ` for ${project.client.companyName}` : ""} is due by ${new Date(project.deadline ?? now).toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+          })}.`,
+          type: "PROJECT_DEADLINE_DUE",
+          link: project.link,
+          dedupeKey: `project-deadline:${day}:${project.id}:${userId}`,
+          createdForDay: day,
+        });
+      }
     }
   },
 });

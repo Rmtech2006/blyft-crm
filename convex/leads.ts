@@ -8,10 +8,16 @@ import {
 
 type LeadDuplicateKeys = ReturnType<typeof buildLeadDuplicateKeys>;
 
-const USERS: Record<string, { id: string; name: string }> = {
-  ritish: { id: "ritish", name: "Ritish" },
-  eshaan: { id: "eshaan", name: "Eshaan" },
-};
+async function logActivity(
+  ctx: MutationCtx,
+  entity: string,
+  entityId: string,
+  action: string,
+  details?: string,
+  userId?: string
+) {
+  await ctx.db.insert("activityLogs", { entity, entityId, action, details, userId });
+}
 
 function istDayKey(now: number): string {
   return new Date(now + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -61,11 +67,17 @@ async function refreshDuplicateFields(
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const leads = await ctx.db.query("leads").order("desc").take(500);
+    const [leads, members] = await Promise.all([
+      ctx.db.query("leads").order("desc").take(500),
+      ctx.db.query("teamMembers").order("desc").take(100),
+    ]);
+    const memberMap = new Map(members.map((m) => [m._id as string, { id: m._id as string, name: m.fullName }]));
     return leads.map((lead) => ({
       ...lead,
       id: lead._id,
-      owner: lead.ownerId ? (USERS[lead.ownerId] ?? null) : null,
+      owner: lead.ownerId
+        ? (memberMap.get(lead.ownerId) ?? { id: lead.ownerId, name: lead.ownerId })
+        : null,
     }));
   },
 });
@@ -85,10 +97,14 @@ export const get = query({
       .withIndex("by_leadId", (q) => q.eq("leadId", args.id))
       .order("desc")
       .take(100);
+    const members = await ctx.db.query("teamMembers").order("desc").take(100);
+    const memberMap = new Map(members.map((m) => [m._id as string, { id: m._id as string, name: m.fullName }]));
     return {
       ...lead,
       id: lead._id,
-      owner: lead.ownerId ? (USERS[lead.ownerId] ?? null) : null,
+      owner: lead.ownerId
+        ? (memberMap.get(lead.ownerId) ?? { id: lead.ownerId, name: lead.ownerId })
+        : null,
       notes: notes.map((n) => ({ ...n, id: n._id, createdAt: n._creationTime })),
       callLogs: callLogs.map((c) => ({ ...c, id: c._id })),
     };
@@ -146,6 +162,7 @@ export const create = mutation({
       dedupeKey: `lead-created:${leadId}`,
       createdForDay: istDayKey(now),
     });
+    await logActivity(ctx, "lead", leadId, "CREATE", args.name, args.ownerId);
 
     return leadId;
   },
@@ -216,6 +233,7 @@ export const update = mutation({
       }
     }
     await ctx.db.patch(id, patch);
+    await logActivity(ctx, "lead", id, "UPDATE", args.name ?? existing.name, existing.ownerId);
   },
 });
 
@@ -242,11 +260,13 @@ export const setFollowUpDate = mutation({
 export const remove = mutation({
   args: { id: v.id("leads") },
   handler: async (ctx, args) => {
+    const leadToDelete = await ctx.db.get(args.id);
     const notes = await ctx.db.query("leadNotes").withIndex("by_leadId", (q) => q.eq("leadId", args.id)).take(200);
     for (const n of notes) await ctx.db.delete(n._id);
     const calls = await ctx.db.query("leadCallLogs").withIndex("by_leadId", (q) => q.eq("leadId", args.id)).take(200);
     for (const c of calls) await ctx.db.delete(c._id);
     await ctx.db.delete(args.id);
+    await logActivity(ctx, "lead", args.id, "DELETE", leadToDelete?.name, leadToDelete?.ownerId);
   },
 });
 
@@ -336,6 +356,7 @@ export const convertToClient = mutation({
       stage: "PROPOSAL_ACCEPTED",
       convertedClientId: clientId,
     });
+    await logActivity(ctx, "lead", args.id, "CONVERT", `${lead.company ?? lead.name} → client`, lead.ownerId);
 
     return clientId;
   },
