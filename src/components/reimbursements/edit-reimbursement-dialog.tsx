@@ -21,9 +21,15 @@ const schema = z.object({
   description: z.string().min(1, 'Description required'),
   date: z.string().min(1, 'Date required'),
   teamMemberId: z.string().optional(),
+  submittedById: z.string().min(1, 'Submitter required'),
 })
 
 type FormData = z.infer<typeof schema>
+
+const SUBMITTERS = [
+  { id: 'ritish', name: 'Ritish' },
+  { id: 'eshaan', name: 'Eshaan' },
+]
 
 type EditableReimbursement = {
   id: string
@@ -33,6 +39,7 @@ type EditableReimbursement = {
   date: number
   receiptUrl?: string
   teamMember?: { id: string } | null
+  submittedBy: { id: string }
 }
 
 function dateInputValue(value: number) {
@@ -59,6 +66,7 @@ export function EditReimbursementDialog({
       description: reimbursement.description,
       date: dateInputValue(reimbursement.date),
       teamMemberId: reimbursement.teamMember?.id ?? '',
+      submittedById: reimbursement.submittedBy.id,
     },
   })
 
@@ -70,6 +78,7 @@ export function EditReimbursementDialog({
       description: reimbursement.description,
       date: dateInputValue(reimbursement.date),
       teamMemberId: reimbursement.teamMember?.id ?? '',
+      submittedById: reimbursement.submittedBy.id,
     })
   }, [open, reimbursement, reset])
 
@@ -84,6 +93,7 @@ export function EditReimbursementDialog({
         date: new Date(data.date).getTime(),
         receiptUrl: reimbursement.receiptUrl,
         teamMemberId: data.teamMemberId ? (data.teamMemberId as Id<'teamMembers'>) : undefined,
+        submittedById: data.submittedById,
       })
       toast.success('Reimbursement updated')
       setOpen(false)
@@ -132,6 +142,15 @@ export function EditReimbursementDialog({
             <Label>Description</Label>
             <Input {...register('description')} />
             {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
+          </div>
+          <div className="space-y-1">
+            <Label>Submitted By</Label>
+            <Select value={watch('submittedById') ?? ''} onValueChange={(v) => v && setValue('submittedById', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {SUBMITTERS.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1">
             <Label>Team Member</Label>

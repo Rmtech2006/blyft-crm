@@ -80,6 +80,7 @@ export const update = mutation({
     receiptUrl: v.optional(v.string()),
     receiptStorageId: v.optional(v.string()),
     teamMemberId: v.optional(v.id("teamMembers")),
+    submittedById: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { id, ...rest } = args;
