@@ -78,7 +78,9 @@ async function loadDueLeadFollowUps(ctx: ReadCtx, now: number) {
     .withIndex("by_followUpDate", (q) => q.lt("followUpDate", now + 1))
     .take(100);
 
-  return getDueLeadFollowUps(candidates, now).slice(0, 30);
+  return getDueLeadFollowUps(candidates, now)
+    .filter((lead: Doc<"leads">) => lead.stage !== "PROPOSAL_SENT")
+    .slice(0, 30);
 }
 
 async function loadStaleProposalLeads(ctx: ReadCtx, now: number) {
