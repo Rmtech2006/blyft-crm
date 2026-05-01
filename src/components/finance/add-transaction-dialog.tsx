@@ -185,8 +185,9 @@ export function AddTransactionDialog({
       >
         {isEditing ? <Pencil className="h-3.5 w-3.5" /> : <><Plus className="h-4 w-4 mr-1" /> {triggerLabel}</>}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader><DialogTitle>{isEditing ? 'Edit Transaction' : 'Record Transaction'}</DialogTitle></DialogHeader>
+      <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
+        <DialogHeader className="shrink-0"><DialogTitle>{isEditing ? 'Edit Transaction' : 'Record Transaction'}</DialogTitle></DialogHeader>
+        <div className="overflow-y-auto flex-1 pr-1">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
@@ -311,11 +312,12 @@ export function AddTransactionDialog({
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-2 pb-1">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={loading}>{loading ? 'Saving...' : isEditing ? 'Save Changes' : 'Record'}</Button>
           </div>
         </form>
+        </div>
       </DialogContent>
     </Dialog>
   )
