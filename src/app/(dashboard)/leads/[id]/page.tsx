@@ -2,6 +2,7 @@
 
 import { use, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import { Id } from '@convex/_generated/dataModel'
@@ -31,6 +32,7 @@ const stageColors: Record<string, string> = STAGE_COLORS
 export default function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
+  const { data: session } = useSession()
   const lead = useQuery(api.leads.get, { id: id as Id<'leads'> })
   const templates = useQuery(api.templates.list)
   const updateLead = useMutation(api.leads.update)

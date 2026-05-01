@@ -16,11 +16,9 @@ const OPEN_LEAD_STAGES = [
   "QUALIFICATION_SUBMITTED",
   "STRATEGY_CALL",
   "PROPOSAL_SENT",
+  "PROPOSAL_ACCEPTED",
   "NURTURE",
-  "NEW_LEAD",
-  "CONTACTED",
-  "DISCOVERY",
-  "NEGOTIATION",
+  "LOST",
 ] as const;
 
 function isOperatingIncome(transaction: { category: string }) {

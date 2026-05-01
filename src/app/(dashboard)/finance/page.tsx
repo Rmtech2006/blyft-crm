@@ -431,6 +431,7 @@ function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string;
                       <p className="font-medium text-sm">{t.description}</p>
                       {t.notes && <p className="text-xs text-muted-foreground">{t.notes}</p>}
                       {t.client && <p className="text-xs text-muted-foreground">{t.client.companyName}</p>}
+                      {t.project && <p className="text-xs text-muted-foreground">{t.project.name}</p>}
                     </div>
                   </div>
                 </TableCell>

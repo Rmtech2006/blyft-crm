@@ -284,4 +284,6 @@ test("finance transactions can be filtered by linked client and project", () => 
   assert.match(financePage, /All projects/);
   assert.match(financePage, /setSelectedClientId\(null\)/);
   assert.match(financePage, /setSelectedProjectId\(null\)/);
+  assert.match(financePage, /t\.client && <p className="text-xs text-muted-foreground">\{t\.client\.companyName\}<\/p>/);
+  assert.match(financePage, /t\.project && <p className="text-xs text-muted-foreground">\{t\.project\.name\}<\/p>/);
 });

@@ -183,140 +183,149 @@ export function AddTransactionDialog({
           />
         }
       >
-        {isEditing ? <Pencil className="h-3.5 w-3.5" /> : <><Plus className="h-4 w-4 mr-1" /> {triggerLabel}</>}
+        {isEditing ? (
+          <Pencil className="h-3.5 w-3.5" />
+        ) : (
+          <>
+            <Plus className="h-4 w-4 mr-1" />
+            {triggerLabel}
+          </>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
-        <DialogHeader className="shrink-0"><DialogTitle>{isEditing ? 'Edit Transaction' : 'Record Transaction'}</DialogTitle></DialogHeader>
+        <DialogHeader className="shrink-0">
+          <DialogTitle>{isEditing ? 'Edit Transaction' : 'Record Transaction'}</DialogTitle>
+        </DialogHeader>
         <div className="overflow-y-auto flex-1 pr-1">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label>Type</Label>
-              <Select value={type} onValueChange={(v) => setValue('type', v as 'INCOME' | 'EXPENSE')}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="INCOME">Credit (Income)</SelectItem>
-                  <SelectItem value="EXPENSE">Debit (Expense)</SelectItem>
-                </SelectContent>
-              </Select>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Type</Label>
+                <Select value={type} onValueChange={(v) => setValue('type', v as 'INCOME' | 'EXPENSE')}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="INCOME">Credit (Income)</SelectItem>
+                    <SelectItem value="EXPENSE">Debit (Expense)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Amount (₹)</Label>
+                <Input type="number" step="0.01" placeholder="0.00" {...register('amount')} />
+                {errors.amount && <p className="text-xs text-red-500">{errors.amount.message}</p>}
+              </div>
             </div>
+
             <div className="space-y-1">
-              <Label>Amount (₹)</Label>
-              <Input type="number" step="0.01" placeholder="0.00" {...register('amount')} />
-              {errors.amount && <p className="text-xs text-red-500">{errors.amount.message}</p>}
+              <Label>Description</Label>
+              <Input placeholder="e.g. Payment from Acme Corp" {...register('description')} />
+              {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
             </div>
-          </div>
 
-          <div className="space-y-1">
-            <Label>Description</Label>
-            <Input placeholder="e.g. Payment from Acme Corp" {...register('description')} />
-            {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
-          </div>
-
-          <div className="space-y-1">
-            <Label>Notes</Label>
-            <Textarea placeholder="Add internal notes, invoice reference, or context" {...register('notes')} />
-          </div>
-
-          <div className="space-y-1">
-            <Label>Category</Label>
-            <Input placeholder="e.g. Client Payment, Salary, Ads, Tools" {...register('category')} />
-            {errors.category && <p className="text-xs text-red-500">{errors.category.message}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label>Date</Label>
-              <Input type="date" {...register('date')} />
+              <Label>Notes</Label>
+              <Textarea placeholder="Add internal notes, invoice reference, or context" {...register('notes')} />
             </div>
-            <div className="space-y-1">
-              <Label>Payment Mode</Label>
-              <Select value={paymentMode} onValueChange={(v) => setValue('paymentMode', v as FormData['paymentMode'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {['CASH', 'UPI', 'BANK_TRANSFER', 'CHEQUE', 'CARD', 'OTHER'].map((m) => (
-                    <SelectItem key={m} value={m}>{m.replace('_', ' ')}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          <div className="space-y-1">
-            <Label>Bank Account (optional)</Label>
-            {defaultBankAccountId ? (
-              <p className="text-sm text-muted-foreground">
-                {selectedDefaultBankAccountLabel}
-              </p>
-            ) : (
-              <Select value={bankAccountId || 'none'} onValueChange={(v) => setValue('bankAccountId', v == null ? '' : v === 'none' ? '' : v)}>
-                <SelectTrigger className="w-full min-w-0">
-                  <SelectValue placeholder="No account">
-                    <span className="block truncate">{selectedBankAccountLabel}</span>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No account</SelectItem>
-                  {bankAccounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>{a.name} - {a.bankName}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-1">
+              <Label>Category</Label>
+              <Input placeholder="e.g. Client Payment, Salary, Ads, Tools" {...register('category')} />
+              {errors.category && <p className="text-xs text-red-500">{errors.category.message}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Date</Label>
+                <Input type="date" {...register('date')} />
+              </div>
+              <div className="space-y-1">
+                <Label>Payment Mode</Label>
+                <Select value={paymentMode} onValueChange={(v) => setValue('paymentMode', v as FormData['paymentMode'])}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {['CASH', 'UPI', 'BANK_TRANSFER', 'CHEQUE', 'CARD', 'OTHER'].map((m) => (
+                      <SelectItem key={m} value={m}>{m.replace('_', ' ')}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Bank Account (optional)</Label>
+              {defaultBankAccountId ? (
+                <p className="text-sm text-muted-foreground">{selectedDefaultBankAccountLabel}</p>
+              ) : (
+                <Select value={bankAccountId || 'none'} onValueChange={(v) => setValue('bankAccountId', v == null ? '' : v === 'none' ? '' : v)}>
+                  <SelectTrigger className="w-full min-w-0">
+                    <SelectValue placeholder="No account">
+                      <span className="block truncate">{selectedBankAccountLabel}</span>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No account</SelectItem>
+                    {bankAccounts.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>{a.name} - {a.bankName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label>Link to client</Label>
+                <Select value={clientId || 'none'} onValueChange={(v) => setValue('clientId', v == null ? '' : v === 'none' ? '' : v)}>
+                  <SelectTrigger className="w-full min-w-0">
+                    <SelectValue placeholder="No client">
+                      <span className="block truncate">{selectedClientLabel}</span>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No client</SelectItem>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>{client.companyName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Link to project</Label>
+                <Select value={projectId || 'none'} onValueChange={(v) => setValue('projectId', v == null ? '' : v === 'none' ? '' : v)}>
+                  <SelectTrigger className="w-full min-w-0">
+                    <SelectValue placeholder="No project">
+                      <span className="block truncate">{selectedProjectLabel}</span>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No project</SelectItem>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox id="gstTagged" checked={gstTagged} onCheckedChange={(v) => setValue('gstTagged', !!v)} />
+              <Label htmlFor="gstTagged">GST Tagged</Label>
+            </div>
+
+            {gstTagged && (
+              <div className="space-y-1">
+                <Label>GST Amount (₹)</Label>
+                <Input type="number" step="0.01" placeholder="0.00" {...register('gstAmount')} />
+              </div>
             )}
-          </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-1">
-              <Label>Link to client</Label>
-              <Select value={clientId || 'none'} onValueChange={(v) => setValue('clientId', v == null ? '' : v === 'none' ? '' : v)}>
-                <SelectTrigger className="w-full min-w-0">
-                  <SelectValue placeholder="No client">
-                    <span className="block truncate">{selectedClientLabel}</span>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No client</SelectItem>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>{client.companyName}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex justify-end gap-2 pt-2 pb-1">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Saving...' : isEditing ? 'Save Changes' : 'Record'}
+              </Button>
             </div>
-            <div className="space-y-1">
-              <Label>Link to project</Label>
-              <Select value={projectId || 'none'} onValueChange={(v) => setValue('projectId', v == null ? '' : v === 'none' ? '' : v)}>
-                <SelectTrigger className="w-full min-w-0">
-                  <SelectValue placeholder="No project">
-                    <span className="block truncate">{selectedProjectLabel}</span>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No project</SelectItem>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Checkbox id="gstTagged" checked={gstTagged} onCheckedChange={(v) => setValue('gstTagged', !!v)} />
-            <Label htmlFor="gstTagged">GST Tagged</Label>
-          </div>
-
-          {gstTagged && (
-            <div className="space-y-1">
-              <Label>GST Amount (₹)</Label>
-              <Input type="number" step="0.01" placeholder="0.00" {...register('gstAmount')} />
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2 pt-2 pb-1">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? 'Saving...' : isEditing ? 'Save Changes' : 'Record'}</Button>
-          </div>
-        </form>
+          </form>
         </div>
       </DialogContent>
     </Dialog>
