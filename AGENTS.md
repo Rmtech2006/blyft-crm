@@ -11,3 +11,27 @@ When working on Convex code, **always read `convex/_generated/ai/guidelines.md` 
 
 Convex agent skills for common tasks can be installed by running `npx convex ai-files install`.
 <!-- convex-ai-end -->
+
+<!-- superpowers-start -->
+## Superpowers Skills
+
+This project uses the [Superpowers](https://github.com/obra/superpowers) methodology. Skills are in `docs/superpowers/skills/`. Before any task, check if a skill applies and follow it.
+
+**Available skills** (read the file before using):
+- `brainstorming.md` — REQUIRED before creating features, components, or new functionality
+- `systematic-debugging.md` — REQUIRED before proposing any fix
+- `test-driven-development.md` — REQUIRED before writing implementation code
+- `verification-before-completion.md` — REQUIRED before claiming work is done
+- `writing-plans.md` — before multi-step implementation tasks
+- `executing-plans.md` — when running a written plan
+- `subagent-driven-development.md` — for plan execution with subagents
+- `dispatching-parallel-agents.md` — for 2+ independent tasks
+- `using-git-worktrees.md` — before isolated feature work
+- `requesting-code-review.md` — after major features or before merge
+- `receiving-code-review.md` — when handling review feedback
+- `finishing-a-development-branch.md` — when implementation is complete
+- `writing-skills.md` — when authoring new skills
+- `using-superpowers.md` — meta-skill for how to invoke all others
+
+**Priority:** User instructions → Superpowers skills → Default behavior
+<!-- superpowers-end -->
