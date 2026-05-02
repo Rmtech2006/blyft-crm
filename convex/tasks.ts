@@ -2,8 +2,15 @@ import { query, mutation, type QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUserId, requireIdentity } from "./auth";
 
+const ADMIN_USERS: Record<string, { id: string; name: string }> = {
+  ritish: { id: "ritish", name: "Ritish" },
+  eshaan: { id: "eshaan", name: "Eshaan" },
+};
+
 async function getAssignee(ctx: QueryCtx, assigneeId?: string) {
   if (!assigneeId) return null;
+
+  if (ADMIN_USERS[assigneeId]) return ADMIN_USERS[assigneeId];
 
   const teamMemberId = ctx.db.normalizeId("teamMembers", assigneeId);
   if (!teamMemberId) return null;

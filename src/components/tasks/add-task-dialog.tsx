@@ -16,6 +16,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus } from 'lucide-react'
 
+const ADMIN_USERS = [
+  { id: 'ritish', fullName: 'Ritish' },
+  { id: 'eshaan', fullName: 'Eshaan' },
+]
+
 const schema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
@@ -144,6 +149,7 @@ export function AddTaskDialog() {
                 <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Unassigned</SelectItem>
+                  {ADMIN_USERS.map((u) => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}
                   {users
                     .filter((u) => u.status !== 'OFFBOARDED')
                     .map((u) => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}
