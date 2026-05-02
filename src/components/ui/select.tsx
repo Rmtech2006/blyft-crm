@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { isValidElement } from "react"
+import { isValidElement, createContext, useContext, useRef } from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
@@ -14,7 +14,17 @@ function getTextContent(node: React.ReactNode): string {
   return ''
 }
 
-const Select = SelectPrimitive.Root
+// Registry that maps value → label so SelectValue can show human-readable text
+const SelectLabelsContext = createContext<React.MutableRefObject<Map<string, string>> | null>(null)
+
+function Select(props: React.ComponentProps<typeof SelectPrimitive.Root>) {
+  const labelsRef = useRef(new Map<string, string>())
+  return (
+    <SelectLabelsContext.Provider value={labelsRef}>
+      <SelectPrimitive.Root {...props} />
+    </SelectLabelsContext.Provider>
+  )
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
@@ -26,13 +36,19 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   )
 }
 
-function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
+function SelectValue({ className, placeholder, ...props }: SelectPrimitive.Value.Props) {
+  const labelsRef = useContext(SelectLabelsContext)
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
+      placeholder={placeholder}
       className={cn("flex flex-1 text-left", className)}
       {...props}
-    />
+    >
+      {labelsRef
+        ? (value: unknown) => (value != null && value !== '' ? (labelsRef.current.get(String(value)) ?? String(value)) : undefined)
+        : undefined}
+    </SelectPrimitive.Value>
   )
 }
 
@@ -119,13 +135,21 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  value,
   ...props
 }: SelectPrimitive.Item.Props) {
+  const labelsRef = useContext(SelectLabelsContext)
   const label = getTextContent(children)
+
+  // Register value → label so SelectValue can display it
+  if (labelsRef && value != null) {
+    labelsRef.current.set(String(value), label)
+  }
+
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
-      label={label || undefined}
+      value={value}
       className={cn(
         "relative flex w-full cursor-default items-center gap-1.5 rounded-xl py-2 pr-8 pl-2.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
