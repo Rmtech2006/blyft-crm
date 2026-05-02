@@ -50,11 +50,7 @@ export function FinanceSummaryCards({
         </CardHeader>
         <CardContent><p className={`text-2xl font-bold ${totalBankBalance >= 0 ? 'text-purple-600' : 'text-destructive'}`}>{formatINR(totalBankBalance)}</p></CardContent>
       </Card>
-      {nonOperatingIncome > 0 && (
-        <p className="text-xs text-muted-foreground md:col-span-4">
-          Non-operating income recorded separately: {formatINR(nonOperatingIncome)}
-        </p>
-      )}
+
     </div>
   )
 }

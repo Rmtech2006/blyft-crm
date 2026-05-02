@@ -1,10 +1,18 @@
 "use client"
 
 import * as React from "react"
+import { isValidElement } from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
-
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
+
+function getTextContent(node: React.ReactNode): string {
+  if (typeof node === 'string') return node
+  if (typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(getTextContent).join('')
+  if (isValidElement(node)) return getTextContent((node.props as { children?: React.ReactNode }).children)
+  return ''
+}
 
 const Select = SelectPrimitive.Root
 
@@ -113,9 +121,11 @@ function SelectItem({
   children,
   ...props
 }: SelectPrimitive.Item.Props) {
+  const label = getTextContent(children)
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
+      label={label || undefined}
       className={cn(
         "relative flex w-full cursor-default items-center gap-1.5 rounded-xl py-2 pr-8 pl-2.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
