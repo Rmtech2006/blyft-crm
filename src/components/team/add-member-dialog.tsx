@@ -69,10 +69,23 @@ export function AddMemberDialog() {
   const createMember = useMutation(api.team.create)
   const generateUploadUrl = useMutation(api.files.generateUploadUrl)
 
-  const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, reset, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { type: 'INTERN', status: 'ACTIVE', compensationMode: 'NONE' },
   })
+  const memberType = watch('type') ?? 'INTERN'
+  const memberStatus = watch('status') ?? 'ACTIVE'
+  const compensationMode = watch('compensationMode') ?? 'NONE'
+
+  const MEMBER_TYPE_LABELS: Record<string, string> = {
+    INTERN: 'Intern', FREELANCER: 'Freelancer', PART_TIME: 'Part-time', FULL_TIME: 'Full-time',
+  }
+  const MEMBER_STATUS_LABELS: Record<string, string> = {
+    ACTIVE: 'Active', ON_LEAVE: 'On Leave', OFFBOARDED: 'Offboarded',
+  }
+  const COMPENSATION_LABELS: Record<string, string> = {
+    NONE: 'None', HOURLY: 'Hourly', MONTHLY: 'Monthly', PROJECT_BASED: 'Project Based',
+  }
 
   useEffect(() => {
     if (!photoFile) {
@@ -194,23 +207,24 @@ export function AddMemberDialog() {
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1">
               <Label>Type *</Label>
-              <Select defaultValue="INTERN" onValueChange={(value) => setValue('type', value as FormData['type'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={memberType} onValueChange={(value) => setValue('type', value as FormData['type'])}>
+                <SelectTrigger><SelectValue>{MEMBER_TYPE_LABELS[memberType]}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  {['INTERN', 'FREELANCER', 'PART_TIME', 'FULL_TIME'].map((type) => (
-                    <SelectItem key={type} value={type}>{type.replace('_', ' ')}</SelectItem>
-                  ))}
+                  <SelectItem value="INTERN">Intern</SelectItem>
+                  <SelectItem value="FREELANCER">Freelancer</SelectItem>
+                  <SelectItem value="PART_TIME">Part-time</SelectItem>
+                  <SelectItem value="FULL_TIME">Full-time</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
               <Label>Status</Label>
-              <Select defaultValue="ACTIVE" onValueChange={(value) => setValue('status', value as FormData['status'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={memberStatus} onValueChange={(value) => setValue('status', value as FormData['status'])}>
+                <SelectTrigger><SelectValue>{MEMBER_STATUS_LABELS[memberStatus]}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  {['ACTIVE', 'ON_LEAVE', 'OFFBOARDED'].map((status) => (
-                    <SelectItem key={status} value={status}>{status.replace('_', ' ')}</SelectItem>
-                  ))}
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="ON_LEAVE">On Leave</SelectItem>
+                  <SelectItem value="OFFBOARDED">Offboarded</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -268,13 +282,13 @@ export function AddMemberDialog() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">
               <Label>Compensation Mode</Label>
-              <Select defaultValue="NONE" onValueChange={(value) => setValue('compensationMode', value as FormData['compensationMode'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={compensationMode} onValueChange={(value) => setValue('compensationMode', value as FormData['compensationMode'])}>
+                <SelectTrigger><SelectValue>{COMPENSATION_LABELS[compensationMode]}</SelectValue></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NONE">None</SelectItem>
-                  {['HOURLY', 'MONTHLY', 'PROJECT_BASED'].map((mode) => (
-                    <SelectItem key={mode} value={mode}>{mode.replace('_', ' ')}</SelectItem>
-                  ))}
+                  <SelectItem value="HOURLY">Hourly</SelectItem>
+                  <SelectItem value="MONTHLY">Monthly</SelectItem>
+                  <SelectItem value="PROJECT_BASED">Project Based</SelectItem>
                 </SelectContent>
               </Select>
             </div>
