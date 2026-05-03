@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { isValidElement, createContext, useContext, useRef } from "react"
+import { isValidElement, createContext, useContext, useRef, useReducer, useCallback, useLayoutEffect } from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
@@ -14,13 +14,28 @@ function getTextContent(node: React.ReactNode): string {
   return ''
 }
 
-// Registry that maps value → label so SelectValue can show human-readable text
-const SelectLabelsContext = createContext<React.MutableRefObject<Map<string, string>> | null>(null)
+type SelectLabelsCtx = {
+  labelsRef: React.MutableRefObject<Map<string, string>>
+  register: (value: string, label: string) => void
+}
 
+const SelectLabelsContext = createContext<SelectLabelsCtx | null>(null)
+
+// Wraps Select.Root and provides a labels registry so SelectValue can display
+// human-readable text instead of raw enum/ID values.
 function Select(props: React.ComponentProps<typeof SelectPrimitive.Root>) {
   const labelsRef = useRef(new Map<string, string>())
+  const [, forceUpdate] = useReducer((x: number) => x + 1, 0)
+
+  const register = useCallback((value: string, label: string) => {
+    if (labelsRef.current.get(value) !== label) {
+      labelsRef.current.set(value, label)
+      forceUpdate()
+    }
+  }, [])
+
   return (
-    <SelectLabelsContext.Provider value={labelsRef}>
+    <SelectLabelsContext.Provider value={{ labelsRef, register }}>
       <SelectPrimitive.Root {...props} />
     </SelectLabelsContext.Provider>
   )
@@ -37,7 +52,7 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
 }
 
 function SelectValue({ className, placeholder, ...props }: SelectPrimitive.Value.Props) {
-  const labelsRef = useContext(SelectLabelsContext)
+  const ctx = useContext(SelectLabelsContext)
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
@@ -45,8 +60,11 @@ function SelectValue({ className, placeholder, ...props }: SelectPrimitive.Value
       className={cn("flex flex-1 text-left", className)}
       {...props}
     >
-      {labelsRef
-        ? (value: unknown) => (value != null && value !== '' ? (labelsRef.current.get(String(value)) ?? String(value)) : undefined)
+      {ctx
+        ? (value: unknown) =>
+            value != null && value !== ''
+              ? (ctx.labelsRef.current.get(String(value)) ?? String(value))
+              : undefined
         : undefined}
     </SelectPrimitive.Value>
   )
@@ -138,13 +156,14 @@ function SelectItem({
   value,
   ...props
 }: SelectPrimitive.Item.Props) {
-  const labelsRef = useContext(SelectLabelsContext)
+  const ctx = useContext(SelectLabelsContext)
   const label = getTextContent(children)
 
-  // Register value → label so SelectValue can display it
-  if (labelsRef && value != null) {
-    labelsRef.current.set(String(value), label)
-  }
+  // Register value→label after DOM paint so SelectValue can display it.
+  // useLayoutEffect fires before the user sees anything, avoiding a flash.
+  useLayoutEffect(() => {
+    if (ctx && value != null) ctx.register(String(value), label)
+  }, [ctx, value, label])
 
   return (
     <SelectPrimitive.Item
@@ -196,8 +215,7 @@ function SelectScrollUpButton({
       )}
       {...props}
     >
-      <ChevronUpIcon
-      />
+      <ChevronUpIcon />
     </SelectPrimitive.ScrollUpArrow>
   )
 }
@@ -215,8 +233,7 @@ function SelectScrollDownButton({
       )}
       {...props}
     >
-      <ChevronDownIcon
-      />
+      <ChevronDownIcon />
     </SelectPrimitive.ScrollDownArrow>
   )
 }
