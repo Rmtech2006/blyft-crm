@@ -23,7 +23,9 @@ const SelectLabelsContext = createContext<SelectLabelsCtx | null>(null)
 
 // Wraps Select.Root and provides a labels registry so SelectValue can display
 // human-readable text instead of raw enum/ID values.
-function Select(props: React.ComponentProps<typeof SelectPrimitive.Root>) {
+function Select<Value, Multiple extends boolean | undefined = false>(
+  props: SelectPrimitive.Root.Props<Value, Multiple>
+) {
   const labelsRef = useRef(new Map<string, string>())
   const [, forceUpdate] = useReducer((x: number) => x + 1, 0)
 
@@ -36,7 +38,7 @@ function Select(props: React.ComponentProps<typeof SelectPrimitive.Root>) {
 
   return (
     <SelectLabelsContext.Provider value={{ labelsRef, register }}>
-      <SelectPrimitive.Root {...props} />
+      <SelectPrimitive.Root {...(props as SelectPrimitive.Root.Props<unknown>)} />
     </SelectLabelsContext.Provider>
   )
 }
@@ -51,8 +53,20 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   )
 }
 
-function SelectValue({ className, placeholder, ...props }: SelectPrimitive.Value.Props) {
+function SelectValue({ className, placeholder, children: explicitChildren, ...props }: SelectPrimitive.Value.Props) {
   const ctx = useContext(SelectLabelsContext)
+
+  // If the caller provides explicit children (e.g. a precomputed label span), use those.
+  // Otherwise fall back to the registry so we display human-readable text instead of raw values.
+  const children = explicitChildren !== undefined
+    ? explicitChildren
+    : ctx
+      ? (value: unknown) =>
+          value != null && value !== ''
+            ? (ctx.labelsRef.current.get(String(value)) ?? String(value))
+            : undefined
+      : undefined
+
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
@@ -60,12 +74,7 @@ function SelectValue({ className, placeholder, ...props }: SelectPrimitive.Value
       className={cn("flex flex-1 text-left", className)}
       {...props}
     >
-      {ctx
-        ? (value: unknown) =>
-            value != null && value !== ''
-              ? (ctx.labelsRef.current.get(String(value)) ?? String(value))
-              : undefined
-        : undefined}
+      {children}
     </SelectPrimitive.Value>
   )
 }

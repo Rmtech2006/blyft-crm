@@ -243,9 +243,12 @@ export function AddTransactionDialog({
                 <Select value={paymentMode} onValueChange={(v) => setValue('paymentMode', v as FormData['paymentMode'])}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {['CASH', 'UPI', 'BANK_TRANSFER', 'CHEQUE', 'CARD', 'OTHER'].map((m) => (
-                      <SelectItem key={m} value={m}>{m.replace('_', ' ')}</SelectItem>
-                    ))}
+                    <SelectItem value="CASH">Cash</SelectItem>
+                    <SelectItem value="UPI">UPI</SelectItem>
+                    <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
+                    <SelectItem value="CHEQUE">Cheque</SelectItem>
+                    <SelectItem value="CARD">Card</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
