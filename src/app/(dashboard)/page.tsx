@@ -174,6 +174,7 @@ export default function DashboardPage() {
   const targetProgressSource = stats.salesTarget?.progress ?? Math.round((stats.monthlyRevenue / revenueBaseline) * 100)
   const hasTargetTrend = stats.monthlyRevenueTrend.some((month) => month.target > 0)
 
+  const activePipeline = stats.openLeads + stats.activeProjects
   const firstName = session?.user?.name?.split(' ')[0] ?? 'there'
   const hasLeftRailCards =
     visibleSections.has('revenueTracker') ||

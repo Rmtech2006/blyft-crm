@@ -81,3 +81,11 @@ test("dashboard stats queries stay bounded and index-backed", () => {
   assert.match(dashboard, /withIndex\("by_type_and_date"/);
   assert.match(dashboard, /withIndex\("by_status_and_dueDate"/);
 });
+
+test("dashboard attention queue derives live pipeline before rendering it", () => {
+  const dashboard = read("src/app/(dashboard)/page.tsx");
+
+  assert.match(dashboard, /const activePipeline = stats\.openLeads \+ stats\.activeProjects/);
+  assert.match(dashboard, /label: 'Live pipeline'/);
+  assert.match(dashboard, /value: activePipeline/);
+});
