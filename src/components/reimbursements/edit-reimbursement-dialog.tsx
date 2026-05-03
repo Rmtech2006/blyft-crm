@@ -15,6 +15,12 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Pencil } from 'lucide-react'
 
+const CATEGORY_LABELS: Record<string, string> = {
+  TRAVEL: 'Travel', FOOD_ENTERTAINMENT: 'Food & Entertainment',
+  TOOLS_SOFTWARE: 'Tools & Software', OFFICE_SUPPLIES: 'Office Supplies',
+  AD_SPEND: 'Ad Spend', MISCELLANEOUS: 'Miscellaneous',
+}
+
 const schema = z.object({
   category: z.enum(['TRAVEL', 'FOOD_ENTERTAINMENT', 'TOOLS_SOFTWARE', 'OFFICE_SUPPLIES', 'AD_SPEND', 'MISCELLANEOUS']),
   amount: z.string().min(1, 'Amount required'),
@@ -119,11 +125,14 @@ export function EditReimbursementDialog({
           <div className="space-y-1">
             <Label>Category</Label>
             <Select value={watch('category')} onValueChange={(v) => setValue('category', v as FormData['category'])}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger><SelectValue>{CATEGORY_LABELS[watch('category')]}</SelectValue></SelectTrigger>
               <SelectContent>
-                {['TRAVEL', 'FOOD_ENTERTAINMENT', 'TOOLS_SOFTWARE', 'OFFICE_SUPPLIES', 'AD_SPEND', 'MISCELLANEOUS'].map((category) => (
-                  <SelectItem key={category} value={category}>{category.replace('_', ' ')}</SelectItem>
-                ))}
+                <SelectItem value="TRAVEL">Travel</SelectItem>
+                <SelectItem value="FOOD_ENTERTAINMENT">Food & Entertainment</SelectItem>
+                <SelectItem value="TOOLS_SOFTWARE">Tools & Software</SelectItem>
+                <SelectItem value="OFFICE_SUPPLIES">Office Supplies</SelectItem>
+                <SelectItem value="AD_SPEND">Ad Spend</SelectItem>
+                <SelectItem value="MISCELLANEOUS">Miscellaneous</SelectItem>
               </SelectContent>
             </Select>
           </div>

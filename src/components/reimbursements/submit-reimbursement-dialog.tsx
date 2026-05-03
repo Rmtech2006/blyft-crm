@@ -96,9 +96,12 @@ export function SubmitReimbursementDialog() {
             <Select defaultValue="MISCELLANEOUS" onValueChange={(v) => setValue('category', v as FormData['category'])}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {['TRAVEL', 'FOOD_ENTERTAINMENT', 'TOOLS_SOFTWARE', 'OFFICE_SUPPLIES', 'AD_SPEND', 'MISCELLANEOUS'].map((c) => (
-                  <SelectItem key={c} value={c}>{c.replace('_', ' ')}</SelectItem>
-                ))}
+                <SelectItem value="TRAVEL">Travel</SelectItem>
+                <SelectItem value="FOOD_ENTERTAINMENT">Food & Entertainment</SelectItem>
+                <SelectItem value="TOOLS_SOFTWARE">Tools & Software</SelectItem>
+                <SelectItem value="OFFICE_SUPPLIES">Office Supplies</SelectItem>
+                <SelectItem value="AD_SPEND">Ad Spend</SelectItem>
+                <SelectItem value="MISCELLANEOUS">Miscellaneous</SelectItem>
               </SelectContent>
             </Select>
           </div>

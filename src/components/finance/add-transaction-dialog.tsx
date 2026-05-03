@@ -114,6 +114,14 @@ export function AddTransactionDialog({
   const bankAccountId = watch('bankAccountId')
   const clientId = watch('clientId')
   const projectId = watch('projectId')
+  const PAYMENT_MODE_LABELS: Record<FormData['paymentMode'], string> = {
+    CASH: 'Cash', UPI: 'UPI', BANK_TRANSFER: 'Bank Transfer',
+    CHEQUE: 'Cheque', CARD: 'Card', OTHER: 'Other',
+  }
+  const TYPE_LABELS: Record<'INCOME' | 'EXPENSE', string> = {
+    INCOME: 'Credit (Income)', EXPENSE: 'Debit (Expense)',
+  }
+
   const selectedBankAccount = bankAccounts.find((a) => a.id === bankAccountId)
   const selectedBankAccountLabel = selectedBankAccount
     ? `${selectedBankAccount.name} - ${selectedBankAccount.bankName}`
@@ -202,7 +210,7 @@ export function AddTransactionDialog({
               <div className="space-y-1">
                 <Label>Type</Label>
                 <Select value={type} onValueChange={(v) => setValue('type', v as 'INCOME' | 'EXPENSE')}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{TYPE_LABELS[type]}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="INCOME">Credit (Income)</SelectItem>
                     <SelectItem value="EXPENSE">Debit (Expense)</SelectItem>
@@ -241,7 +249,7 @@ export function AddTransactionDialog({
               <div className="space-y-1">
                 <Label>Payment Mode</Label>
                 <Select value={paymentMode} onValueChange={(v) => setValue('paymentMode', v as FormData['paymentMode'])}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{PAYMENT_MODE_LABELS[paymentMode]}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="CASH">Cash</SelectItem>
                     <SelectItem value="UPI">UPI</SelectItem>
