@@ -27,6 +27,7 @@ import { DashboardPageHeader } from '@/components/dashboard/page-header'
 import { DashboardPartialModeAlert } from '@/components/dashboard/partial-mode-alert'
 import { StatsCard } from '@/components/dashboard/stats-card'
 import { EmptyDashboardState } from '@/components/dashboard/empty-dashboard-state'
+import { TodaysFocus } from '@/components/dashboard/todays-focus'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -119,7 +120,10 @@ function getPerformanceTone(value: number): {
 function DashboardSkeleton() {
   return (
     <div className="space-y-6">
-      <Skeleton className="h-[430px] rounded-[36px]" />
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
+        <Skeleton className="h-[320px] rounded-[32px]" />
+        <Skeleton className="h-[320px] rounded-[32px]" />
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
@@ -171,10 +175,18 @@ export default function DashboardPage() {
       : 0
 
   const revenueBaseline = Math.max(monthlyAverage, 1)
-  const targetProgressSource = stats.salesTarget?.progress ?? Math.round((stats.monthlyRevenue / revenueBaseline) * 100)
+  const revenuePace = Math.round((stats.monthlyRevenue / revenueBaseline) * 100)
+  const hasSalesTarget = Boolean(stats.salesTarget)
+  const targetProgressSource = stats.salesTarget?.progress ?? revenuePace
+  const revenueProgress = Math.max(8, Math.min(targetProgressSource, 100))
+  const revenueTone = getPerformanceTone(targetProgressSource)
+  const targetDelta = stats.salesTarget
+    ? stats.salesTarget.actualAmount - stats.salesTarget.targetAmount
+    : 0
   const hasTargetTrend = stats.monthlyRevenueTrend.some((month) => month.target > 0)
 
   const activePipeline = stats.openLeads + stats.activeProjects
+  const opsLoad = activePipeline + stats.pendingReimbursements + stats.overdueCount
   const firstName = session?.user?.name?.split(' ')[0] ?? 'there'
   const hasLeftRailCards =
     visibleSections.has('revenueTracker') ||
@@ -258,31 +270,38 @@ export default function DashboardPage() {
 
       {visibleSections.size === 0 && <EmptyDashboardState />}
 
+      <TodaysFocus />
+
       {visibleSections.has('heroOverview') && (
-        <section className="surface-card hero-noise relative overflow-hidden bg-primary px-6 py-8 text-primary-foreground sm:px-8 sm:py-9 lg:px-10 lg:py-10">
-          <div className="absolute inset-0 opacity-45">
-            <div className="absolute -left-12 top-16 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
-            <div className="absolute left-1/3 top-10 h-40 w-40 rounded-full bg-white/7 blur-3xl" />
-            <div className="absolute right-0 top-0 h-60 w-60 rounded-full bg-white/8 blur-3xl" />
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
+        <div className="surface-card hero-noise relative overflow-hidden bg-primary px-6 py-7 text-primary-foreground sm:px-8 sm:py-8">
+          <div className="absolute inset-0 opacity-40">
+            <div className="absolute -left-10 top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+            <div className="absolute right-0 top-0 h-52 w-52 rounded-full bg-white/8 blur-3xl" />
           </div>
 
-          <div className="relative flex flex-col gap-8 lg:gap-10">
-            <div className="max-w-5xl space-y-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-primary-foreground/55 sm:text-xs">
-                Executive overview
-              </p>
-              <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-[5rem] lg:leading-[1.06]">
-                {greeting}, {firstName}. Your agency control room is live.
-              </h1>
-              <p className="max-w-4xl text-base leading-8 text-primary-foreground/68 sm:text-[1.1rem]">
-                Monitor clients, pipeline, delivery, reimbursements, and revenue from a single operating view.
-              </p>
-              <Badge className="w-fit rounded-full border border-white/16 bg-white/8 px-5 py-2 text-sm uppercase tracking-[0.28em] text-primary-foreground shadow-none">
+          <div className="relative flex h-full flex-col gap-8">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-primary-foreground/55">
+                  Executive overview
+                </p>
+                <div className="space-y-2">
+                  <h1 className="max-w-2xl text-3xl font-semibold tracking-tight sm:text-[2.6rem]">
+                    {greeting}, {firstName}. Your agency control room is live.
+                  </h1>
+                  <p className="max-w-2xl text-sm leading-7 text-primary-foreground/70 sm:text-base">
+                    Monitor clients, pipeline, delivery, reimbursements, and revenue from a single operating view.
+                  </p>
+                </div>
+              </div>
+
+              <Badge className="border border-white/15 bg-white/10 text-primary-foreground shadow-none">
                 BLYFT workspace
               </Badge>
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-3">
               {[
                 {
                   label: 'Live clients',
@@ -302,19 +321,101 @@ export default function DashboardPage() {
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="rounded-[32px] border border-white/12 bg-white/[0.055] px-6 py-6 backdrop-blur-sm"
+                  className="rounded-[24px] border border-white/12 bg-white/6 px-4 py-4 backdrop-blur-sm"
                 >
-                  <p className="text-xs font-semibold uppercase tracking-[0.32em] text-primary-foreground/55">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-primary-foreground/55">
                     {item.label}
                   </p>
-                  <p className="mt-7 text-5xl font-semibold tracking-tight">{item.value}</p>
-                  <p className="mt-5 max-w-[18rem] text-base leading-8 text-primary-foreground/66">
-                    {item.note}
-                  </p>
+                  <p className="mt-3 text-3xl font-semibold tracking-tight">{item.value}</p>
+                  <p className="mt-2 text-sm text-primary-foreground/65">{item.note}</p>
                 </div>
               ))}
             </div>
           </div>
+        </div>
+
+        <Card className="surface-card border-border/70 bg-card/96">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="section-eyebrow">Revenue pulse</p>
+                <CardTitle className="mt-2 text-2xl">This month</CardTitle>
+              </div>
+              <Badge className={cn('border-0 shadow-none', revenueTone.chip)}>
+                {revenueTone.label}
+              </Badge>
+            </div>
+            <CardDescription>
+              {hasSalesTarget
+                ? 'Compare actual revenue against the configured monthly target.'
+                : 'Compare current income with your rolling six-month baseline until a target is configured.'}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <p className="text-4xl font-semibold tracking-tight text-foreground">
+                {formatCurrency(stats.monthlyRevenue)}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {hasSalesTarget
+                  ? `Target ${formatCurrency(stats.salesTarget!.targetAmount)} for ${formatMonthLabel(stats.salesTarget!.monthKey)}`
+                  : `Baseline ${formatCurrency(monthlyAverage)} over the last 6 months`}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                <span>{hasSalesTarget ? 'Target attainment' : 'Revenue attainment'}</span>
+                <span>{targetProgressSource}%</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn('h-full rounded-full transition-all', revenueTone.bar)}
+                  style={{ width: `${revenueProgress}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="surface-muted p-4">
+                <p className="section-eyebrow">{hasSalesTarget ? (targetDelta >= 0 ? 'Ahead of target' : 'Remaining to target') : 'Baseline variance'}</p>
+                <p className="mt-3 text-2xl font-semibold tracking-tight">
+                  {hasSalesTarget ? formatCurrency(Math.abs(targetDelta)) : `${revenuePace}%`}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {hasSalesTarget
+                    ? targetDelta >= 0
+                      ? 'Revenue has moved past the configured monthly goal.'
+                      : 'This is what remains to hit the overall monthly target.'
+                    : 'Use Settings to switch from baseline mode to target tracking.'}
+                </p>
+              </div>
+
+              <div className="surface-muted p-4">
+                <p className="section-eyebrow">Ops pressure</p>
+                <p className="mt-3 text-2xl font-semibold tracking-tight">{opsLoad}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Combined active work, approvals, and overdue follow-up.
+                </p>
+              </div>
+            </div>
+
+            {!hasSalesTarget && (
+              <div className="flex items-center justify-between gap-4 rounded-[22px] border border-dashed border-border/80 bg-muted/35 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Monthly sales target not configured</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Add an overall target in Settings to unlock PRD-aligned progress tracking.
+                  </p>
+                </div>
+                <Button variant="outline" className="shrink-0" render={<Link href="/settings" />}>
+                  Configure
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
         </section>
       )}
 

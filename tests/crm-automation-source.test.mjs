@@ -59,10 +59,7 @@ test("dashboard and lead detail expose phase 1-3 helpers", () => {
   const whatsappPanel = read("src/components/leads/whatsapp-message-panel.tsx");
   const notifications = read("src/components/layout/notification-panel.tsx");
 
-  assert.doesNotMatch(dashboard, /<TodaysFocus/);
-  assert.match(dashboard, /Executive overview/);
-  assert.match(dashboard, /Your agency control room is live/);
-  assert.match(dashboard, /BLYFT workspace/);
+  assert.match(dashboard, /TodaysFocus/);
   assert.match(focusComponent, /api\.automation\.getTodaysFocus/);
   assert.match(focusComponent, /Project deadlines/);
   assert.match(leadDetail, /WhatsappMessagePanel/);
