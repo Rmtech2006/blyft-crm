@@ -21,6 +21,17 @@ const ADMIN_USERS = [
   { id: 'eshaan', fullName: 'Eshaan' },
 ]
 
+const STATUS_LABELS: Record<string, string> = {
+  TODO: 'To Do', IN_PROGRESS: 'In Progress', IN_REVIEW: 'In Review',
+  DONE: 'Done', BLOCKED: 'Blocked',
+}
+const PRIORITY_LABELS: Record<string, string> = {
+  CRITICAL: 'Critical', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low',
+}
+const RECURRING_LABELS: Record<string, string> = {
+  NONE: 'None', DAILY: 'Daily', WEEKLY: 'Weekly', MONTHLY: 'Monthly',
+}
+
 const schema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
@@ -56,6 +67,10 @@ export function EditTaskDialog({ task, trigger }: { task: EditableTask; trigger?
   const projects = useQuery(api.projects.list) ?? []
   const users = useQuery(api.team.list) ?? []
   const updateTask = useMutation(api.tasks.update)
+  const allAssignees = [
+    ...ADMIN_USERS,
+    ...users.filter((u) => u.status !== 'OFFBOARDED'),
+  ]
 
   const { register, handleSubmit, setValue, reset, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -133,22 +148,25 @@ export function EditTaskDialog({ task, trigger }: { task: EditableTask; trigger?
             <div className="space-y-1">
               <Label>Status</Label>
               <Select value={watch('status')} onValueChange={(v) => setValue('status', v as FormData['status'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue>{STATUS_LABELS[watch('status')]}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  {['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'].map((status) => (
-                    <SelectItem key={status} value={status}>{status.replace('_', ' ')}</SelectItem>
-                  ))}
+                  <SelectItem value="TODO">To Do</SelectItem>
+                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                  <SelectItem value="IN_REVIEW">In Review</SelectItem>
+                  <SelectItem value="DONE">Done</SelectItem>
+                  <SelectItem value="BLOCKED">Blocked</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
               <Label>Priority</Label>
               <Select value={watch('priority')} onValueChange={(v) => setValue('priority', v as FormData['priority'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue>{PRIORITY_LABELS[watch('priority')]}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
-                    <SelectItem key={priority} value={priority}>{priority}</SelectItem>
-                  ))}
+                  <SelectItem value="CRITICAL">Critical</SelectItem>
+                  <SelectItem value="HIGH">High</SelectItem>
+                  <SelectItem value="MEDIUM">Medium</SelectItem>
+                  <SelectItem value="LOW">Low</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -161,11 +179,12 @@ export function EditTaskDialog({ task, trigger }: { task: EditableTask; trigger?
             <div className="space-y-1">
               <Label>Recurring</Label>
               <Select value={watch('recurringType')} onValueChange={(v) => setValue('recurringType', v as FormData['recurringType'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue>{RECURRING_LABELS[watch('recurringType')]}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  {['NONE', 'DAILY', 'WEEKLY', 'MONTHLY'].map((recurring) => (
-                    <SelectItem key={recurring} value={recurring}>{recurring}</SelectItem>
-                  ))}
+                  <SelectItem value="NONE">None</SelectItem>
+                  <SelectItem value="DAILY">Daily</SelectItem>
+                  <SelectItem value="WEEKLY">Weekly</SelectItem>
+                  <SelectItem value="MONTHLY">Monthly</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -174,7 +193,11 @@ export function EditTaskDialog({ task, trigger }: { task: EditableTask; trigger?
             <div className="space-y-1">
               <Label>Project</Label>
               <Select value={watch('projectId') || 'none'} onValueChange={(v) => setValue('projectId', v === 'none' ? '' : String(v))}>
-                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectTrigger className="w-full min-w-0">
+                  <SelectValue placeholder="None">
+                    <span className="block truncate">{projects.find((p) => p.id === watch('projectId'))?.name ?? 'None'}</span>
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
                   {projects.map((project) => <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>)}
@@ -184,7 +207,9 @@ export function EditTaskDialog({ task, trigger }: { task: EditableTask; trigger?
             <div className="space-y-1">
               <Label>Assignee</Label>
               <Select value={watch('assigneeId') || 'none'} onValueChange={(v) => setValue('assigneeId', v === 'none' ? '' : String(v))}>
-                <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Unassigned">
+                  {allAssignees.find((u) => u.id === watch('assigneeId'))?.fullName ?? 'Unassigned'}
+                </SelectValue></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Unassigned</SelectItem>
                   {ADMIN_USERS.map((u) => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}

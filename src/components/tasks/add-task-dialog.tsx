@@ -21,6 +21,17 @@ const ADMIN_USERS = [
   { id: 'eshaan', fullName: 'Eshaan' },
 ]
 
+const STATUS_LABELS: Record<string, string> = {
+  TODO: 'To Do', IN_PROGRESS: 'In Progress', IN_REVIEW: 'In Review',
+  DONE: 'Done', BLOCKED: 'Blocked',
+}
+const PRIORITY_LABELS: Record<string, string> = {
+  CRITICAL: 'Critical', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low',
+}
+const RECURRING_LABELS: Record<string, string> = {
+  NONE: 'None', DAILY: 'Daily', WEEKLY: 'Weekly', MONTHLY: 'Monthly',
+}
+
 const schema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
@@ -42,10 +53,16 @@ export function AddTaskDialog() {
   const users = useQuery(api.team.list) ?? []
   const createTask = useMutation(api.tasks.create)
 
-  const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, reset, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { status: 'TODO', priority: 'MEDIUM', recurringType: 'NONE' },
   })
+  const status = watch('status') ?? 'TODO'
+  const priority = watch('priority') ?? 'MEDIUM'
+  const recurringType = watch('recurringType') ?? 'NONE'
+  const projectId = watch('projectId')
+  const assigneeId = watch('assigneeId')
+  const allAssignees = [...ADMIN_USERS, ...users.filter((u) => u.status !== 'OFFBOARDED')]
 
   async function onSubmit(data: FormData) {
     setLoading(true)
@@ -92,23 +109,26 @@ export function AddTaskDialog() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label>Status</Label>
-              <Select defaultValue="TODO" onValueChange={(v) => setValue('status', v as FormData['status'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={status} onValueChange={(v) => setValue('status', v as FormData['status'])}>
+                <SelectTrigger><SelectValue>{STATUS_LABELS[status]}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  {['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'].map((s) => (
-                    <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
-                  ))}
+                  <SelectItem value="TODO">To Do</SelectItem>
+                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                  <SelectItem value="IN_REVIEW">In Review</SelectItem>
+                  <SelectItem value="DONE">Done</SelectItem>
+                  <SelectItem value="BLOCKED">Blocked</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
               <Label>Priority</Label>
-              <Select defaultValue="MEDIUM" onValueChange={(v) => setValue('priority', v as FormData['priority'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={priority} onValueChange={(v) => setValue('priority', v as FormData['priority'])}>
+                <SelectTrigger><SelectValue>{PRIORITY_LABELS[priority]}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((p) => (
-                    <SelectItem key={p} value={p}>{p}</SelectItem>
-                  ))}
+                  <SelectItem value="CRITICAL">Critical</SelectItem>
+                  <SelectItem value="HIGH">High</SelectItem>
+                  <SelectItem value="MEDIUM">Medium</SelectItem>
+                  <SelectItem value="LOW">Low</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -121,12 +141,13 @@ export function AddTaskDialog() {
             </div>
             <div className="space-y-1">
               <Label>Recurring</Label>
-              <Select defaultValue="NONE" onValueChange={(v) => setValue('recurringType', v as FormData['recurringType'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={recurringType} onValueChange={(v) => setValue('recurringType', v as FormData['recurringType'])}>
+                <SelectTrigger><SelectValue>{RECURRING_LABELS[recurringType]}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  {['NONE', 'DAILY', 'WEEKLY', 'MONTHLY'].map((r) => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
+                  <SelectItem value="NONE">None</SelectItem>
+                  <SelectItem value="DAILY">Daily</SelectItem>
+                  <SelectItem value="WEEKLY">Weekly</SelectItem>
+                  <SelectItem value="MONTHLY">Monthly</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -135,8 +156,12 @@ export function AddTaskDialog() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label>Project</Label>
-              <Select onValueChange={(v) => setValue('projectId', v === 'none' || v == null ? undefined : String(v))}>
-                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+              <Select value={projectId || 'none'} onValueChange={(v) => setValue('projectId', v === 'none' || v == null ? undefined : String(v))}>
+                <SelectTrigger className="w-full min-w-0">
+                  <SelectValue placeholder="None">
+                    <span className="block truncate">{projects.find((p) => p.id === projectId)?.name ?? 'None'}</span>
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
                   {projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
@@ -145,8 +170,10 @@ export function AddTaskDialog() {
             </div>
             <div className="space-y-1">
               <Label>Assignee</Label>
-              <Select onValueChange={(v) => setValue('assigneeId', v === 'none' || v == null ? undefined : String(v))}>
-                <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+              <Select value={assigneeId || 'none'} onValueChange={(v) => setValue('assigneeId', v === 'none' || v == null ? undefined : String(v))}>
+                <SelectTrigger><SelectValue placeholder="Unassigned">
+                  {allAssignees.find((u) => u.id === assigneeId)?.fullName ?? 'Unassigned'}
+                </SelectValue></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Unassigned</SelectItem>
                   {ADMIN_USERS.map((u) => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}

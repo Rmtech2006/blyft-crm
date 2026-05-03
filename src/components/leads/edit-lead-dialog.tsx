@@ -65,9 +65,22 @@ export function EditLeadDialog({ lead, open, onClose }: Props) {
   const [loading, setLoading] = useState(false)
   const updateLead = useMutation(api.leads.update)
 
-  const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<FormData>({
+  const SOURCE_LABELS: Record<string, string> = {
+    INSTAGRAM: 'Instagram', REFERRAL: 'Referral', LINKEDIN: 'LinkedIn',
+    COLD_EMAIL: 'Cold Email', EVENT: 'Event', WEBSITE: 'Website', OTHER: 'Other',
+  }
+  const STAGE_LABELS: Record<string, string> = {
+    LEAD_CAPTURED: 'Lead Captured', QUALIFICATION_SUBMITTED: 'Qualification Submitted',
+    STRATEGY_CALL: 'Strategy Call', PROPOSAL_SENT: 'Proposal Sent',
+    PROPOSAL_ACCEPTED: 'Proposal Accepted', NURTURE: 'Nurture', LOST: 'Lost',
+  }
+
+  const { register, handleSubmit, setValue, reset, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
+  const source = watch('source')
+  const stage = watch('stage')
+  const ownerId = watch('ownerId')
 
   useEffect(() => {
     if (open) {
@@ -152,23 +165,31 @@ export function EditLeadDialog({ lead, open, onClose }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label>Source</Label>
-              <Select defaultValue={lead.source} onValueChange={(v) => setValue('source', v as FormData['source'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={source} onValueChange={(v) => setValue('source', v as FormData['source'])}>
+                <SelectTrigger><SelectValue>{source ? SOURCE_LABELS[source] : ''}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  {['INSTAGRAM', 'REFERRAL', 'LINKEDIN', 'COLD_EMAIL', 'EVENT', 'WEBSITE', 'OTHER'].map((s) => (
-                    <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
-                  ))}
+                  <SelectItem value="INSTAGRAM">Instagram</SelectItem>
+                  <SelectItem value="REFERRAL">Referral</SelectItem>
+                  <SelectItem value="LINKEDIN">LinkedIn</SelectItem>
+                  <SelectItem value="COLD_EMAIL">Cold Email</SelectItem>
+                  <SelectItem value="EVENT">Event</SelectItem>
+                  <SelectItem value="WEBSITE">Website</SelectItem>
+                  <SelectItem value="OTHER">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
               <Label>Stage</Label>
-              <Select defaultValue={lead.stage} onValueChange={(v) => setValue('stage', v as FormData['stage'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={stage} onValueChange={(v) => setValue('stage', v as FormData['stage'])}>
+                <SelectTrigger><SelectValue>{stage ? STAGE_LABELS[stage] : ''}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  {['LEAD_CAPTURED', 'QUALIFICATION_SUBMITTED', 'STRATEGY_CALL', 'PROPOSAL_SENT', 'PROPOSAL_ACCEPTED', 'NURTURE', 'LOST'].map((s) => (
-                    <SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>
-                  ))}
+                  <SelectItem value="LEAD_CAPTURED">Lead Captured</SelectItem>
+                  <SelectItem value="QUALIFICATION_SUBMITTED">Qualification Submitted</SelectItem>
+                  <SelectItem value="STRATEGY_CALL">Strategy Call</SelectItem>
+                  <SelectItem value="PROPOSAL_SENT">Proposal Sent</SelectItem>
+                  <SelectItem value="PROPOSAL_ACCEPTED">Proposal Accepted</SelectItem>
+                  <SelectItem value="NURTURE">Nurture</SelectItem>
+                  <SelectItem value="LOST">Lost</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -200,9 +221,12 @@ export function EditLeadDialog({ lead, open, onClose }: Props) {
             </div>
             <div className="space-y-1">
               <Label>Owner</Label>
-              <Select defaultValue={lead.ownerId ?? undefined} onValueChange={(v) => setValue('ownerId', v ?? undefined)}>
-                <SelectTrigger><SelectValue placeholder="Assign owner" /></SelectTrigger>
+              <Select value={ownerId || 'none'} onValueChange={(v) => setValue('ownerId', v === 'none' ? '' : v)}>
+                <SelectTrigger><SelectValue placeholder="Assign owner">
+                  {ownerId === 'ritish' ? 'Ritish' : ownerId === 'eshaan' ? 'Eshaan' : 'Assign owner'}
+                </SelectValue></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
                   <SelectItem value="ritish">Ritish</SelectItem>
                   <SelectItem value="eshaan">Eshaan</SelectItem>
                 </SelectContent>
