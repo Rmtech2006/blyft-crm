@@ -18,6 +18,15 @@ import { Textarea } from '@/components/ui/textarea'
 const PROJECT_TYPES = ['SOCIAL_MEDIA', 'SEO', 'WEB_DESIGN', 'BRANDING', 'CONTENT', 'ADS', 'OTHER'] as const
 const PROJECT_STATUSES = ['NOT_STARTED', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'ON_HOLD'] as const
 
+const PROJECT_TYPE_LABELS: Record<string, string> = {
+  SOCIAL_MEDIA: 'Social Media', SEO: 'SEO', WEB_DESIGN: 'Web Design',
+  BRANDING: 'Branding', CONTENT: 'Content', ADS: 'Ads', OTHER: 'Other',
+}
+const PROJECT_STATUS_LABELS: Record<string, string> = {
+  NOT_STARTED: 'Not Started', IN_PROGRESS: 'In Progress', IN_REVIEW: 'In Review',
+  COMPLETED: 'Completed', ON_HOLD: 'On Hold',
+}
+
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   clientId: z.string().min(1, 'Client is required'),
@@ -138,8 +147,10 @@ export function EditProjectDialog({ project, open, onClose }: EditProjectDialogP
             <div className="space-y-1">
               <Label>Client *</Label>
               <Select value={selectedClientId} onValueChange={(value) => setValue('clientId', String(value ?? ''))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select client" />
+                <SelectTrigger className="w-full min-w-0">
+                  <SelectValue placeholder="Select client">
+                    <span className="block truncate">{clients.find((c) => c.id === selectedClientId)?.companyName ?? 'Select client'}</span>
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {clients.map((client) => (
@@ -156,13 +167,11 @@ export function EditProjectDialog({ project, open, onClose }: EditProjectDialogP
               <Label>Type</Label>
               <Select value={selectedType} onValueChange={(value) => setValue('type', value as FormData['type'])}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue>{selectedType ? PROJECT_TYPE_LABELS[selectedType] : ''}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {PROJECT_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {formatEnumLabel(type)}
-                    </SelectItem>
+                    <SelectItem key={type} value={type}>{PROJECT_TYPE_LABELS[type]}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -179,13 +188,11 @@ export function EditProjectDialog({ project, open, onClose }: EditProjectDialogP
               <Label>Status</Label>
               <Select value={selectedStatus} onValueChange={(value) => setValue('status', value as FormData['status'])}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue>{selectedStatus ? PROJECT_STATUS_LABELS[selectedStatus] : ''}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {PROJECT_STATUSES.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {formatEnumLabel(status)}
-                    </SelectItem>
+                    <SelectItem key={status} value={status}>{PROJECT_STATUS_LABELS[status]}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

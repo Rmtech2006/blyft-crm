@@ -36,10 +36,22 @@ export function AddProjectDialog() {
   const clients = useQuery(api.clients.list) ?? []
   const createProject = useMutation(api.projects.create)
 
-  const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<FormData>({
+  const PROJECT_TYPE_LABELS: Record<string, string> = {
+    SOCIAL_MEDIA: 'Social Media', SEO: 'SEO', WEB_DESIGN: 'Web Design',
+    BRANDING: 'Branding', CONTENT: 'Content', ADS: 'Ads', OTHER: 'Other',
+  }
+  const PROJECT_STATUS_LABELS: Record<string, string> = {
+    NOT_STARTED: 'Not Started', IN_PROGRESS: 'In Progress', IN_REVIEW: 'In Review',
+    COMPLETED: 'Completed', ON_HOLD: 'On Hold',
+  }
+
+  const { register, handleSubmit, setValue, reset, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { type: 'OTHER', status: 'NOT_STARTED' },
   })
+  const clientId = watch('clientId')
+  const type = watch('type') ?? 'OTHER'
+  const status = watch('status') ?? 'NOT_STARTED'
 
   async function onSubmit(data: FormData) {
     setLoading(true)
@@ -82,9 +94,14 @@ export function AddProjectDialog() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label>Client *</Label>
-              <Select onValueChange={(v) => setValue('clientId', String(v ?? ''))}>
-                <SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger>
+              <Select value={clientId || 'none'} onValueChange={(v) => setValue('clientId', v === 'none' ? '' : String(v ?? ''))}>
+                <SelectTrigger className="w-full min-w-0">
+                  <SelectValue placeholder="Select client">
+                    <span className="block truncate">{clients.find((c) => c.id === clientId)?.companyName ?? 'Select client'}</span>
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Select client</SelectItem>
                   {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.companyName}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -92,11 +109,11 @@ export function AddProjectDialog() {
             </div>
             <div className="space-y-1">
               <Label>Type</Label>
-              <Select defaultValue="OTHER" onValueChange={(v) => setValue('type', v as FormData['type'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={type} onValueChange={(v) => setValue('type', v as FormData['type'])}>
+                <SelectTrigger><SelectValue>{PROJECT_TYPE_LABELS[type]}</SelectValue></SelectTrigger>
                 <SelectContent>
                   {['SOCIAL_MEDIA', 'SEO', 'WEB_DESIGN', 'BRANDING', 'CONTENT', 'ADS', 'OTHER'].map((t) => (
-                    <SelectItem key={t} value={t}>{t.replace('_', ' ')}</SelectItem>
+                    <SelectItem key={t} value={t}>{PROJECT_TYPE_LABELS[t]}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -111,11 +128,11 @@ export function AddProjectDialog() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label>Status</Label>
-              <Select defaultValue="NOT_STARTED" onValueChange={(v) => setValue('status', v as FormData['status'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={status} onValueChange={(v) => setValue('status', v as FormData['status'])}>
+                <SelectTrigger><SelectValue>{PROJECT_STATUS_LABELS[status]}</SelectValue></SelectTrigger>
                 <SelectContent>
                   {['NOT_STARTED', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'ON_HOLD'].map((s) => (
-                    <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
+                    <SelectItem key={s} value={s}>{PROJECT_STATUS_LABELS[s]}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
