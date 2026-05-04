@@ -42,6 +42,7 @@ import { normalizeDashboardStats } from '@/lib/dashboard-stats'
 import { exportCsv, printReport } from '@/lib/export'
 import { cn } from '@/lib/utils'
 import { protectedQueryArgs } from '@/lib/convex-query-args.mjs'
+import { usePrivacyMode } from '@/contexts/privacy-mode-context'
 
 const quickActionIcons: Record<DashboardQuickActionId, typeof UserPlus> = {
   'add-lead': UserPlus,
@@ -142,6 +143,7 @@ function DashboardSkeleton() {
 export default function DashboardPage() {
   const { data: session } = useSession()
   const { isAuthenticated } = useConvexAuth()
+  const { mask } = usePrivacyMode()
   const savedSettings = useQuery(api.settings.get, protectedQueryArgs(Boolean(session?.user) && isAuthenticated, {}))
   const rawStats = useQuery(api.dashboard.getStats)
   const { data: stats, isPartial } = useMemo(() => normalizeDashboardStats(rawStats), [rawStats])
@@ -355,12 +357,12 @@ export default function DashboardPage() {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <p className="text-4xl font-semibold tracking-tight text-foreground">
-                {formatCurrency(stats.monthlyRevenue)}
+                {mask(stats.monthlyRevenue, formatCurrency)}
               </p>
               <p className="text-sm text-muted-foreground">
                 {hasSalesTarget
-                  ? `Target ${formatCurrency(stats.salesTarget!.targetAmount)} for ${formatMonthLabel(stats.salesTarget!.monthKey)}`
-                  : `Baseline ${formatCurrency(monthlyAverage)} over the last 6 months`}
+                  ? `Target ${mask(stats.salesTarget!.targetAmount, formatCurrency)} for ${formatMonthLabel(stats.salesTarget!.monthKey)}`
+                  : `Baseline ${mask(monthlyAverage, formatCurrency)} over the last 6 months`}
               </p>
             </div>
 
@@ -381,7 +383,7 @@ export default function DashboardPage() {
               <div className="surface-muted p-4">
                 <p className="section-eyebrow">{hasSalesTarget ? (targetDelta >= 0 ? 'Ahead of target' : 'Remaining to target') : 'Baseline variance'}</p>
                 <p className="mt-3 text-2xl font-semibold tracking-tight">
-                  {hasSalesTarget ? formatCurrency(Math.abs(targetDelta)) : `${revenuePace}%`}
+                  {hasSalesTarget ? mask(Math.abs(targetDelta), formatCurrency) : `${revenuePace}%`}
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {hasSalesTarget
@@ -444,7 +446,7 @@ export default function DashboardPage() {
         />
         <StatsCard
           title="Monthly revenue"
-          value={formatCompactCurrency(stats.monthlyRevenue)}
+          value={mask(stats.monthlyRevenue, formatCompactCurrency)}
           subtitle="Income recorded this month"
           icon={Wallet}
           color="amber"
@@ -744,13 +746,13 @@ export default function DashboardPage() {
                             <div>
                               <span className="block text-[11px] uppercase tracking-[0.2em]">Target</span>
                               <span className="mt-1 block font-medium text-foreground">
-                                {formatCurrency(target.targetAmount)}
+                                {mask(target.targetAmount, formatCurrency)}
                               </span>
                             </div>
                             <div>
                               <span className="block text-[11px] uppercase tracking-[0.2em]">Actual</span>
                               <span className="mt-1 block font-medium text-foreground">
-                                {formatCurrency(target.actualAmount)}
+                                {mask(target.actualAmount, formatCurrency)}
                               </span>
                             </div>
                           </div>

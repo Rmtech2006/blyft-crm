@@ -28,6 +28,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { BlyftLogo } from '@/components/brand/blyft-logo'
+import { PrivacyModeProvider } from '@/contexts/privacy-mode-context'
 
 const routeLabels: Array<{ href: string; label: string }> = [
   { href: '/reimbursements', label: 'Reimbursements' },
@@ -242,16 +243,18 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <SidebarProvider defaultOpen={true}>
-      <AppSidebar />
-      <SidebarInset className="min-h-screen overflow-hidden bg-transparent">
-        <div className="app-shell min-h-screen">
-          <TopHeader />
-          <main className="flex-1 overflow-auto px-4 pb-8 pt-6 sm:px-6">
-            <div className="mx-auto w-full max-w-[1480px]">{children}</div>
-          </main>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+    <PrivacyModeProvider>
+      <SidebarProvider defaultOpen={true}>
+        <AppSidebar />
+        <SidebarInset className="min-h-screen overflow-hidden bg-transparent">
+          <div className="app-shell min-h-screen">
+            <TopHeader />
+            <main className="flex-1 overflow-auto px-4 pb-8 pt-6 sm:px-6">
+              <div className="mx-auto w-full max-w-[1480px]">{children}</div>
+            </main>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    </PrivacyModeProvider>
   )
 }

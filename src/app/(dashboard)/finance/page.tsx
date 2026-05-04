@@ -16,9 +16,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AddTransactionDialog } from '@/components/finance/add-transaction-dialog'
 import { FinanceSummaryCards } from '@/components/finance/summary-cards'
 import { ExportMenu } from '@/components/shared/export-menu'
-import { TrendingUp, Landmark, Trash2, Plus, Pencil, ArrowLeft, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import { TrendingUp, Landmark, Trash2, Plus, Pencil, ArrowLeft, ArrowUpRight, ArrowDownLeft, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { exportCsv, printReport } from '@/lib/export'
+import { usePrivacyMode } from '@/contexts/privacy-mode-context'
 import {
   buildStatementRowsFromCurrentBalance,
   sortTransactionsByDateDesc,
@@ -366,6 +367,7 @@ type BankAccountWithTx = {
 
 function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string; bankAccounts: BankAccountWithTx[]; onBack: () => void }) {
   const removeTransaction = useMutation(api.finance.removeTransaction)
+  const { mask } = usePrivacyMode()
   const account = bankAccounts.find((a) => a.id === accountId)
 
   if (!account) return null
@@ -395,7 +397,7 @@ function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string;
         <div className="flex items-center gap-3">
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Current Balance</p>
-            <p className={`text-xl font-bold ${account.balance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{formatINR(account.balance)}</p>
+            <p className={`text-xl font-bold ${account.balance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{mask(account.balance, formatINR)}</p>
           </div>
           <AddTransactionDialog defaultBankAccountId={account.id} triggerLabel="Add Entry" />
         </div>
@@ -437,9 +439,9 @@ function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string;
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{t.category}</TableCell>
                 <TableCell><Badge variant="outline" className="text-xs">{t.paymentMode.replace('_', ' ')}</Badge></TableCell>
-                <TableCell className="text-right font-medium text-emerald-500">{t.type === 'INCOME' ? formatINR(t.amount) : '—'}</TableCell>
-                <TableCell className="text-right font-medium text-destructive">{t.type === 'EXPENSE' ? formatINR(t.amount) : '—'}</TableCell>
-                <TableCell className={`text-right font-semibold text-sm ${t.runningBalance >= 0 ? 'text-foreground' : 'text-destructive'}`}>{formatINR(t.runningBalance)}</TableCell>
+                <TableCell className="text-right font-medium text-emerald-500">{t.type === 'INCOME' ? mask(t.amount, formatINR) : '—'}</TableCell>
+                <TableCell className="text-right font-medium text-destructive">{t.type === 'EXPENSE' ? mask(t.amount, formatINR) : '—'}</TableCell>
+                <TableCell className={`text-right font-semibold text-sm ${t.runningBalance >= 0 ? 'text-foreground' : 'text-destructive'}`}>{mask(t.runningBalance, formatINR)}</TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
                     <AddTransactionDialog transaction={t} />
@@ -460,6 +462,7 @@ function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string;
 // ── Outstanding Payments Tab ──────────────────────────────────────────────────
 function OutstandingTab() {
   const outstanding = useQuery(api.finance.getOutstanding) ?? []
+  const { mask } = usePrivacyMode()
 
   if (outstanding.length === 0) {
     return (
@@ -479,7 +482,7 @@ function OutstandingTab() {
         <p className="text-sm text-muted-foreground">{outstanding.length} client{outstanding.length !== 1 ? 's' : ''} with outstanding payments</p>
         <div className="text-right">
           <p className="text-xs text-muted-foreground">Total Outstanding</p>
-          <p className="text-xl font-bold text-destructive">{formatINR(totalOutstanding)}</p>
+          <p className="text-xl font-bold text-destructive">{mask(totalOutstanding, formatINR)}</p>
         </div>
       </div>
       <Card>
@@ -497,10 +500,10 @@ function OutstandingTab() {
             {outstanding.map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="font-medium text-sm">{c.companyName}</TableCell>
-                <TableCell className="text-right text-sm text-muted-foreground">{formatINR(c.retainerAmount)}</TableCell>
-                <TableCell className="text-right text-sm text-emerald-500 font-medium">{formatINR(c.receivedThisMonth)}</TableCell>
+                <TableCell className="text-right text-sm text-muted-foreground">{mask(c.retainerAmount, formatINR)}</TableCell>
+                <TableCell className="text-right text-sm text-emerald-500 font-medium">{mask(c.receivedThisMonth, formatINR)}</TableCell>
                 <TableCell className="text-right">
-                  <span className="font-bold text-destructive text-sm">{formatINR(c.outstanding)}</span>
+                  <span className="font-bold text-destructive text-sm">{mask(c.outstanding, formatINR)}</span>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {c.lastPaymentDate
@@ -525,6 +528,7 @@ function PettyCashTab() {
   const removeEntry = useMutation(api.finance.removePettyCash)
 
   const balance = entries.reduce((s, e) => e.type === 'IN' ? s + e.amount : s - e.amount, 0)
+  const { mask } = usePrivacyMode()
 
   async function handleAdd(evt: React.FormEvent) {
     evt.preventDefault()
@@ -545,7 +549,7 @@ function PettyCashTab() {
         <p className="text-sm text-muted-foreground">Track small cash movements separately from bank transactions</p>
         <div className="text-right">
           <p className="text-xs text-muted-foreground">Petty Cash Balance</p>
-          <p className={`text-xl font-bold ${balance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{formatINR(balance)}</p>
+          <p className={`text-xl font-bold ${balance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{mask(balance, formatINR)}</p>
         </div>
       </div>
 
@@ -612,8 +616,8 @@ function PettyCashTab() {
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{e.category}</TableCell>
-                <TableCell className="text-right font-medium text-emerald-500">{e.type === 'IN' ? formatINR(e.amount) : '—'}</TableCell>
-                <TableCell className="text-right font-medium text-destructive">{e.type === 'OUT' ? formatINR(e.amount) : '—'}</TableCell>
+                <TableCell className="text-right font-medium text-emerald-500">{e.type === 'IN' ? mask(e.amount, formatINR) : '—'}</TableCell>
+                <TableCell className="text-right font-medium text-destructive">{e.type === 'OUT' ? mask(e.amount, formatINR) : '—'}</TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
                     <EditPettyCashDialog entry={e} />
@@ -639,6 +643,7 @@ export default function FinancePage() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
+  const { isHidden, toggle, mask } = usePrivacyMode()
 
   const clients = useQuery(api.clients.list) ?? []
   const projects = useQuery(api.projects.list) ?? []
@@ -734,6 +739,9 @@ export default function FinancePage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Finance</h1>
         <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={toggle} title={isHidden ? 'Show amounts' : 'Hide amounts'}>
+            {isHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </Button>
           <ExportMenu onCsv={handleCsvExport} onPdf={handlePdfExport} />
           <AddTransactionDialog />
         </div>
@@ -831,8 +839,8 @@ export default function FinancePage() {
                     <TableCell className="text-sm">{t.category}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{t.bankAccount?.name ?? '—'}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{t.paymentMode.replace('_', ' ')}</Badge></TableCell>
-                    <TableCell className="text-right font-medium text-emerald-500">{t.type === 'INCOME' ? formatINR(t.amount) : '—'}</TableCell>
-                    <TableCell className="text-right font-medium text-destructive">{t.type === 'EXPENSE' ? formatINR(t.amount) : '—'}</TableCell>
+                    <TableCell className="text-right font-medium text-emerald-500">{t.type === 'INCOME' ? mask(t.amount, formatINR) : '—'}</TableCell>
+                    <TableCell className="text-right font-medium text-destructive">{t.type === 'EXPENSE' ? mask(t.amount, formatINR) : '—'}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
                         <AddTransactionDialog transaction={t} />
@@ -908,16 +916,16 @@ export default function FinancePage() {
                         {account.accountNumber && <p className="text-xs text-muted-foreground font-mono">{account.accountNumber}</p>}
                         <div>
                           <p className="text-xs text-muted-foreground">Current Balance</p>
-                          <p className={`text-2xl font-bold ${account.balance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{formatINR(account.balance)}</p>
+                          <p className={`text-2xl font-bold ${account.balance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{mask(account.balance, formatINR)}</p>
                         </div>
                         <div className="flex gap-4 pt-1 border-t">
                           <div>
                             <p className="text-xs text-muted-foreground">Credits</p>
-                            <p className="text-sm font-medium text-emerald-500">{formatINR(credits)}</p>
+                            <p className="text-sm font-medium text-emerald-500">{mask(credits, formatINR)}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Debits</p>
-                            <p className="text-sm font-medium text-destructive">{formatINR(debits)}</p>
+                            <p className="text-sm font-medium text-destructive">{mask(debits, formatINR)}</p>
                           </div>
                           <div className="ml-auto text-right">
                             <p className="text-xs text-muted-foreground">Entries</p>

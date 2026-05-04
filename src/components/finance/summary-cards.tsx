@@ -1,5 +1,6 @@
 import { Landmark, TrendingDown, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { usePrivacyMode } from '@/contexts/privacy-mode-context'
 
 export function FinanceSummaryCards({
   income,
@@ -16,6 +17,8 @@ export function FinanceSummaryCards({
   totalBankBalance: number
   formatINR: (amount: number) => string
 }) {
+  const { mask } = usePrivacyMode()
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
       <Card>
@@ -24,7 +27,7 @@ export function FinanceSummaryCards({
             <TrendingUp className="h-4 w-4 text-green-500" /> Operating Income
           </CardTitle>
         </CardHeader>
-        <CardContent><p className="text-2xl font-bold text-emerald-500">{formatINR(income)}</p></CardContent>
+        <CardContent><p className="text-2xl font-bold text-emerald-500">{mask(income, formatINR)}</p></CardContent>
       </Card>
       <Card>
         <CardHeader className="pb-2">
@@ -32,7 +35,7 @@ export function FinanceSummaryCards({
             <TrendingDown className="h-4 w-4 text-red-500" /> Total Expenses
           </CardTitle>
         </CardHeader>
-        <CardContent><p className="text-2xl font-bold text-destructive">{formatINR(expense)}</p></CardContent>
+        <CardContent><p className="text-2xl font-bold text-destructive">{mask(expense, formatINR)}</p></CardContent>
       </Card>
       <Card>
         <CardHeader className="pb-2">
@@ -40,7 +43,7 @@ export function FinanceSummaryCards({
             <TrendingUp className="h-4 w-4 text-primary" /> Operating Profit
           </CardTitle>
         </CardHeader>
-        <CardContent><p className={`text-2xl font-bold ${net >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{formatINR(net)}</p></CardContent>
+        <CardContent><p className={`text-2xl font-bold ${net >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{mask(net, formatINR)}</p></CardContent>
       </Card>
       <Card>
         <CardHeader className="pb-2">
@@ -48,9 +51,8 @@ export function FinanceSummaryCards({
             <Landmark className="h-4 w-4 text-purple-500" /> Total Bank Balance
           </CardTitle>
         </CardHeader>
-        <CardContent><p className={`text-2xl font-bold ${totalBankBalance >= 0 ? 'text-purple-600' : 'text-destructive'}`}>{formatINR(totalBankBalance)}</p></CardContent>
+        <CardContent><p className={`text-2xl font-bold ${totalBankBalance >= 0 ? 'text-purple-600' : 'text-destructive'}`}>{mask(totalBankBalance, formatINR)}</p></CardContent>
       </Card>
-
     </div>
   )
 }
