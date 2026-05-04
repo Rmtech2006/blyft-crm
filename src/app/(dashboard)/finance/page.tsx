@@ -365,9 +365,8 @@ type BankAccountWithTx = {
   }>
 }
 
-function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string; bankAccounts: BankAccountWithTx[]; onBack: () => void }) {
+function BankStatement({ accountId, bankAccounts, onBack, mask }: { accountId: string; bankAccounts: BankAccountWithTx[]; onBack: () => void; mask: (amount: number, formatter: (n: number) => string) => string }) {
   const removeTransaction = useMutation(api.finance.removeTransaction)
-  const { mask } = usePrivacyMode()
   const account = bankAccounts.find((a) => a.id === accountId)
 
   if (!account) return null
@@ -460,9 +459,8 @@ function BankStatement({ accountId, bankAccounts, onBack }: { accountId: string;
 }
 
 // ── Outstanding Payments Tab ──────────────────────────────────────────────────
-function OutstandingTab() {
+function OutstandingTab({ mask }: { mask: (amount: number, formatter: (n: number) => string) => string }) {
   const outstanding = useQuery(api.finance.getOutstanding) ?? []
-  const { mask } = usePrivacyMode()
 
   if (outstanding.length === 0) {
     return (
@@ -520,7 +518,7 @@ function OutstandingTab() {
 }
 
 // ── Petty Cash Tab ────────────────────────────────────────────────────────────
-function PettyCashTab() {
+function PettyCashTab({ mask }: { mask: (amount: number, formatter: (n: number) => string) => string }) {
   const [form, setForm] = useState({ description: '', amount: '', type: 'OUT' as 'IN' | 'OUT', category: '', date: new Date().toISOString().slice(0, 10) })
   const [loading, setLoading] = useState(false)
   const entries = useQuery(api.finance.listPettyCash) ?? []
@@ -528,7 +526,6 @@ function PettyCashTab() {
   const removeEntry = useMutation(api.finance.removePettyCash)
 
   const balance = entries.reduce((s, e) => e.type === 'IN' ? s + e.amount : s - e.amount, 0)
-  const { mask } = usePrivacyMode()
 
   async function handleAdd(evt: React.FormEvent) {
     evt.preventDefault()
@@ -643,7 +640,7 @@ export default function FinancePage() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
-  const { isHidden, toggle, mask } = usePrivacyMode()
+  const { isHidden, toggle, mask } = usePrivacyMode(true)
 
   const clients = useQuery(api.clients.list) ?? []
   const projects = useQuery(api.projects.list) ?? []
@@ -754,6 +751,7 @@ export default function FinancePage() {
         net={net}
         totalBankBalance={totalBankBalance}
         formatINR={formatINR}
+        mask={mask}
       />
 
       <Tabs defaultValue="transactions">
@@ -857,11 +855,11 @@ export default function FinancePage() {
         </TabsContent>
 
         <TabsContent value="outstanding">
-          <OutstandingTab />
+          <OutstandingTab mask={mask} />
         </TabsContent>
 
         <TabsContent value="petty">
-          <PettyCashTab />
+          <PettyCashTab mask={mask} />
         </TabsContent>
 
         <TabsContent value="bank" className="space-y-4">
@@ -870,6 +868,7 @@ export default function FinancePage() {
               accountId={selectedAccountId}
               bankAccounts={bankAccounts as BankAccountWithTx[]}
               onBack={() => setSelectedAccountId(null)}
+              mask={mask}
             />
           ) : (
             <>

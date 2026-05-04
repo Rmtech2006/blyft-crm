@@ -1,6 +1,5 @@
 import { Landmark, TrendingDown, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { usePrivacyMode } from '@/contexts/privacy-mode-context'
 
 export function FinanceSummaryCards({
   income,
@@ -9,6 +8,7 @@ export function FinanceSummaryCards({
   net,
   totalBankBalance,
   formatINR,
+  mask,
 }: {
   income: number
   nonOperatingIncome: number
@@ -16,9 +16,8 @@ export function FinanceSummaryCards({
   net: number
   totalBankBalance: number
   formatINR: (amount: number) => string
+  mask: (amount: number, formatter: (n: number) => string) => string
 }) {
-  const { mask } = usePrivacyMode()
-
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
       <Card>

@@ -7,6 +7,8 @@ import {
   Bell,
   BookOpen,
   Building2,
+  Eye,
+  EyeOff,
   LayoutDashboard,
   PencilLine,
   Save,
@@ -44,6 +46,7 @@ import {
   normalizeDashboardSectionIds,
 } from '@/lib/dashboard-preferences'
 import { protectedQueryArgs } from '@/lib/convex-query-args.mjs'
+import { usePrivacyMode } from '@/contexts/privacy-mode-context'
 
 function getInitials(name: string | null | undefined) {
   if (!name) return 'U'
@@ -130,6 +133,7 @@ export default function SettingsPage() {
   const teamMembers = useMemo(() => teamMembersQuery ?? [], [teamMembersQuery])
   const [activeTab, setActiveTab] = useState('profile')
   const [selectedMonth, setSelectedMonth] = useState(getMonthKey(new Date()))
+  const { isHidden: targetsHidden, toggle: toggleTargets, mask: maskTarget } = usePrivacyMode(true)
   const salesTargetsQuery = useQuery(
     api.salesTargets.listForMonth,
     activeTab === 'sales-targets' ? { monthKey: selectedMonth } : 'skip'
@@ -567,6 +571,9 @@ export default function SettingsPage() {
                       Configure overall, department, and team-member targets for {formatMonthLabel(selectedMonth)}.
                     </CardDescription>
                   </div>
+                  <Button variant="outline" size="icon" onClick={toggleTargets} title={targetsHidden ? 'Show amounts' : 'Hide amounts'} className="shrink-0">
+                    {targetsHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
 
                   <div className="w-full max-w-[220px] space-y-1.5">
                     <Label htmlFor="targetMonth">Month</Label>
@@ -594,13 +601,13 @@ export default function SettingsPage() {
                   <div className="surface-muted p-4">
                     <p className="section-eyebrow">Target value</p>
                     <p className="mt-3 text-2xl font-semibold tracking-tight">
-                      {salesTargetsLoading ? 'Loading...' : formatCurrency(totalTargetValue)}
+                      {salesTargetsLoading ? 'Loading...' : maskTarget(totalTargetValue, formatCurrency)}
                     </p>
                   </div>
                   <div className="surface-muted p-4">
                     <p className="section-eyebrow">Manual actuals</p>
                     <p className="mt-3 text-2xl font-semibold tracking-tight">
-                      {salesTargetsLoading ? 'Loading...' : formatCurrency(totalActualValue)}
+                      {salesTargetsLoading ? 'Loading...' : maskTarget(totalActualValue, formatCurrency)}
                     </p>
                   </div>
                 </div>
@@ -776,14 +783,14 @@ export default function SettingsPage() {
                               <div>
                                 <span className="block text-[11px] uppercase tracking-[0.2em]">Target</span>
                                 <span className="mt-1 block font-medium text-foreground">
-                                  {formatCurrency(target.targetAmount)}
+                                  {maskTarget(target.targetAmount, formatCurrency)}
                                 </span>
                               </div>
                               <div>
                                 <span className="block text-[11px] uppercase tracking-[0.2em]">Actual</span>
                                 <span className="mt-1 block font-medium text-foreground">
                                   {target.actualAmount !== undefined && target.actualAmount !== null
-                                    ? formatCurrency(target.actualAmount)
+                                    ? maskTarget(target.actualAmount, formatCurrency)
                                     : 'Auto from revenue'}
                                 </span>
                               </div>
